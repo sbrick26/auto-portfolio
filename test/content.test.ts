@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { profile, about, skills, projects, updates, resume } from "@/content/data";
+import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
 
 describe("updates feed (pipeline seam)", () => {
   it("has at least one entry", () => {
@@ -61,6 +61,28 @@ describe("projects", () => {
   });
 });
 
+describe("changelog (pipeline seam)", () => {
+  it("entries are well-formed and newest-first", () => {
+    expect(changelog.length).toBeGreaterThan(0);
+    for (const e of changelog) {
+      expect(e.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(e.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(e.changes.length).toBeGreaterThan(0);
+    }
+    const semver = (v: string) => v.split(".").map(Number);
+    for (let i = 1; i < changelog.length; i++) {
+      const [a, b] = [semver(changelog[i - 1].version), semver(changelog[i].version)];
+      const newer = a[0] > b[0] || (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2])));
+      expect(newer, `${changelog[i - 1].version} must be newer than ${changelog[i].version}`).toBe(true);
+    }
+  });
+
+  it("the newest changelog entry matches the package version", async () => {
+    const pkg = await import("../package.json");
+    expect(changelog[0].version).toBe(pkg.version);
+  });
+});
+
 describe("privacy guard: nothing sensitive ships to the public site", () => {
   const everything = JSON.stringify({ profile, about, skills, projects, updates, resume });
 
@@ -70,19 +92,20 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   });
 
   it("contains no client names (engagements stay generalized)", () => {
+    // base64-encoded so this public test file does not itself name the clients
     const clientNames = [
-      "Niagara",
-      "TKO",
-      "WWE",
-      "UFC",
-      "Knight Swift",
-      "Knight-Swift",
-      "US Xpress",
-      "PACCAR",
-      "AAA Cooper",
-      "PERA",
-      "ZOME",
-    ];
+      "TmlhZ2FyYQ==",
+      "VEtP",
+      "V1dF",
+      "VUZD",
+      "S25pZ2h0IFN3aWZ0",
+      "S25pZ2h0LVN3aWZ0",
+      "VVMgWHByZXNz",
+      "UEFDQ0FS",
+      "QUFBIENvb3Blcg==",
+      "UEVSQQ==",
+      "Wk9NRQ==",
+    ].map((s) => Buffer.from(s, "base64").toString());
     for (const name of clientNames) {
       expect(everything.toLowerCase(), `client name "${name}" must not appear`).not.toContain(
         name.toLowerCase()
@@ -91,7 +114,7 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   });
 
   it("uses only the public email", () => {
-    expect(everything).not.toContain("utexas.edu");
+    expect(everything).not.toContain(Buffer.from("dXRleGFzLmVkdQ==", "base64").toString());
     expect(profile.links.email).toBe("swayambarik@gmail.com");
   });
 

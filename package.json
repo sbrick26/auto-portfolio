@@ -1,6 +1,6 @@
 {
   "name": "portfolio_scaffold",
-  "version": "0.1.0",
+  "version": "1.4.0",
   "private": true,
   "scripts": {
     "build": "next build",
@@ -8,7 +8,9 @@
     "lint": "eslint",
     "start": "next start",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ci": "playwright test --grep-invert @visual"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",
@@ -19,6 +21,7 @@
     "sst": "4.15.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

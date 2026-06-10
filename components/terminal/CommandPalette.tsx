@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { COMMANDS } from "@/lib/commands";
+import { APP_VERSION } from "@/lib/version";
 
 export function CommandPalette({
   open,
@@ -101,6 +102,10 @@ export function CommandPalette({
               {list.length === 0 && (
                 <div className="px-4 py-3 text-[13px] text-term-faint">no matches</div>
               )}
+            </div>
+            <div className="flex items-center justify-between border-t border-term-border px-4 py-2 text-[11px] text-term-faint">
+              <span>esc to close</span>
+              <span className="tabular-nums">v{APP_VERSION}</span>
             </div>
           </motion.div>
         </motion.div>

@@ -3,6 +3,7 @@
 // so the work feed and resume stay in sync and never drift.
 
 import updatesJson from "./updates.json";
+import changelogJson from "./changelog.json";
 
 export const profile = {
   name: "Swayam Barik",
@@ -167,6 +168,11 @@ export type Update = {
 // synthesizes into a real update. Nothing here requires a resume change;
 // the resume only regenerates when the career corpus warrants it (Phase 3).
 export const updates: Update[] = updatesJson as Update[];
+
+export type ChangelogEntry = { version: string; date: string; changes: string[] };
+
+// PIPELINE SEAM: scripts append an entry here on every version bump (newest first).
+export const changelog: ChangelogEntry[] = changelogJson as ChangelogEntry[];
 
 export type ResumeItem = { title: string; org?: string; when?: string; points: string[] };
 
