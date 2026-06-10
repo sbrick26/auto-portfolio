@@ -1,0 +1,8 @@
+[
+  { "date": "2026-06-06", "time": "10:12", "text": "decided on the agent pipeline architecture (3 levels, hard ceiling)", "tag": "design" },
+  { "date": "2026-06-07", "time": "15:40", "text": "locked the tooling: subagents + headless claude -p for unattended runs", "tag": "design" },
+  { "date": "2026-06-08", "time": "18:30", "text": "set up AWS + GitHub, secured creds, layered the config", "tag": "infra" },
+  { "date": "2026-06-08", "time": "19:05", "text": "scaffolded the terminal site (Next.js + Tailwind + Geist Mono)", "tag": "portfolio" },
+  { "date": "2026-06-08", "time": "19:20", "text": "built the click-or-type command engine with tabs", "tag": "portfolio" },
+  { "date": "2026-06-08", "time": "19:35", "text": "wired the live updates tail you're reading right now", "tag": "portfolio" }
+]
