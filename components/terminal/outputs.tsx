@@ -298,6 +298,17 @@ export function ResumeOutput() {
         </div>
       </Reveal>
       <Reveal i={2}>
+        <SectionLabel>skills</SectionLabel>
+        <div className="space-y-1">
+          {skills.map((g) => (
+            <div key={g.category} className="text-[13px]">
+              <span className="text-term-faint">{g.category}: </span>
+              <span className="text-term-text/90">{g.items.map((s) => s.name).join(", ")}</span>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+      <Reveal i={3}>
         <SectionLabel>education</SectionLabel>
         {resume.education.map((e, i) => (
           <div key={i}>

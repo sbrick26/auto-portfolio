@@ -29,7 +29,20 @@ export const about: string[] = [
 export type Skill = { name: string; level: number }; // level 0-100
 export type SkillGroup = { category: string; accent: string; items: Skill[] };
 
+// Comprehensive on purpose: languages, AI/agents, web/mobile, cloud/devops,
+// and the leadership/delivery track (startup PM + enterprise technical sales).
 export const skills: SkillGroup[] = [
+  {
+    category: "ai / agents",
+    accent: "var(--color-term-orange)",
+    items: [
+      { name: "IBM Bob", level: 93 },
+      { name: "watsonx Orchestrate", level: 90 },
+      { name: "Agentic systems", level: 88 },
+      { name: "MCP servers", level: 86 },
+      { name: "RAG / LangChain", level: 80 },
+    ],
+  },
   {
     category: "languages",
     accent: "var(--color-term-blue)",
@@ -37,6 +50,7 @@ export const skills: SkillGroup[] = [
       { name: "TypeScript / JS", level: 90 },
       { name: "Python", level: 85 },
       { name: "Swift / Obj-C", level: 78 },
+      { name: "SQL", level: 74 },
     ],
   },
   {
@@ -44,27 +58,30 @@ export const skills: SkillGroup[] = [
     accent: "var(--color-term-purple)",
     items: [
       { name: "React / Next.js", level: 88 },
-      { name: "Node / GraphQL", level: 82 },
-      { name: "iOS", level: 78 },
+      { name: "Node / Express / GraphQL", level: 82 },
+      { name: "iOS (UIKit)", level: 78 },
+      { name: "PWA", level: 76 },
     ],
   },
   {
-    category: "cloud / infra",
+    category: "cloud / devops",
     accent: "var(--color-term-green)",
     items: [
-      { name: "AWS", level: 80 },
-      { name: "MongoDB / Firebase", level: 78 },
-      { name: "CI / CD", level: 76 },
+      { name: "AWS (deploy + Marketplace)", level: 82 },
+      { name: "CI / CD pipelines", level: 80 },
+      { name: "Docker", level: 76 },
+      { name: "MongoDB / Firebase", level: 76 },
+      { name: "OAuth 2.0 / OpenAPI", level: 78 },
     ],
   },
   {
-    category: "ai / agents",
-    accent: "var(--color-term-orange)",
+    category: "leadership / delivery",
+    accent: "var(--color-term-cyan)",
     items: [
-      { name: "Agentic systems", level: 88 },
-      { name: "MCP servers", level: 86 },
-      { name: "watsonx platform", level: 88 },
-      { name: "RAG / LangChain", level: 80 },
+      { name: "POC design + technical sales", level: 92 },
+      { name: "Agile / sprint leadership", level: 86 },
+      { name: "Product (PRDs, JIRA, Confluence)", level: 82 },
+      { name: "A/B experimentation", level: 78 },
     ],
   },
 ];
