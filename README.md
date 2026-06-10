@@ -6,116 +6,123 @@ builds, tests, reviews, versions, and ships the site - on its own schedule, ever
 
 Live: **[imsway.dev](https://imsway.dev)** · try the `changelog` command (and find the secret one)
 
-## How it runs on its own
+**Docs:** [the agent pipeline](docs/pipeline.md) ·
+[architecture and deployment](docs/architecture.md) ·
+[development](docs/development.md)
 
-Two scheduled runs anchor the day, both on an always-on Mac:
+## Architecture and deployment
 
-- **9:30am - the daily improvement.** An ideation agent (read-only, untrusted output)
-  proposes one small, useful change. A build agent implements it on a branch and gets
-  every check green. A reviewer agent judges scope, correctness, taste, and safety.
-  The branch becomes a PR, CI gates it, and the change is deployed to a throwaway
-  preview stage. The owner gets a Telegram message with the preview link, the PR link,
-  and a change summary, plus approve/reject buttons. Approve = squash-merge, production
-  deploy, version bump, changelog entry, git tag, closing text with the live link, and
-  the preview stage is torn down. Trivial polish skips the buttons and auto-merges once
-  CI is green; anything user-visible always waits for the human.
-- **4:00pm - the check-in.** The bot interviews the owner about the day's work. Notes
-  texted to the bot at ANY hour queue in an inbox and are folded in automatically.
-  A content agent files everything into a private career corpus, posts to the site's
-  live `updates` feed only when something is genuinely worth posting, and touches the
-  one-page resume only when truly warranted. Then it offers three improvement ideas as
-  buttons (the pick seeds tomorrow's 9:30 run), processes any Dependabot PRs, and ends
-  with a maintainer audit of the whole pipeline.
+How a change travels: agents work on the Mac, GitHub gates it, AWS serves it, and the
+owner approves from a phone.
 
-Anything that goes red gets the repair loop: the failing CI log is handed to the build
-agent, which fixes, verifies locally, and pushes - capped rounds, never weakening tests.
-A single run-lock ensures the flows never collide, and `touch state/pause` stops
-everything instantly.
+```mermaid
+flowchart LR
+    O(["👤 Owner"]) <-->|"notes anytime · pings · approvals"| TG["📱 Telegram bot"]
+    TG <--> AG
 
-## Architecture
+    subgraph mac["🖥️ Always-on Mac · launchd 9:30 + 16:00"]
+        AG["🤖 Claude agents +<br/>deterministic shell pipeline<br/>lock · state · repair loop"]
+    end
+
+    subgraph gh["🐙 GitHub · sbrick26/auto-portfolio"]
+        PR["pull request"]
+        CI["⚙️ Actions CI<br/>check + e2e required"]
+        MAIN["main · protected<br/>+ vX.Y.Z tags"]
+        DEP["🤖 Dependabot"]
+    end
+
+    subgraph aws["☁️ AWS us-east-2 · SST v4"]
+        subgraph prod["production stage"]
+            R53["🌐 Route 53<br/>imsway.dev + www"] --> CF["CloudFront"]
+            CF --> LAM["λ Lambda SSR"]
+            CF --> S3["🪣 S3 assets"]
+        end
+        PREV["🔍 preview stage<br/>temporary CloudFront URL"]
+    end
+
+    AG -->|"branch + PR"| PR
+    DEP -->|"weekly bumps"| PR
+    PR --> CI
+    CI -.->|"red: failing log"| AG
+    AG -->|"deploy candidate"| PREV
+    PREV -->|"preview link in approval"| TG
+    AG -->|"approved: squash merge<br/>version + changelog"| MAIN
+    MAIN -->|"sst deploy"| CF
+    AG -.->|"teardown after merge"| PREV
+    V(["🌍 Visitors"]) --> R53
+```
+
+## The agents
+
+Who does what: three levels with a hard ceiling - front agent, project lead, workers.
+Every user-visible change ends at the same gate: preview link + human approval.
 
 ```mermaid
 flowchart TD
-    O([Owner]) <-->|"messages, notes (anytime),<br/>one-tap approvals"| TGM[Telegram bot]
+    O(["👤 Owner"]) <-->|"interview · idea buttons · heartbeat"| TGM["📱 Telegram"]
+    TGM <--> FA["Front agent layer<br/>routing · SQLite state · run lock · inbox"]
 
-    subgraph mac[Always-on Mac - launchd schedules]
-        TGM --> FA[Front agent layer<br/>routing, shared SQLite state,<br/>run lock, inbox]
-        FA --> DAILY[9:30 daily-improve]
-        FA --> CHECKIN[16:00 check-in]
+    FA --> DAILY["⏰ 9:30 daily improvement"]
+    FA --> CHECKIN["⏰ 16:00 check-in"]
 
-        subgraph workers[Portfolio lead + workers]
-            IDE[ideation<br/>read-only, untrusted]
-            BLD[build<br/>implements + repairs]
-            REV[reviewer<br/>judgment only]
-            CNT[content-resume<br/>corpus, feed, resume]
-            MNT[maintainer<br/>evidence-only audits]
-        end
-        DAILY --> IDE --> BLD --> REV
-        CHECKIN --> CNT
-        CHECKIN --> MNT
+    subgraph workers["Portfolio lead + workers · capped loops, never deeper"]
+        IDE["💡 ideation<br/>read-only · researches<br/>output untrusted"]
+        BLD["🔨 build<br/>implements + repairs<br/>on branches only"]
+        REV["🔎 reviewer<br/>judgment only:<br/>scope · correctness · taste"]
+        CNT["✍️ content-resume<br/>corpus · updates feed ·<br/>resume only when warranted"]
+        MNT["🩺 maintainer<br/>evidence-only audits<br/>of the pipeline itself"]
     end
 
-    BLD -->|branch + PR| GH[(GitHub)]
-    DEP[Dependabot] -->|weekly PRs| GH
-    GH --> CI[CI gates<br/>lint · types · 47 tests<br/>coverage · privacy guards · build]
-    CI -.red.-> BLD
-    CI -->|green| PREV[Preview stage<br/>temporary CloudFront]
-    PREV -->|approve via Telegram| MAIN[main + version tag<br/>+ changelog entry]
-    CI -->|green, trivial| MAIN
-    MAIN -->|SST deploy| AWS[AWS production<br/>CloudFront + Lambda + S3<br/>imsway.dev]
-    MAIN -.teardown.-> PREV
-    AWS --> V([Visitors])
+    DAILY --> IDE
+    IDE -->|"proposal"| BLD
+    BLD <-->|"max 5 rounds"| REV
+    CHECKIN --> CNT
+    CHECKIN --> MNT
+    MNT -.->|"top finding + approve button"| TGM
+
+    BLD --> GATE{"🚦 PR · CI · repair loop<br/>conflicts reconciled<br/>red CI fixed from the log"}
+    CNT --> GATE
+    GATE -->|"trivial polish"| SHIP["squash merge · version bump<br/>changelog · tag · deploy"]
+    GATE -->|"user-visible:<br/>preview + one tap"| TGM
+    TGM -->|"approve"| SHIP
+    SHIP --> LIVE(["🌍 imsway.dev"])
 ```
 
-Three levels, hard ceiling: front agent, project leads, workers. New projects bolt on
-as new leads with zero rework to the rest.
+## How it runs on its own
+
+- **9:30** - ideation proposes one researched improvement, build implements it on a
+  branch, the reviewer judges it, CI gates it, a preview stage goes up, and the owner
+  ships it with one tap. Trivial polish auto-merges; the preview is torn down after
+  every merge.
+- **16:00** - the bot interviews the owner (notes texted anytime fold in from an
+  inbox), the content worker feeds the private career corpus and the site's live
+  `updates` feed, three ideas for tomorrow arrive as buttons, Dependabot PRs are
+  processed, and the maintainer audits the pipeline itself.
+- **Anything red** enters the repair loop: conflicts get merged and reconciled
+  semantically, stale branches get updated, failing CI logs get handed to the build
+  worker - capped rounds, never weakening tests. If Dependabot's own branch is beyond
+  repair, the pipeline re-does the bump itself on a fresh branch.
+- **While anything is in flight** the owner gets a heartbeat ping every minute with
+  the current step; it pauses whenever the system is waiting on a human.
+
+Full detail: [docs/pipeline.md](docs/pipeline.md).
 
 ## Guardrails
 
-- The ideation worker has zero write or commit access; its output is treated as untrusted.
-- Deterministic checks (lint, types, tests, coverage thresholds, build) are scripts and
-  CI - never agent judgment. The reviewer adds judgment on top.
-- Human merge is the final gate for anything user-visible. Hard cap (~5 rounds) on every
-  build-review and repair loop.
-- The maintainer may only raise issues backed by concrete evidence (failed runs, red PRs,
-  broken endpoints, guardrail violations) - no speculative "improvements". Its fixes need
-  owner approval, and a fix that breaks anything pauses the pipeline.
-- Privacy guards run in CI: client names stay generalized to industries, no phone
-  numbers or private emails can ship. Secrets live only in local `.env` files
-  (see `.env.example`), never in the repo.
+- Agents act only on instructions from the owner (or Dependabot bumps). External PRs,
+  issues, and comments are untrusted input - reported, never obeyed.
+- Deterministic checks are scripts and CI, never agent judgment. Human merge is the
+  final gate for anything user-visible.
+- Privacy guards run in CI: client names generalized to industries, no phone numbers,
+  no private emails. Secrets live only in local `.env` files, never in the repo.
+- Every loop is hard-capped. A maintainer fix that breaks anything pauses the pipeline.
 
-## Versioning
-
-Semver, surfaced on the site itself (palette footer + a hidden command):
-- **Minor** versions ship automatically with every pipeline drop - each one tags the
-  repo and records itself in the `changelog` command's data.
-- **Major** versions are milestone releases done deliberately with the owner.
-
-## The site
-
-A custom React terminal engine (no xterm.js): click-or-type commands (`me`, `about`,
-`updates`, `skills`, `projects`, `resume`, `contact`, `changelog`, `help`, aliases, and
-one secret), ghost-text autocomplete, editor-style tabs, cmd-K palette, arrow-key
-history, an animated live `updates` tail fed from `content/updates.json`, skills with
-animated bars + radar chart, fully responsive.
-
-**Stack:** Next.js (App Router) · React · TypeScript · Tailwind v4 · Framer Motion ·
-Recharts · Vitest + RTL · SST v4 on AWS · GitHub Actions · Claude Code agents
-
-## Build and run
+## Quick start
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
-npm run test           # unit + component tests
-npm run test:coverage  # with coverage thresholds (CI runs this)
-npm run build          # production build
-npx sst deploy --stage production   # needs AWS creds in .env
+npm run dev    # http://localhost:3000
+npm run test   # unit + component suites
 ```
 
-## Content seams (what the agents write to)
-
-- `content/updates.json` - the live feed; grows freely
-- `content/changelog.json` - one entry per shipped version
-- `content/data.ts` - profile, skills, projects, resume; the resume changes only when warranted
-- The career corpus lives outside this repo and never ships
+More in [docs/development.md](docs/development.md).
