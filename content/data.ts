@@ -85,7 +85,7 @@ export const projects: Project[] = [
       "This site. A multi-agent system that ships its own daily improvements: front agent on Telegram, per-project leads and workers, PRs to GitHub, CI gates, deploy to AWS via SST.",
     stack: ["Next.js", "TypeScript", "Claude Code", "SST", "AWS"],
     status: "building",
-    link: "https://github.com/sbrick26/portfolio",
+    link: "https://github.com/sbrick26/auto-portfolio",
   },
   {
     name: "email triage agent",

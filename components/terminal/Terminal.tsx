@@ -7,8 +7,13 @@ import { Session, Block } from "./Session";
 import { CommandPalette } from "./CommandPalette";
 import { Welcome, RENDERERS, ErrorOutput } from "./outputs";
 
-let uid = 0;
-const nid = () => ++uid;
+// Counter lives on globalThis so dev hot reloads can't reset it and hand out
+// duplicate ids to tabs/blocks that are still mounted.
+const g = globalThis as typeof globalThis & { __termUid?: number };
+const nid = () => {
+  g.__termUid = (g.__termUid ?? 0) + 1;
+  return g.__termUid;
+};
 
 type Tab = { id: number; title: string; blocks: Block[] };
 
