@@ -4,5 +4,8 @@
   { "date": "2026-06-08", "time": "18:30", "text": "set up AWS + GitHub, secured creds, layered the config", "tag": "infra" },
   { "date": "2026-06-08", "time": "19:05", "text": "scaffolded the terminal site (Next.js + Tailwind + Geist Mono)", "tag": "portfolio" },
   { "date": "2026-06-08", "time": "19:20", "text": "built the click-or-type command engine with tabs", "tag": "portfolio" },
-  { "date": "2026-06-08", "time": "19:35", "text": "wired the live updates tail you're reading right now", "tag": "portfolio" }
+  { "date": "2026-06-08", "time": "19:35", "text": "wired the live updates tail you're reading right now", "tag": "portfolio" },
+  { "date": "2026-06-10", "time": "01:45", "text": "38 tests + coverage gates + privacy guards now block every PR", "tag": "pipeline" },
+  { "date": "2026-06-10", "time": "02:10", "text": "agent layer scaffolded: lead + 4 workers with scoped tools", "tag": "agents" },
+  { "date": "2026-06-10", "time": "02:35", "text": "registered imsway.dev and shipped to AWS. you're reading this on the live site", "tag": "launch" }
 ]
