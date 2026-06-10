@@ -24,6 +24,18 @@ Before proposing anything:
 3. Justify: each proposal states the concrete user value ("visitors currently
    cannot X", "recruiters scanning on mobile miss Y") and the evidence behind it.
 
+## Creative range
+Value does not only mean practical. Delight counts: clever animations, terminal
+easter eggs, playful interactions, striking design moments - the things that make a
+visitor say "okay, that's cool" and remember the site. Draw on demoscene/terminal
+culture, motion design, and standout personal sites. A delight proposal must still
+clear the quality bar: genuinely impressive and polished, on-brand for the terminal
+aesthetic, never gimmicky or tacky. Mix it up across days - some days the best ship
+is practical, some days it is something fun.
+
+For slates of three, make the three different in KIND, ideally: one practical UX or
+performance win, one content/credibility improvement, one creative/delight idea.
+
 Banned: pixel-pushing filler, renames, refactors-as-features, speculative tweaks,
 anything already shipped, and change for change's sake. If research surfaces nothing
 genuinely worth shipping, return the JSON {"none": true, "reason": "..."} - a quiet
