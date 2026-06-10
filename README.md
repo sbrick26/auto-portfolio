@@ -2,75 +2,105 @@
 
 A terminal-style portfolio site that is also a live demonstration of an autonomous,
 agent-run development pipeline. The site does not just describe the system. The system
-builds, tests, reviews, and ships the site.
+builds, tests, reviews, versions, and ships the site - on its own schedule, every day.
 
-Live site: [imsway.dev](https://imsway.dev) (AWS via SST).
+Live: **[imsway.dev](https://imsway.dev)** · try the `changelog` command (and find the secret one)
 
-## The idea
+## How it runs on its own
 
-A fleet of agents on an always-on Mac Mini maintains this site with minimal human input:
+Two scheduled runs anchor the day, both on an always-on Mac:
 
-- Every day the pipeline picks one useful, low-risk improvement, builds it on a branch,
-  runs deterministic checks, has it reviewed, and opens a PR. Trivial polish auto-merges.
-  Anything user-visible waits for a one-tap approval on Telegram.
-- Every afternoon a check-in interviews the owner over Telegram about what they worked on.
-  If the gathered information synthesizes into something worth posting, it lands in the
-  live `updates` feed. The one-page resume only regenerates when a contribution genuinely
-  warrants it, so the feed grows freely while the resume stays disciplined.
+- **9:30am - the daily improvement.** An ideation agent (read-only, untrusted output)
+  proposes one small, useful change. A build agent implements it on a branch and gets
+  every check green. A reviewer agent judges scope, correctness, taste, and safety.
+  The branch becomes a PR, CI gates it, and the change is deployed to a throwaway
+  preview stage. The owner gets a Telegram message with the preview link, the PR link,
+  and a change summary, plus approve/reject buttons. Approve = squash-merge, production
+  deploy, version bump, changelog entry, git tag, closing text with the live link, and
+  the preview stage is torn down. Trivial polish skips the buttons and auto-merges once
+  CI is green; anything user-visible always waits for the human.
+- **4:00pm - the check-in.** The bot interviews the owner about the day's work. Notes
+  texted to the bot at ANY hour queue in an inbox and are folded in automatically.
+  A content agent files everything into a private career corpus, posts to the site's
+  live `updates` feed only when something is genuinely worth posting, and touches the
+  one-page resume only when truly warranted. Then it offers three improvement ideas as
+  buttons (the pick seeds tomorrow's 9:30 run), processes any Dependabot PRs, and ends
+  with a maintainer audit of the whole pipeline.
+
+Anything that goes red gets the repair loop: the failing CI log is handed to the build
+agent, which fixes, verifies locally, and pushes - capped rounds, never weakening tests.
+A single run-lock ensures the flows never collide, and `touch state/pause` stops
+everything instantly.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    U([Owner]) -->|Telegram| FA
+    O([Owner]) <-->|"messages, notes (anytime),<br/>one-tap approvals"| TGM[Telegram bot]
 
-    subgraph mini[Always-on Mac Mini]
-        FA[Front agent<br/>thin: routes work, owns shared state]
-        FA --> PL[Portfolio site lead<br/>owns this website]
-        PL --> IW[Ideation worker<br/>research + proposals<br/>NO write or commit access]
-        PL --> CW[Content-resume worker<br/>career corpus, updates feed,<br/>living one-page resume]
-        PL --> BW[Build worker<br/>implements on a branch]
-        PL --> RW[Reviewer worker<br/>LLM judgment only]
-        FA -.future.-> TL[Tutorial-video lead]
+    subgraph mac[Always-on Mac - launchd schedules]
+        TGM --> FA[Front agent layer<br/>routing, shared SQLite state,<br/>run lock, inbox]
+        FA --> DAILY[9:30 daily-improve]
+        FA --> CHECKIN[16:00 check-in]
+
+        subgraph workers[Portfolio lead + workers]
+            IDE[ideation<br/>read-only, untrusted]
+            BLD[build<br/>implements + repairs]
+            REV[reviewer<br/>judgment only]
+            CNT[content-resume<br/>corpus, feed, resume]
+            MNT[maintainer<br/>evidence-only audits]
+        end
+        DAILY --> IDE --> BLD --> REV
+        CHECKIN --> CNT
+        CHECKIN --> MNT
     end
 
-    BW -->|push branch + PR| GH[(GitHub)]
-    GH --> CI[CI gates<br/>lint, types, tests + coverage, build]
-    CI -->|green + approval| M[main]
-    M -->|SST deploy| AWS[AWS<br/>CloudFront + Lambda + S3]
+    BLD -->|branch + PR| GH[(GitHub)]
+    DEP[Dependabot] -->|weekly PRs| GH
+    GH --> CI[CI gates<br/>lint · types · 47 tests<br/>coverage · privacy guards · build]
+    CI -.red.-> BLD
+    CI -->|green| PREV[Preview stage<br/>temporary CloudFront]
+    PREV -->|approve via Telegram| MAIN[main + version tag<br/>+ changelog entry]
+    CI -->|green, trivial| MAIN
+    MAIN -->|SST deploy| AWS[AWS production<br/>CloudFront + Lambda + S3<br/>imsway.dev]
+    MAIN -.teardown.-> PREV
     AWS --> V([Visitors])
 ```
 
-Three levels, hard ceiling: front agent, project leads, workers. New projects bolt on as
-new leads with no rework.
+Three levels, hard ceiling: front agent, project leads, workers. New projects bolt on
+as new leads with zero rework to the rest.
 
-### Guardrails
+## Guardrails
 
 - The ideation worker has zero write or commit access; its output is treated as untrusted.
-- Deterministic checks (lint, types, tests, build) are scripts, never agent judgment.
-  The reviewer adds judgment on top; it never replaces the scripts.
-- Human merge is the final gate for anything user-visible.
-- Every build-review loop has a hard iteration cap.
-- Secrets live in local `.env` files (see `.env.example`), never in the repo.
+- Deterministic checks (lint, types, tests, coverage thresholds, build) are scripts and
+  CI - never agent judgment. The reviewer adds judgment on top.
+- Human merge is the final gate for anything user-visible. Hard cap (~5 rounds) on every
+  build-review and repair loop.
+- The maintainer may only raise issues backed by concrete evidence (failed runs, red PRs,
+  broken endpoints, guardrail violations) - no speculative "improvements". Its fixes need
+  owner approval, and a fix that breaks anything pauses the pipeline.
+- Privacy guards run in CI: client names stay generalized to industries, no phone
+  numbers or private emails can ship. Secrets live only in local `.env` files
+  (see `.env.example`), never in the repo.
+
+## Versioning
+
+Semver, surfaced on the site itself (palette footer + a hidden command):
+- **Minor** versions ship automatically with every pipeline drop - each one tags the
+  repo and records itself in the `changelog` command's data.
+- **Major** versions are milestone releases done deliberately with the owner.
 
 ## The site
 
-A custom React terminal engine (no xterm.js) so rich blocks, animation, and mobile
-behavior stay fully controllable:
+A custom React terminal engine (no xterm.js): click-or-type commands (`me`, `about`,
+`updates`, `skills`, `projects`, `resume`, `contact`, `changelog`, `help`, aliases, and
+one secret), ghost-text autocomplete, editor-style tabs, cmd-K palette, arrow-key
+history, an animated live `updates` tail fed from `content/updates.json`, skills with
+animated bars + radar chart, fully responsive.
 
-- Click-or-type commands: `me`, `about`, `updates`, `skills`, `projects`, `resume`,
-  `contact`, `help`, `clear`, plus aliases (`whoami`, `work`, `cv`, ...)
-- Editor-style tabs you can open, switch, and close
-- cmd-K command palette, arrow-key history, tab completion
-- `updates` renders as a live animated tail log fed from `content/updates.json`,
-  the file the agent pipeline appends to
-- Animated skill bars + radar chart (Recharts), staggered reveals (Framer Motion)
-- Fully responsive: windowed terminal on desktop, full-screen on mobile
-
-## Stack
-
-Next.js (App Router) / React / TypeScript / Tailwind CSS v4 / Framer Motion / Recharts /
-Vitest + React Testing Library / SST on AWS / GitHub Actions
+**Stack:** Next.js (App Router) · React · TypeScript · Tailwind v4 · Framer Motion ·
+Recharts · Vitest + RTL · SST v4 on AWS · GitHub Actions · Claude Code agents
 
 ## Build and run
 
@@ -78,28 +108,14 @@ Vitest + React Testing Library / SST on AWS / GitHub Actions
 npm install
 npm run dev            # http://localhost:3000
 npm run test           # unit + component tests
-npm run test:coverage  # tests with coverage thresholds (CI runs this)
+npm run test:coverage  # with coverage thresholds (CI runs this)
 npm run build          # production build
+npx sst deploy --stage production   # needs AWS creds in .env
 ```
 
-Deploy (needs AWS credentials in `.env`, see `.env.example`):
+## Content seams (what the agents write to)
 
-```bash
-npx sst deploy --stage production
-```
-
-## Flow of a change
-
-1. A branch is created (by an agent or a human)
-2. Push opens a PR
-3. CI runs eslint, tsc, the test suite with coverage thresholds, and the production build
-4. Review happens (reviewer worker for judgment, human for anything user-visible)
-5. Merge to `main`, deploy to AWS via SST
-
-## Content seams
-
-- `content/data.ts` - profile, about, skills, projects, resume
-- `content/updates.json` - the live feed; the pipeline appends entries here
-- Client engagement projects are generalized on purpose (industry, never the client name),
-  and a privacy-guard test in CI enforces that no client names, phone numbers, or private
-  emails ever ship
+- `content/updates.json` - the live feed; grows freely
+- `content/changelog.json` - one entry per shipped version
+- `content/data.ts` - profile, skills, projects, resume; the resume changes only when warranted
+- The career corpus lives outside this repo and never ships
