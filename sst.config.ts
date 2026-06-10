@@ -12,6 +12,11 @@ export default $config({
     };
   },
   async run() {
-    new sst.aws.Nextjs("Site");
+    new sst.aws.Nextjs("Site", {
+      domain:
+        $app.stage === "production"
+          ? { name: "imsway.dev", redirects: ["www.imsway.dev"] }
+          : undefined,
+    });
   },
 });

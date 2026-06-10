@@ -4,7 +4,7 @@ A terminal-style portfolio site that is also a live demonstration of an autonomo
 agent-run development pipeline. The site does not just describe the system. The system
 builds, tests, reviews, and ships the site.
 
-Live site: coming soon (AWS via SST).
+Live site: [imsway.dev](https://imsway.dev) (AWS via SST).
 
 ## The idea
 
