@@ -8,5 +8,6 @@
   { "date": "2026-06-10", "time": "01:45", "text": "38 tests + coverage gates + privacy guards now block every PR", "tag": "pipeline" },
   { "date": "2026-06-10", "time": "02:10", "text": "agent layer scaffolded: lead + 4 workers with scoped tools", "tag": "agents" },
   { "date": "2026-06-10", "time": "02:35", "text": "registered imsway.dev and shipped to AWS. you're reading this on the live site", "tag": "launch" },
-  { "date": "2026-06-10", "time": "16:00", "text": "built a job requisition agent on watsonx Orchestrate: prompts HR staff for inputs, creates the req in Workday, then chases down approvers via Teams channel alerts - part of an AskHR suite for a sports entertainment industry client", "tag": "client-work" }
+  { "date": "2026-06-10", "time": "16:00", "text": "built a job requisition agent on watsonx Orchestrate: prompts HR staff for inputs, creates the req in Workday, then chases down approvers via Teams channel alerts - part of an AskHR suite for a sports entertainment industry client", "tag": "client-work" },
+  { "date": "2026-06-10", "time": "16:30", "text": "beta-testing a new IBM i developer tooling release: connected to a live IBM i box to transfer, compile, run, and test code directly on the machine. found a couple of bugs, traced the exact fixes, and posted them upstream", "tag": "ibm-i" }
 ]
