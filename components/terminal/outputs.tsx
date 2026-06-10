@@ -210,10 +210,10 @@ export function SkillsOutput() {
         <div className="h-[210px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#23262e" />
+              <PolarGrid stroke="#323848" />
               <PolarAngleAxis
                 dataKey="category"
-                tick={{ fill: "#828995", fontSize: 11 }}
+                tick={{ fill: "#a3acbc", fontSize: 11 }}
               />
               <Radar
                 dataKey="value"

@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.7.0",
+    "date": "2026-06-10",
+    "changes": [
+      "brighter sunlight-readable theme: same palette, every layer lifted in luminance"
+    ]
+  },
+  {
     "version": "1.6.0",
     "date": "2026-06-10",
     "changes": [

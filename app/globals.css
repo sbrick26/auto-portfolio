@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-term-bg: #0b0c0f;
-  --color-term-panel: #121419;
-  --color-term-panel2: #0e1014;
-  --color-term-border: #21242c;
-  --color-term-text: #d6dae1;
-  --color-term-dim: #828995;
-  --color-term-faint: #525864;
-  --color-term-green: #6ee7a0;
-  --color-term-cyan: #56d4dd;
-  --color-term-blue: #79c0ff;
-  --color-term-purple: #cba6ff;
-  --color-term-yellow: #e6c07b;
-  --color-term-orange: #ffa657;
-  --color-term-red: #ff6b6b;
+  /* sunlight-readable dark: same palette, every layer lifted in luminance.
+     Hierarchy preserved: bg < panel2 < panel < border < faint < dim < text. */
+  --color-term-bg: #181c26;
+  --color-term-panel: #242936;
+  --color-term-panel2: #1d222e;
+  --color-term-border: #424a5e;
+  --color-term-text: #edf0f5;
+  --color-term-dim: #a3acbc;
+  --color-term-faint: #717a8b;
+  --color-term-green: #7ef0ac;
+  --color-term-cyan: #66e2eb;
+  --color-term-blue: #8acaff;
+  --color-term-purple: #d4b5ff;
+  --color-term-yellow: #f0cd88;
+  --color-term-orange: #ffb26b;
+  --color-term-red: #ff7e7e;
   --font-mono: var(--font-geist-mono);
   --font-sans: var(--font-geist-sans);
 }
@@ -25,7 +27,7 @@ html, body { height: 100%; }
 
 body {
   background:
-    radial-gradient(1100px 520px at 50% -8%, #15181f 0%, transparent 62%),
+    radial-gradient(1100px 520px at 50% -8%, #2b3144 0%, transparent 62%),
     var(--color-term-bg);
   color: var(--color-term-text);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
@@ -35,13 +37,13 @@ body {
 
 *::-webkit-scrollbar { width: 9px; height: 9px; }
 *::-webkit-scrollbar-thumb {
-  background: #2a2e37; border-radius: 8px;
+  background: #353c4a; border-radius: 8px;
   border: 2px solid transparent; background-clip: padding-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: #3a404c; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: #485065; background-clip: padding-box; }
 *::-webkit-scrollbar-track { background: transparent; }
 
-::selection { background: rgba(110, 231, 160, 0.22); }
+::selection { background: rgba(126, 240, 172, 0.25); }
 
 @keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 .cursor-blink { animation: blink 1.05s steps(1) infinite; }
