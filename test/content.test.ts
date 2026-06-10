@@ -1,0 +1,110 @@
+import { describe, it, expect } from "vitest";
+import { profile, about, skills, projects, updates, resume } from "@/content/data";
+
+describe("updates feed (pipeline seam)", () => {
+  it("has at least one entry", () => {
+    expect(updates.length).toBeGreaterThan(0);
+  });
+
+  it("every entry has a valid date, time, and text", () => {
+    for (const u of updates) {
+      expect(u.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(u.time).toMatch(/^\d{2}:\d{2}$/);
+      expect(u.text.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("is ordered oldest to newest (the tail renders top-down)", () => {
+    const stamps = updates.map((u) => `${u.date} ${u.time}`);
+    expect([...stamps].sort()).toEqual(stamps);
+  });
+});
+
+describe("skills", () => {
+  it("every level is within 0-100", () => {
+    for (const g of skills) {
+      for (const s of g.items) {
+        expect(s.level).toBeGreaterThanOrEqual(0);
+        expect(s.level).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("every group has a category, accent, and at least one item", () => {
+    for (const g of skills) {
+      expect(g.category.length).toBeGreaterThan(0);
+      expect(g.accent).toContain("var(--color-");
+      expect(g.items.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("projects", () => {
+  it("every project has a valid status", () => {
+    for (const p of projects) {
+      expect(["live", "building", "shipped", "archived"]).toContain(p.status);
+    }
+  });
+
+  it("links, when present, are https", () => {
+    for (const p of projects) {
+      if (p.link) expect(p.link).toMatch(/^https:\/\//);
+    }
+  });
+
+  it("every project has a name, blurb, and stack", () => {
+    for (const p of projects) {
+      expect(p.name.length).toBeGreaterThan(0);
+      expect(p.blurb.length).toBeGreaterThan(10);
+      expect(p.stack.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("privacy guard: nothing sensitive ships to the public site", () => {
+  const everything = JSON.stringify({ profile, about, skills, projects, updates, resume });
+
+  it("contains no phone number", () => {
+    expect(everything).not.toMatch(/\(\d{3}\)\s?\d{3}[- ]?\d{4}/);
+    expect(everything).not.toMatch(/\d{3}[- ]\d{3}[- ]\d{4}/);
+  });
+
+  it("contains no client names (engagements stay generalized)", () => {
+    const clientNames = [
+      "Niagara",
+      "TKO",
+      "WWE",
+      "UFC",
+      "Knight Swift",
+      "Knight-Swift",
+      "US Xpress",
+      "PACCAR",
+      "AAA Cooper",
+      "PERA",
+      "ZOME",
+    ];
+    for (const name of clientNames) {
+      expect(everything.toLowerCase(), `client name "${name}" must not appear`).not.toContain(
+        name.toLowerCase()
+      );
+    }
+  });
+
+  it("uses only the public email", () => {
+    expect(everything).not.toContain("utexas.edu");
+    expect(profile.links.email).toBe("swayambarik@gmail.com");
+  });
+
+  it("github links point at sbrick26", () => {
+    expect(profile.links.github).toContain("github.com/sbrick26");
+    for (const p of projects) {
+      if (p.link?.includes("github.com")) expect(p.link).toContain("sbrick26");
+    }
+  });
+
+  it("contains no leftover TODO text in user-visible strings", () => {
+    // blurbs/points/summaries must never render the word TODO to a visitor
+    const visible = JSON.stringify({ profile, about, projects, resume, updates });
+    expect(visible).not.toMatch(/TODO/);
+  });
+});
