@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { profile, about, skills, projects, updates, resume } from "@/content/data";
+import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
 
 describe("updates feed (pipeline seam)", () => {
   it("has at least one entry", () => {
@@ -58,6 +58,28 @@ describe("projects", () => {
       expect(p.blurb.length).toBeGreaterThan(10);
       expect(p.stack.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("changelog (pipeline seam)", () => {
+  it("entries are well-formed and newest-first", () => {
+    expect(changelog.length).toBeGreaterThan(0);
+    for (const e of changelog) {
+      expect(e.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(e.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(e.changes.length).toBeGreaterThan(0);
+    }
+    const semver = (v: string) => v.split(".").map(Number);
+    for (let i = 1; i < changelog.length; i++) {
+      const [a, b] = [semver(changelog[i - 1].version), semver(changelog[i].version)];
+      const newer = a[0] > b[0] || (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2])));
+      expect(newer, `${changelog[i - 1].version} must be newer than ${changelog[i].version}`).toBe(true);
+    }
+  });
+
+  it("the newest changelog entry matches the package version", async () => {
+    const pkg = await import("../package.json");
+    expect(changelog[0].version).toBe(pkg.version);
   });
 });
 

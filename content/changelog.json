@@ -1,0 +1,37 @@
+[
+  {
+    "version": "1.3.0",
+    "date": "2026-06-10",
+    "changes": [
+      "changelog command: what shipped, per version",
+      "every pipeline drop now records itself here automatically"
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-06-10",
+    "changes": [
+      "secret version command (go find it)",
+      "version readout in the command palette footer",
+      "dependency updates: types, tooling, github actions"
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-06-10",
+    "changes": [
+      "ghost-text autocomplete in the prompt: type, see the suggestion, arrow-right to accept",
+      "first change proposed, built, reviewed, and shipped by the agent pipeline"
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-06-10",
+    "changes": [
+      "launch: terminal portfolio live at imsway.dev",
+      "custom terminal engine: tabs, palette, live updates tail, skills radar",
+      "CI gates: 38 tests, coverage thresholds, privacy guards",
+      "deployed on AWS via SST with the agent pipeline behind it"
+    ]
+  }
+]

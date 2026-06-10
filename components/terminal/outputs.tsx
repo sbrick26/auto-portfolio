@@ -9,7 +9,7 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
 } from "recharts";
-import { profile, about, skills, projects, updates, resume } from "@/content/data";
+import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor } from "./typing";
@@ -368,6 +368,38 @@ export function HelpOutput() {
   );
 }
 
+/* ------------------------------- changelog ------------------------------- */
+
+export function ChangelogOutput() {
+  return (
+    <div className="max-w-2xl space-y-4">
+      {changelog.map((e, i) => (
+        <Reveal key={e.version} i={i}>
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <span className={i === 0 ? "text-term-green" : "text-term-cyan"}>
+              v{e.version}
+            </span>
+            <span className="text-[12px] text-term-faint tabular-nums">{e.date}</span>
+            {i === 0 && (
+              <span className="rounded border border-term-green/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-term-green">
+                current
+              </span>
+            )}
+          </div>
+          <ul className="mt-1 space-y-1">
+            {e.changes.map((c, j) => (
+              <li key={j} className="flex gap-2 text-[13px] text-term-dim">
+                <span className="text-term-green">+</span>
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
 /* -------------------------------- version -------------------------------- */
 
 export function VersionOutput() {
@@ -415,5 +447,6 @@ export const RENDERERS: Record<string, () => React.ReactNode> = {
   projects: () => <ProjectsOutput />,
   resume: () => <ResumeOutput />,
   contact: () => <ContactOutput />,
+  changelog: () => <ChangelogOutput />,
   version: () => <VersionOutput />,
 };
