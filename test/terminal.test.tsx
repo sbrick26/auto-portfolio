@@ -103,6 +103,33 @@ describe("Terminal", () => {
     expect(input.value).toBe("updates");
   });
 
+  it("shows ghost-text for a partial command", () => {
+    render(<Terminal />);
+    const input = getPromptInput();
+    fireEvent.change(input, { target: { value: "pr" } });
+    // ghost shows the remainder of "projects"
+    expect(screen.getAllByText("ojects").length).toBeGreaterThan(0);
+  });
+
+  it("hides ghost-text once a space is typed or on exact match", () => {
+    render(<Terminal />);
+    const input = getPromptInput();
+    fireEvent.change(input, { target: { value: "projects x" } });
+    expect(screen.queryByText("ojects")).toBeNull();
+    fireEvent.change(input, { target: { value: "projects" } });
+    // exact match: no remainder to show
+    expect(screen.queryByText(/^ojects$/)).toBeNull();
+  });
+
+  it("arrow-right accepts the ghost suggestion at end of input", () => {
+    render(<Terminal />);
+    const input = getPromptInput();
+    fireEvent.change(input, { target: { value: "sk" } });
+    input.setSelectionRange(2, 2);
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+    expect(input.value).toBe("skills");
+  });
+
   it("quick chips run their command", () => {
     render(<Terminal />);
     const chips = screen.getAllByRole("button", { name: "resume" });
