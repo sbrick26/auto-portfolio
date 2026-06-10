@@ -13,6 +13,13 @@ export function Prompt({
   const [val, setVal] = useState("");
   const [hi, setHi] = useState<number | null>(null);
 
+  // ghost-text suggestion: only for a single partial token, never mid-sentence
+  const q = val.toLowerCase();
+  const sug =
+    q && !q.includes(" ")
+      ? COMMANDS.find((c) => !c.hidden && c.name.startsWith(q) && c.name !== q)
+      : undefined;
+
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       run(val);
@@ -39,10 +46,13 @@ export function Prompt({
       }
     } else if (e.key === "Tab") {
       e.preventDefault();
-      const q = val.trim().toLowerCase();
-      if (q) {
-        const m = COMMANDS.find((c) => !c.hidden && c.name.startsWith(q));
-        if (m) setVal(m.name);
+      if (sug) setVal(sug.name);
+    } else if (e.key === "ArrowRight" && sug) {
+      // accept the ghost only when the caret sits at the end
+      const el = e.currentTarget;
+      if (el.selectionStart === val.length && el.selectionEnd === val.length) {
+        e.preventDefault();
+        setVal(sug.name);
       }
     }
   };
@@ -63,18 +73,29 @@ export function Prompt({
       <div className="flex items-center gap-2 px-4 py-3 sm:px-5">
         <span className="text-term-green">~</span>
         <span className="text-term-dim">&rsaquo;</span>
-        <input
-          ref={inputRef}
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          onKeyDown={onKey}
-          className="min-w-0 flex-1 bg-transparent text-term-text outline-none placeholder:text-term-faint"
-          placeholder="type a command, or tap one above (try: help)"
-          spellCheck={false}
-          autoComplete="off"
-          autoCapitalize="off"
-          aria-label="terminal input"
-        />
+        <div className="relative min-w-0 flex-1">
+          {sug && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre"
+            >
+              <span className="invisible">{val}</span>
+              <span className="text-term-faint">{sug.name.slice(val.length)}</span>
+            </div>
+          )}
+          <input
+            ref={inputRef}
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onKeyDown={onKey}
+            className="w-full bg-transparent text-term-text outline-none placeholder:text-term-faint"
+            placeholder="type a command, or tap one above (try: help)"
+            spellCheck={false}
+            autoComplete="off"
+            autoCapitalize="off"
+            aria-label="terminal input"
+          />
+        </div>
       </div>
     </div>
   );
