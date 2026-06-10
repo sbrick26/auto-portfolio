@@ -90,7 +90,11 @@ test("no client names or phone numbers in the served page", async ({ page }) => 
   await page.goto("/");
   await bootDone(page);
   const html = await page.content();
-  for (const leak of ["Niagara", "PACCAR", "Knight Swift", "US Xpress", "469-719", "(469)", "utexas.edu"]) {
+  // base64-encoded so the public spec does not itself contain the strings
+  const leaks = ["TmlhZ2FyYQ==", "UEFDQ0FS", "S25pZ2h0IFN3aWZ0", "VVMgWHByZXNz", "NDY5LTcxOQ==", "KDQ2OSk=", "dXRleGFzLmVkdQ=="].map((s) =>
+    Buffer.from(s, "base64").toString()
+  );
+  for (const leak of leaks) {
     expect(html, `"${leak}" must never ship`).not.toContain(leak);
   }
 });

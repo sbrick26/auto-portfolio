@@ -92,19 +92,20 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   });
 
   it("contains no client names (engagements stay generalized)", () => {
+    // base64-encoded so this public test file does not itself name the clients
     const clientNames = [
-      "Niagara",
-      "TKO",
-      "WWE",
-      "UFC",
-      "Knight Swift",
-      "Knight-Swift",
-      "US Xpress",
-      "PACCAR",
-      "AAA Cooper",
-      "PERA",
-      "ZOME",
-    ];
+      "TmlhZ2FyYQ==",
+      "VEtP",
+      "V1dF",
+      "VUZD",
+      "S25pZ2h0IFN3aWZ0",
+      "S25pZ2h0LVN3aWZ0",
+      "VVMgWHByZXNz",
+      "UEFDQ0FS",
+      "QUFBIENvb3Blcg==",
+      "UEVSQQ==",
+      "Wk9NRQ==",
+    ].map((s) => Buffer.from(s, "base64").toString());
     for (const name of clientNames) {
       expect(everything.toLowerCase(), `client name "${name}" must not appear`).not.toContain(
         name.toLowerCase()
@@ -113,7 +114,7 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   });
 
   it("uses only the public email", () => {
-    expect(everything).not.toContain("utexas.edu");
+    expect(everything).not.toContain(Buffer.from("dXRleGFzLmVkdQ==", "base64").toString());
     expect(profile.links.email).toBe("swayambarik@gmail.com");
   });
 
