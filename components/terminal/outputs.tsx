@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { profile, about, skills, projects, updates, resume } from "@/content/data";
 import { COMMANDS, QUICK } from "@/lib/commands";
+import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
 
@@ -367,6 +368,29 @@ export function HelpOutput() {
   );
 }
 
+/* -------------------------------- version -------------------------------- */
+
+export function VersionOutput() {
+  return (
+    <div className="space-y-2 text-[13px]">
+      <div>
+        <span className="text-term-text">auto-portfolio</span>{" "}
+        <span className="text-term-green">v{APP_VERSION}</span>
+      </div>
+      <div className="text-term-dim">
+        channel <span className="text-term-cyan">production</span> · imsway.dev
+      </div>
+      <div className="space-y-0.5 text-[12px] text-term-faint">
+        <div>minor versions ship themselves through the agent pipeline</div>
+        <div>major versions are milestone drops</div>
+      </div>
+      <div className="pt-1 text-[12px] text-term-purple">
+        you found the secret command. nice.
+      </div>
+    </div>
+  );
+}
+
 /* --------------------------------- error --------------------------------- */
 
 export function ErrorOutput({ input }: { input: string }) {
@@ -391,4 +415,5 @@ export const RENDERERS: Record<string, () => React.ReactNode> = {
   projects: () => <ProjectsOutput />,
   resume: () => <ResumeOutput />,
   contact: () => <ContactOutput />,
+  version: () => <VersionOutput />,
 };

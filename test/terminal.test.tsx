@@ -165,6 +165,35 @@ describe("Terminal", () => {
   });
 });
 
+describe("secret version command", () => {
+  it("is hidden from help and the quick chips", () => {
+    render(<Terminal />);
+    run("help");
+    expect(screen.queryByRole("button", { name: "version" })).toBeNull();
+  });
+
+  it("is excluded from tab-completion", () => {
+    render(<Terminal />);
+    const input = getPromptInput();
+    fireEvent.change(input, { target: { value: "ver" } });
+    fireEvent.keyDown(input, { key: "Tab" });
+    expect(input.value).toBe("ver"); // hidden commands never complete
+  });
+
+  it("typing it works and shows the version", () => {
+    render(<Terminal />);
+    run("version");
+    expect(screen.getByText(/v\d+\.\d+\.\d+/)).toBeDefined();
+    expect(screen.getByText(/secret command/)).toBeDefined();
+  });
+
+  it("the palette footer shows the version", () => {
+    render(<Terminal />);
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(screen.getByText(/^v\d+\.\d+\.\d+$/)).toBeDefined();
+  });
+});
+
 describe("Updates tail", () => {
   it("shows the live indicator", () => {
     render(<Terminal />);
