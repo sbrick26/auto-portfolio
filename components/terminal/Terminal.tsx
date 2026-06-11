@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MotionConfig } from "framer-motion";
 import { findCommand } from "@/lib/commands";
 import { TerminalCtx } from "./TerminalContext";
 import { Session, Block } from "./Session";
@@ -91,6 +92,7 @@ export function Terminal() {
   }, []);
 
   return (
+    <MotionConfig reducedMotion="user">
     <TerminalCtx.Provider value={{ run, openTab, history, openPalette: () => setPaletteOpen(true) }}>
       <div className="flex h-dvh w-full flex-col overflow-hidden border-term-border bg-term-panel/80 shadow-2xl shadow-black/40 backdrop-blur-xl sm:h-[80vh] sm:max-w-3xl sm:rounded-xl sm:border md:max-w-4xl">
         {/* window chrome */}
@@ -163,5 +165,6 @@ export function Terminal() {
         onPick={(cmd) => run(cmd)}
       />
     </TerminalCtx.Provider>
+    </MotionConfig>
   );
 }

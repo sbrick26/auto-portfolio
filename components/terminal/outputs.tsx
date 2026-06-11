@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Radar,
   RadarChart,
@@ -146,13 +146,18 @@ function TailRow({ u, onDone }: { u: (typeof updates)[number]; onDone: () => voi
 export function UpdatesOutput() {
   const [count, setCount] = useState(1);
   const allShown = count >= updates.length;
+  // The pulse is an opacity loop, which MotionConfig reducedMotion="user" does
+  // not suppress (it only disables transform/layout). Render a static, full
+  // opacity dot when reduced motion is requested - the green dot still signals
+  // 'live', only the pulsing stops.
+  const reduceMotion = useReducedMotion();
   return (
     <div className="max-w-2xl space-y-2.5">
       <div className="flex items-center gap-2 text-[12px]">
         <motion.span
           className="inline-block h-2 w-2 rounded-full bg-term-green"
-          animate={{ opacity: [1, 0.25, 1] }}
-          transition={{ duration: 1.4, repeat: Infinity }}
+          animate={reduceMotion ? undefined : { opacity: [1, 0.25, 1] }}
+          transition={reduceMotion ? undefined : { duration: 1.4, repeat: Infinity }}
         />
         <span className="text-term-green">live</span>
         <span className="text-term-faint">tail -f ~/work/updates.log</span>

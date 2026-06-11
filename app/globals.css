@@ -52,3 +52,16 @@ body {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
+/* Respect an explicit OS-level reduced-motion preference. The cursor stays a
+   steady visible block (the blink stops), and any lingering keyframe loops are
+   neutralized as a defensive backstop. framer-motion animations are handled
+   separately via <MotionConfig reducedMotion="user">. */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink { animation: none; }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
