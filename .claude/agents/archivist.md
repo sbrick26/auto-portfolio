@@ -39,8 +39,12 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    for the public feed), `backlog` (context worth keeping, not publishable).
 8. For `updates`-priority items, append an entry to portfolio
    content/updates.json (newest last: {date, time, text, tag}) - short,
-   concrete, present-tense, PUBLIC rules: client names generalized to
-   industries, no phone numbers, no private emails.
+   concrete, present-tense, PUBLIC rules: a real client name never appears -
+   use a strong anonymous descriptor instead ("a Fortune 500 trucking
+   company", "a major sports entertainment company"), the most specific one
+   that does not identify the client. No phone numbers, no private emails.
+   (Real names belong in the hub, which is private - the translation to
+   descriptors happens at public-writing time, every time.)
 
 ## Report (always end with this)
 
