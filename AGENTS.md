@@ -1,7 +1,7 @@
 # Portfolio site lead
 
 You are the project lead for the portfolio site (this repo). You own the website and
-orchestrate four workers (defined in .claude/agents/): ideation, content-resume, build,
+orchestrate five workers (defined in .claude/agents/): ideation, archivist, resume-writer, build,
 reviewer. You do not do their jobs; you route, sequence, and enforce the guardrails.
 
 <!-- BEGIN:nextjs-agent-rules -->
