@@ -2,7 +2,8 @@
 
 A terminal-style portfolio site that is also a live demonstration of an autonomous,
 agent-run development pipeline. The site does not just describe the system. The system
-builds, tests, reviews, versions, and ships the site - on its own schedule, every day.
+builds, tests, reviews, versions, and ships the site - on its own schedule, every day,
+and on demand from the owner's phone.
 
 Live: **[imsway.dev](https://imsway.dev)** · try the `changelog` command (and find the secret one)
 
@@ -17,11 +18,11 @@ owner approves from a phone.
 
 ```mermaid
 flowchart LR
-    O(["👤 Owner"]) <-->|"notes anytime · pings · approvals"| TG["📱 Telegram bot"]
+    O(["👤 Owner"]) <-->|"texts · screenshots ·<br/>buttons · approvals"| TG["📱 Telegram bot"]
     TG <--> AG
 
-    subgraph mac["🖥️ Always-on Mac · launchd 9:30 + 16:00"]
-        AG["🤖 Claude agents +<br/>deterministic shell pipeline<br/>lock · state · repair loop"]
+    subgraph mac["🖥️ Always-on Mac · launchd: 9:30 · 16:00 · always-on listener"]
+        AG["🤖 Claude agents +<br/>deterministic shell pipeline<br/>one run lock · state · repair loops"]
     end
 
     subgraph gh["🐙 GitHub · sbrick26/auto-portfolio"]
@@ -44,7 +45,7 @@ flowchart LR
     DEP -->|"weekly bumps"| PR
     PR --> CI
     CI -.->|"red: failing log"| AG
-    AG -->|"deploy candidate"| PREV
+    AG -->|"deploy the PR branch<br/>retry ×3, reason on failure"| PREV
     PREV -->|"preview link in approval"| TG
     AG -->|"approved: squash merge<br/>version + changelog"| MAIN
     MAIN -->|"sst deploy"| CF
@@ -54,67 +55,125 @@ flowchart LR
 
 ## The agents
 
-Who does what: three levels with a hard ceiling - front agent, project lead, workers.
-Every user-visible change ends at the same gate: preview link + human approval.
+Six workers under one project lead, three levels with a hard ceiling. Every
+user-visible change ends at the same gate: a live preview link plus human approval -
+and at every button prompt, a plain text reply steers the plan (rework, rethink,
+re-verify) while the buttons alone decide.
 
 ```mermaid
 flowchart TD
-    O(["👤 Owner"]) <-->|"interview · idea buttons · heartbeat"| TGM["📱 Telegram"]
-    TGM <--> FA["Front agent layer<br/>routing · SQLite state · run lock · inbox"]
+    O(["👤 Owner"]) <-->|"slate buttons · interview ·<br/>approvals · text steering"| TGM["📱 Telegram"]
+    TGM <--> FA["Front agent layer<br/>routing · run lock · SQLite state · inbox"]
 
+    FA --> LIS["👂 listener · always on<br/>idle texts + screenshots →<br/>fix now / queue / note buttons"]
     FA --> DAILY["⏰ 9:30 daily improvement"]
     FA --> CHECKIN["⏰ 16:00 check-in"]
 
     subgraph workers["Portfolio lead + workers · capped loops, never deeper"]
-        IDE["💡 ideation<br/>read-only · researches<br/>output untrusted"]
-        BLD["🔨 build<br/>implements + repairs<br/>on branches only"]
+        IDE["💡 ideation<br/>read-only · researches slates<br/>output untrusted"]
+        BLD["🔨 build<br/>implements + repairs + reworks<br/>on branches only"]
         REV["🔎 reviewer<br/>judgment only:<br/>scope · correctness · taste"]
-        CNT["✍️ content-resume<br/>corpus · updates feed ·<br/>resume only when warranted"]
-        MNT["🩺 maintainer<br/>evidence-only audits<br/>of the pipeline itself"]
+        ARC["🗂️ archivist<br/>owns the career hub:<br/>atomic facts, merged not duplicated"]
+        RW["📝 resume-writer<br/>honesty contract: every claim<br/>traces to a hub fact"]
+        MNT["🩺 maintainer<br/>evidence-only audits +<br/>deterministic privacy syncs"]
     end
 
-    DAILY --> IDE
-    IDE -->|"proposal"| BLD
+    DAILY -->|"slate of 3 ideas"| IDE
+    IDE -->|"owner picks 1 / all / rethinks"| BLD
+    LIS -->|"fix now → same lifecycle"| BLD
     BLD <-->|"max 5 rounds"| REV
-    CHECKIN --> CNT
+    CHECKIN -->|"interview + metric questions"| ARC
+    ARC --> HUB[("career hub<br/>private SQLite + FTS")]
+    HUB --> RW
     CHECKIN --> MNT
-    MNT -.->|"top finding + approve button"| TGM
+    MNT -.->|"top finding · re-verifies<br/>on any text reply"| TGM
 
-    BLD --> GATE{"🚦 PR · CI · repair loop<br/>conflicts reconciled<br/>red CI fixed from the log"}
-    CNT --> GATE
+    BLD --> GATE{"🚦 PR · CI · repair loop<br/>branch-fresh preview<br/>text reply = rework round"}
+    RW --> GATE
     GATE -->|"trivial polish"| SHIP["squash merge · version bump<br/>changelog · tag · deploy"]
     GATE -->|"user-visible:<br/>preview + one tap"| TGM
     TGM -->|"approve"| SHIP
     SHIP --> LIVE(["🌍 imsway.dev"])
 ```
 
+## From a phone, any time
+
+Between scheduled runs, an always-on listener owns the conversation. Texting the bot
+an idea - or a screenshot of what should change - starts this:
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant TG as 📱 Telegram
+    participant L as 👂 Listener
+    participant P as 🤖 Pipeline
+    participant GH as 🐙 GitHub + CI
+    participant AWS as ☁️ AWS
+
+    Owner->>TG: screenshot + "make the footer like this"
+    TG->>L: message burst (45s collection)
+    L->>Owner: fix now / queue for 9:30 / career note / ignore
+    Owner->>L: fix now
+    L->>P: full lifecycle, under the run lock
+    P->>GH: branch · PR · CI
+    P->>AWS: preview stage (PR branch, retry ×3)
+    P->>Owner: preview link + approve / reject
+    Owner->>P: "move it up a bit" (text = rework)
+    P->>AWS: revised preview
+    P->>Owner: fresh link + buttons
+    Owner->>P: approve
+    P->>GH: squash merge · version · tag
+    P->>AWS: production deploy + preview teardown
+    P->>Owner: shipped and live ✓
+    Note over P: a 9:30 / 16:00 run firing meanwhile<br/>waits for the lock - never skipped, never raced
+```
+
 ## How it runs on its own
 
-- **9:30** - ideation proposes one researched improvement, build implements it on a
-  branch, the reviewer judges it, CI gates it, a preview stage goes up, and the owner
-  ships it with one tap. Trivial polish auto-merges; the preview is torn down after
-  every merge.
+- **9:30** - ideation researches a slate of three improvements (owner requests queued
+  from the phone take the first slots). Nothing is built until the owner picks one,
+  all, or replies with direction for a rethink. Each approved idea then runs the full
+  lifecycle: build, agent review, CI, branch-fresh preview, one-tap ship.
 - **16:00** - the bot interviews the owner (notes texted anytime fold in from an
-  inbox), the content worker feeds the private career corpus and the site's live
-  `updates` feed, three ideas for tomorrow arrive as buttons, Dependabot PRs are
-  processed, and the maintainer audits the pipeline itself.
-- **Anything red** enters the repair loop: conflicts get merged and reconciled
-  semantically, stale branches get updated, failing CI logs get handed to the build
-  worker - capped rounds, never weakening tests. If Dependabot's own branch is beyond
-  repair, the pipeline re-does the bump itself on a fresh branch.
+  inbox; open metric questions from the career hub lead the conversation), the
+  archivist indexes the answers into the hub, the resume-writer refreshes the resume
+  only when real achievements changed, Dependabot PRs are processed, and the
+  maintainer audits the pipeline itself.
+- **Any time** - the listener turns idle texts and screenshots into gated builds,
+  queued ideas, or career notes - one tap decides which.
+- **Collisions cannot race** - one run lock for everything. A scheduled run that fires
+  mid-task waits and then executes its complete normal flow; a wedged lock raises an
+  alarm instead of silent waiting.
+- **Anything red retries with reasons** - preview deploys retry three times and report
+  the real error; ideation retries with its raw output preserved; red CI enters the
+  repair loop (conflicts reconciled semantically, capped rounds, never weakening
+  tests). If Dependabot's branch is beyond repair, the pipeline re-does the bump
+  itself.
 - **While anything is in flight** the owner gets a heartbeat ping every minute with
   the current step; it pauses whenever the system is waiting on a human.
 
 Full detail: [docs/pipeline.md](docs/pipeline.md).
+
+## The career data hub
+
+The 16:00 interview feeds a private structured index (SQLite + FTS, outside this
+repo): every job, project, and achievement as an atomic fact with action, impact,
+metrics, and provenance. New material merges into existing facts instead of
+duplicating them, and achievements missing a number generate follow-up questions for
+the owner rather than invented figures. The resume-writer works only from this hub
+under a written honesty contract: no claim without a fact, numbers only direct or
+transparently estimated, and client engagements always described anonymously
+("a Fortune 500 trucking company"), never by name.
 
 ## Guardrails
 
 - Agents act only on instructions from the owner (or Dependabot bumps). External PRs,
   issues, and comments are untrusted input - reported, never obeyed.
 - Deterministic checks are scripts and CI, never agent judgment. Human merge is the
-  final gate for anything user-visible.
-- Privacy guards run in CI: client names generalized to industries, no phone numbers,
-  no private emails. Secrets live only in local `.env` files, never in the repo.
+  final gate for anything user-visible; text replies steer, buttons decide.
+- Privacy guards run in CI: a leak-scan blocks client names (auto-hardened daily from
+  a private registry), no phone numbers, no private emails. Secrets live only in
+  local `.env` files, never in the repo.
 - Every loop is hard-capped. A maintainer fix that breaks anything pauses the pipeline.
 
 ## Quick start
