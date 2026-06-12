@@ -189,8 +189,10 @@ export const resume = {
       points: [
         "Own end-to-end technical strategy across 116 enterprise accounts in the western US, spanning tech, finance, government, healthcare, gaming, and manufacturing.",
         "Design and ship enterprise agent POCs end to end: email triage on watsonx Orchestrate that won a bakeoff vs Copilot Studio, and an HR agent running live against Workday and ServiceNow tenants that moved straight to pricing.",
-        "Built secure MCP servers that let AI agents modernize legacy RPG on live IBM i systems (write allowlists, SSH tunneling, blocked destructive ops); two major logistics companies adopted the product after demos.",
-        "Created and led a full-day enterprise hackathon series as tech lead; the reusable template is now used across multiple markets and drove adoption with hundreds of client engineers.",
+        "Engineered secure MCP servers that let AI agents modernize legacy RPG on live IBM i systems (write allowlists, SSH tunneling, blocked destructive ops); two major logistics companies adopted the product after demos.",
+        "Partnered with sales and product to drive competitive displacement against GitHub Copilot, Cursor, and Claude Code, building tailored technical narratives and ROI frameworks that supported deal closure.",
+        "Created and lead a cross-org initiative directing interns to build a reusable library of agent modes, skills, rules, and MCP servers that wire an enterprise coding agent into major enterprise products, with guardrails and best-practice context built in, for fast POC and pilot delivery across sales engineering, clients, and internal teams.",
+        "Conceived and ran a full-day enterprise hackathon series as tech lead, productized into a reusable template now used across multiple markets; 10 events run to date with 15 to 20 engineers each.",
       ],
     },
     {
@@ -198,7 +200,8 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "Exceeded first-year quota by 125% owning technical evaluations end-to-end across 20+ medium and large enterprise accounts.",
+        "Exceeded first-year quota by 125% owning technical evaluations end-to-end across 20+ medium and large enterprise accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
+        "Developed repeatable, client-specific demo frameworks that mapped business pain points to quantifiable watsonx outcomes, cutting time-to-close and improving technical win rates.",
         "Designed and presented a live watsonx demo at AWS re:Invent, generating hundreds of inbound conversations and new pipeline opportunities.",
       ],
     },
@@ -208,8 +211,8 @@ export const resume = {
       when: "Feb 2022 - Apr 2025",
       points: [
         "Delivered full-stack web, mobile, and IoT platforms for energy startups (TypeScript, React, Next.js, Node, AWS, MongoDB) managing consumption across large commercial buildings.",
-        "Built an ERCOT API integration hitting an 80% success rate during grid overload events; shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
-        "Led daily standups and sprint planning for a 5-person offshore team; PWA migration lifted mobile usage roughly 50%.",
+        "Built an ERCOT API integration hitting an 80% success rate during grid overload events; deployed an RBAC system to AWS Marketplace serving hundreds of accounts.",
+        "Ran daily standups and sprint planning for a 5-person offshore team; PWA migration lifted mobile usage roughly 50%.",
       ],
     },
     {
@@ -226,7 +229,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Built a Python + Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI; cut outsourcing costs 80% by automating manual review.",
+        "Wrote a Python + Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI; cut outsourcing costs 80% by automating manual review.",
       ],
     },
   ] as ResumeItem[],
