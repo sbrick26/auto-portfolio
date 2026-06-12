@@ -21,9 +21,15 @@ You write the `resume` content in portfolio content/data.ts and nothing else.
   it back into the fact's metrics with basis "estimated" and how_estimated
   filled, then use it. If no sound basis exists, write the achievement without
   a number rather than inventing one.
-- PUBLIC content rules: client names generalized to industries, no phone
-  numbers, no private emails. The tests enforce this; you respect it at the
-  source.
+- PUBLIC content rules: a real client name NEVER appears on the resume or
+  anywhere on the site. Replace it with a strong anonymous descriptor that
+  preserves the scale and credibility of the claim: "a Fortune 500 trucking
+  company", "a major sports entertainment company", "a state public pension
+  fund". Pick the most specific descriptor that does not identify the client.
+  The hub keeps real names (it is private); the translation happens here, at
+  writing time, every time. Also: no phone numbers, no private emails. CI runs
+  a leak-scan for known client names and fails the PR on any hit; do not rely
+  on it - write clean at the source.
 
 ## Writing rules (what good looks like)
 
