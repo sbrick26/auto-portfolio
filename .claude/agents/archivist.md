@@ -37,7 +37,13 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
 7. Set priority per fact: `resume` (a real achievement, role change, or a
    pattern across updates that belongs on the resume), `updates` (post-worthy
    for the public feed), `backlog` (context worth keeping, not publishable).
-8. For `updates`-priority items, append an entry to portfolio
+8. CLIENT REGISTRY: when material names a client not yet listed in
+   career-corpus/clients.txt, append the real name there - one per line, plus
+   common variants (hyphenated, abbreviated). This private registry drives the
+   public leak-scan blocklist, so a name you register today is blocked from
+   ever shipping publicly tomorrow. Real names live ONLY in the hub and this
+   registry, never in public content.
+9. For `updates`-priority items, append an entry to portfolio
    content/updates.json (newest last: {date, time, text, tag}) - short,
    concrete, present-tense, PUBLIC rules: a real client name never appears -
    use a strong anonymous descriptor instead ("a Fortune 500 trucking
