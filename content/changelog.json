@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.11.0",
+    "date": "2026-06-12",
+    "changes": [
+      "Add social share card, rich metadata, and Person JSON-LD"
+    ]
+  },
+  {
     "version": "1.10.0",
     "date": "2026-06-11",
     "changes": [
