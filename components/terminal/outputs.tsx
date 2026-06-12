@@ -58,9 +58,10 @@ export function Welcome() {
             portfolio runs like a terminal.
           </div>
           <div className="text-term-dim text-[13px]">
-            Type a command or tap one. Try <span className="text-term-cyan">updates</span> to
-            see what I&apos;m working on, or <span className="text-term-cyan">help</span> for
-            everything.
+            Type a command or tap one. Try{" "}
+            <span className="text-term-cyan">updates</span>{" "}
+            to see what I&apos;m working on, or{" "}
+            <span className="text-term-cyan">help</span> for everything.
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             {QUICK.map((c) => (
