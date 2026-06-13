@@ -235,15 +235,21 @@ function EvidenceList({ evidence, reduce }: { evidence: SkillEvidence; reduce: b
 // skill with the most recent activity so the freshest proof shows first.
 export function SkillActivity() {
   const reduce = useReducedMotion();
-  const evidence = useMemo(() => buildSkillEvidence(updates), []);
+  // Only surface skills that actually have logged evidence - a category with no
+  // tagged updates yet (e.g. a foundational one not in the daily feed) is hidden
+  // rather than shown as an empty chip.
+  const shown = useMemo(
+    () => buildSkillEvidence(updates).filter((e) => e.total > 0),
+    [],
+  );
   const defaultCategory = useMemo(() => {
-    const active = evidence.filter((e) => e.lastActive);
-    if (!active.length) return evidence[0]?.category ?? "";
+    const active = shown.filter((e) => e.lastActive);
+    if (!active.length) return shown[0]?.category ?? "";
     return active.reduce((best, e) => (e.lastActive! > best.lastActive! ? e : best))
       .category;
-  }, [evidence]);
+  }, [shown]);
   const [selected, setSelected] = useState(defaultCategory);
-  const current = evidence.find((e) => e.category === selected) ?? evidence[0];
+  const current = shown.find((e) => e.category === selected) ?? shown[0];
 
   return (
     <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
@@ -255,7 +261,7 @@ export function SkillActivity() {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {evidence.map((e) => {
+        {shown.map((e) => {
           const on = current?.category === e.category;
           return (
             <button
