@@ -194,6 +194,29 @@ describe("secret version command", () => {
   });
 });
 
+describe("skills --activity heatmap", () => {
+  it("renders the heatmap view when the flag is passed", () => {
+    render(<Terminal />);
+    run("skills --activity");
+    expect(screen.getAllByText("activity heatmap").length).toBeGreaterThan(0);
+    // legend bookends
+    expect(screen.getAllByText("less").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("more").length).toBeGreaterThan(0);
+  });
+
+  it("bare skills keeps the static view and offers the heatmap chip", () => {
+    render(<Terminal />);
+    run("skills");
+    // static view marker present, heatmap legend absent
+    expect(screen.getAllByText("category overview").length).toBeGreaterThan(0);
+    expect(screen.queryByText("less")).toBeNull();
+    // but the heatmap is one tap away
+    expect(
+      screen.getAllByRole("button", { name: "activity heatmap" }).length,
+    ).toBeGreaterThan(0);
+  });
+});
+
 describe("Updates tail", () => {
   it("shows the live indicator", () => {
     render(<Terminal />);

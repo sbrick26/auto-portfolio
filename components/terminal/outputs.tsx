@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Radar,
@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
+import { buildActivity, isoDate } from "@/lib/activity";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor } from "./typing";
@@ -184,7 +185,113 @@ export function UpdatesOutput() {
 
 /* -------------------------------- skills --------------------------------- */
 
-export function SkillsOutput() {
+// Stepped opacities for a 0-4 heatmap cell. 0 reads as empty (neutral border
+// fill); 1-4 paint the category accent at rising strength.
+const HEAT_OPACITY = [0.35, 0.3, 0.52, 0.74, 1] as const;
+
+function HeatCell({
+  accent,
+  level,
+  delay,
+  title,
+  reduce,
+}: {
+  accent: string;
+  level: number;
+  delay: number;
+  title: string;
+  reduce: boolean;
+}) {
+  const filled = level > 0;
+  const opacity = HEAT_OPACITY[level];
+  return (
+    <motion.div
+      title={title}
+      className="aspect-square w-full rounded-[3px]"
+      style={{ background: filled ? accent : "var(--color-term-border)" }}
+      initial={reduce ? false : { opacity: 0, scale: 0.4 }}
+      animate={{ opacity, scale: 1 }}
+      transition={reduce ? { duration: 0 } : { duration: 0.24, delay, ease: "easeOut" }}
+    />
+  );
+}
+
+// GitHub-contribution-style grid: skill categories down the side, recent days
+// across, intensity driven by the live updates feed. Momentum, not a static score.
+export function ActivityGrid() {
+  const reduce = useReducedMotion();
+  // new Date() only varies by day, so the memo is stable within a session.
+  const grid = useMemo(() => buildActivity(updates, isoDate(new Date())), []);
+  const cols = grid.bucketLabels.length;
+
+  return (
+    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <SectionLabel>activity heatmap</SectionLabel>
+        <span className="text-[11px] tabular-nums text-term-faint">
+          {grid.bucketLabels[0]} → {grid.bucketLabels[cols - 1]}
+        </span>
+      </div>
+
+      <div className="space-y-1.5">
+        {grid.rows.map((row, ri) => (
+          <div
+            key={row.category}
+            className="grid items-center gap-1"
+            style={{ gridTemplateColumns: `minmax(52px, auto) repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            <span className="truncate pr-1 text-[11px] text-term-dim">
+              {row.category.split(" ")[0]}
+            </span>
+            {row.intensities.map((level, ci) => (
+              <HeatCell
+                key={ci}
+                accent={row.accent}
+                level={level}
+                reduce={!!reduce}
+                delay={(ri + ci) * 0.03}
+                title={`${row.category} · ${grid.bucketLabels[ci]} · ${row.counts[ci]} update${
+                  row.counts[ci] === 1 ? "" : "s"
+                }`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[11px] text-term-faint">
+        <span>less</span>
+        {([0, 1, 2, 3, 4] as const).map((level) => (
+          <span
+            key={level}
+            className="h-2.5 w-2.5 rounded-[3px]"
+            style={{
+              background: level > 0 ? "var(--color-term-green)" : "var(--color-term-border)",
+              opacity: HEAT_OPACITY[level],
+            }}
+          />
+        ))}
+        <span>more</span>
+      </div>
+    </Reveal>
+  );
+}
+
+export function SkillsOutput({ args = "" }: { args?: string } = {}) {
+  // `skills --activity` (alias `-a`) swaps the static bars/radar for the
+  // recency heatmap; bare `skills` keeps the established view clean.
+  if (/(?:^|\s)(?:--activity|-a)(?:\s|$)/.test(args)) {
+    return (
+      <div className="space-y-4">
+        <ActivityGrid />
+        <div className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+          <span>momentum from the live updates feed, by skill category</span>
+          <CmdChip cmd="skills" label="full skills" />
+        </div>
+      </div>
+    );
+  }
+
   const radarData = skills.map((g) => ({
     category: g.category.split(" ")[0],
     value: Math.round(g.items.reduce((s, x) => s + x.level, 0) / g.items.length),
@@ -231,6 +338,11 @@ export function SkillsOutput() {
             </RadarChart>
           </ResponsiveContainer>
         </div>
+      </Reveal>
+
+      <Reveal i={5} className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+        <span>see momentum over time</span>
+        <CmdChip cmd="skills --activity" label="activity heatmap" />
       </Reveal>
     </div>
   );
@@ -444,12 +556,12 @@ export function ErrorOutput({ input }: { input: string }) {
 
 /* ------------------------------- registry -------------------------------- */
 
-export const RENDERERS: Record<string, () => React.ReactNode> = {
+export const RENDERERS: Record<string, (args?: string) => React.ReactNode> = {
   help: () => <HelpOutput />,
   me: () => <MeOutput />,
   about: () => <AboutOutput />,
   updates: () => <UpdatesOutput />,
-  skills: () => <SkillsOutput />,
+  skills: (args) => <SkillsOutput args={args} />,
   projects: () => <ProjectsOutput />,
   resume: () => <ResumeOutput />,
   contact: () => <ContactOutput />,
