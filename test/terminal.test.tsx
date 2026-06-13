@@ -194,25 +194,26 @@ describe("secret version command", () => {
   });
 });
 
-describe("skills --activity heatmap", () => {
-  it("renders the heatmap view when the flag is passed", () => {
+describe("skills --activity", () => {
+  it("renders the skill-activity view and reveals evidence when a skill is tapped", () => {
     render(<Terminal />);
     run("skills --activity");
-    expect(screen.getAllByText("activity heatmap").length).toBeGreaterThan(0);
-    // legend bookends
-    expect(screen.getAllByText("less").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("more").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("skill activity").length).toBeGreaterThan(0);
+    // tap the web/mobile skill -> its tagged evidence surfaces
+    const webBtn = screen.getAllByRole("button", { name: /web \/ mobile/ });
+    fireEvent.click(webBtn[webBtn.length - 1]);
+    expect(screen.getAllByText("#portfolio").length).toBeGreaterThan(0);
   });
 
-  it("bare skills keeps the static view and offers the heatmap chip", () => {
+  it("bare skills keeps the static view and offers the activity chip", () => {
     render(<Terminal />);
     run("skills");
-    // static view marker present, heatmap legend absent
+    // static view marker present, activity view's hint absent
     expect(screen.getAllByText("category overview").length).toBeGreaterThan(0);
-    expect(screen.queryByText("less")).toBeNull();
-    // but the heatmap is one tap away
+    expect(screen.queryByText(/tap a skill for the work behind it/)).toBeNull();
+    // but the activity view is one tap away
     expect(
-      screen.getAllByRole("button", { name: "activity heatmap" }).length,
+      screen.getAllByRole("button", { name: "skill activity" }).length,
     ).toBeGreaterThan(0);
   });
 });

@@ -3,7 +3,7 @@
     "version": "1.14.0",
     "date": "2026-06-13",
     "changes": [
-      "Activity heatmap: a `skills --activity` proficiency-by-recency grid"
+      "Skill activity: tap a skill under `skills --activity` to read the tagged work behind it"
     ]
   },
   {
