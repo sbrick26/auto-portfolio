@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Radar,
@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
+import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor } from "./typing";
@@ -184,7 +185,122 @@ export function UpdatesOutput() {
 
 /* -------------------------------- skills --------------------------------- */
 
-export function SkillsOutput() {
+// The evidence log for one selected skill: the actual tagged updates behind it,
+// newest first. An empty category reads as "foundation, not in the daily feed"
+// rather than a blank - an off week never makes a skill look abandoned.
+function EvidenceList({ evidence, reduce }: { evidence: SkillEvidence; reduce: boolean }) {
+  if (!evidence.items.length) {
+    return (
+      <div className="rounded-md border border-dashed border-term-border/70 px-3 py-4 text-[12px] leading-relaxed text-term-faint">
+        no recent activity logged for{" "}
+        <span style={{ color: evidence.accent }}>{evidence.category}</span> - it&apos;s
+        foundational, not part of the daily feed right now. New tagged updates land
+        here automatically.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {evidence.items.map((it, i) => (
+        <motion.div
+          key={`${it.date}-${it.time}-${i}`}
+          initial={reduce ? false : { opacity: 0, x: -6 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={reduce ? { duration: 0 } : { duration: 0.2, delay: i * 0.04 }}
+          className="flex gap-2.5"
+        >
+          <span
+            className="mt-1 h-full w-[2px] shrink-0 rounded-full"
+            style={{ background: evidence.accent, opacity: 0.6 }}
+          />
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+            <span className="shrink-0 text-[12px] text-term-faint tabular-nums">
+              {it.date}
+            </span>
+            <span className="text-[13px] text-term-text/90">
+              {it.text}
+              <span className="ml-2 align-middle text-[11px] text-term-purple">
+                #{it.tag}
+              </span>
+            </span>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// Tap a skill, read the work behind it. Skill categories are chips; the selected
+// one expands to its evidence pulled live from the updates feed. Defaults to the
+// skill with the most recent activity so the freshest proof shows first.
+export function SkillActivity() {
+  const reduce = useReducedMotion();
+  // Only surface skills that actually have logged evidence - a category with no
+  // tagged updates yet (e.g. a foundational one not in the daily feed) is hidden
+  // rather than shown as an empty chip.
+  const shown = useMemo(
+    () => buildSkillEvidence(updates).filter((e) => e.total > 0),
+    [],
+  );
+  const defaultCategory = useMemo(() => {
+    const active = shown.filter((e) => e.lastActive);
+    if (!active.length) return shown[0]?.category ?? "";
+    return active.reduce((best, e) => (e.lastActive! > best.lastActive! ? e : best))
+      .category;
+  }, [shown]);
+  const [selected, setSelected] = useState(defaultCategory);
+  const current = shown.find((e) => e.category === selected) ?? shown[0];
+
+  return (
+    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <SectionLabel>skill activity</SectionLabel>
+        <span className="text-[11px] text-term-faint">
+          tap a skill for the work behind it
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {shown.map((e) => {
+          const on = current?.category === e.category;
+          return (
+            <button
+              key={e.category}
+              onClick={() => setSelected(e.category)}
+              className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] transition active:scale-[0.97]"
+              style={{
+                borderColor: on ? e.accent : "var(--color-term-border)",
+                color: on ? e.accent : "var(--color-term-dim)",
+                background: on ? "var(--color-term-panel)" : "transparent",
+              }}
+            >
+              <span>{e.category}</span>
+              <span className="tabular-nums text-term-faint">{e.total}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {current && <EvidenceList evidence={current} reduce={!!reduce} />}
+    </Reveal>
+  );
+}
+
+export function SkillsOutput({ args = "" }: { args?: string } = {}) {
+  // `skills --activity` (alias `-a`) swaps the static bars/radar for the
+  // tap-a-skill evidence view; bare `skills` keeps the established view clean.
+  if (/(?:^|\s)(?:--activity|-a)(?:\s|$)/.test(args)) {
+    return (
+      <div className="space-y-4">
+        <SkillActivity />
+        <div className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+          <span>each skill, backed by the actual work from the live updates feed</span>
+          <CmdChip cmd="skills" label="full skills" />
+        </div>
+      </div>
+    );
+  }
+
   const radarData = skills.map((g) => ({
     category: g.category.split(" ")[0],
     value: Math.round(g.items.reduce((s, x) => s + x.level, 0) / g.items.length),
@@ -231,6 +347,11 @@ export function SkillsOutput() {
             </RadarChart>
           </ResponsiveContainer>
         </div>
+      </Reveal>
+
+      <Reveal i={5} className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+        <span>see the work behind each skill</span>
+        <CmdChip cmd="skills --activity" label="skill activity" />
       </Reveal>
     </div>
   );
@@ -444,12 +565,12 @@ export function ErrorOutput({ input }: { input: string }) {
 
 /* ------------------------------- registry -------------------------------- */
 
-export const RENDERERS: Record<string, () => React.ReactNode> = {
+export const RENDERERS: Record<string, (args?: string) => React.ReactNode> = {
   help: () => <HelpOutput />,
   me: () => <MeOutput />,
   about: () => <AboutOutput />,
   updates: () => <UpdatesOutput />,
-  skills: () => <SkillsOutput />,
+  skills: (args) => <SkillsOutput args={args} />,
   projects: () => <ProjectsOutput />,
   resume: () => <ResumeOutput />,
   contact: () => <ContactOutput />,

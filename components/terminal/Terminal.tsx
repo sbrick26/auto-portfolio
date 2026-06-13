@@ -21,7 +21,10 @@ type Tab = { id: number; title: string; blocks: Block[] };
 function renderInput(input: string): { clear?: boolean; node?: React.ReactNode; title?: string } {
   const cmd = findCommand(input);
   if (cmd?.special === "clear") return { clear: true };
-  if (cmd && RENDERERS[cmd.name]) return { node: RENDERERS[cmd.name](), title: cmd.name };
+  if (cmd && RENDERERS[cmd.name]) {
+    const args = input.split(/\s+/).slice(1).join(" ");
+    return { node: RENDERERS[cmd.name](args), title: cmd.name };
+  }
   return { node: <ErrorOutput input={input} /> };
 }
 
