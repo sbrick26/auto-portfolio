@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.14.0",
+    "date": "2026-06-13",
+    "changes": [
+      "Activity heatmap: a `skills --activity` proficiency-by-recency grid"
+    ]
+  },
+  {
     "version": "1.13.0",
     "date": "2026-06-12",
     "changes": [
