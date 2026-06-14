@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Radar,
@@ -13,47 +13,156 @@ import { profile, about, skills, projects, updates, resume, changelog } from "@/
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
-import { TypedLine, Cursor } from "./typing";
+import { TypedLine, Cursor, Spinner } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
 
 /* ----------------------------- welcome / boot ---------------------------- */
 
-const BOOT = [
-  "booting swayam.os ...",
-  "mounting career-corpus ... ok",
-  "starting agent pipeline ... ok",
-  "ready.",
+// The power-on sequence tells the site's actual story (the agent pipeline that
+// builds and ships it) rather than placeholder lines. Each step types in, runs a
+// brief spinner, then settles to a right-aligned status token. The last step pulls
+// the REAL version and self-deploy date from the changelog, so the flourish is
+// also true. A settled `ok` token in term-green; the deploy line settles to the
+// live version instead.
+const OK = <span className="text-term-green">ok</span>;
+
+const BOOT_STEPS: { label: string; status: React.ReactNode }[] = [
+  { label: "boot swayam.os", status: OK },
+  { label: "mount career-corpus", status: OK },
+  { label: "spawn agent workers", status: OK },
+  { label: "connect imsway.dev", status: OK },
+  {
+    label: "last self-deploy",
+    status: (
+      <span className="text-term-cyan">
+        v{APP_VERSION}{" "}
+        <span className="text-term-faint tabular-nums">{changelog[0]?.date}</span>
+      </span>
+    ),
+  },
 ];
 
-export function Welcome() {
-  const [step, setStep] = useState(0);
-  return (
-    <div className="space-y-3">
-      <div className="space-y-0.5 text-[13px] text-term-dim">
-        {BOOT.slice(0, step + 1).map((l, idx) => (
-          <div key={idx}>
-            <span className="text-term-green">$</span>{" "}
-            {idx === step ? (
-              <TypedLine
-                text={l}
-                speed={12}
-                onDone={() => setStep((s) => Math.min(BOOT.length - 1, s + 1))}
-              />
-            ) : (
-              <span>{l}</span>
-            )}
-          </div>
-        ))}
-      </div>
+// How long a step's spinner runs before it settles to its status token. Kept short
+// so the full five-step play (type + spin per line) lands under ~1.3s.
+const SPIN_MS = 130;
 
-      {step >= BOOT.length - 1 && (
-        <Reveal className="space-y-3 pt-1">
-          <pre className="text-term-green/90 text-[10px] leading-[1.15] sm:text-xs select-none overflow-x-auto no-scrollbar">
+// One boot line: types its label with a live cursor, shows the spinner, then
+// settles to the status token and notifies the parent to advance. A step that is
+// not the active one (already-resolved lines above, or every line under reduced
+// motion / after a skip) mounts straight into its settled state with no animation.
+function BootStep({
+  label,
+  status,
+  active,
+  onDone,
+}: {
+  label: string;
+  status: React.ReactNode;
+  active: boolean;
+  onDone: () => void;
+}) {
+  const [phase, setPhase] = useState<"type" | "spin" | "done">(active ? "type" : "done");
+  const fired = useRef(false);
+
+  const onTyped = useCallback(() => setPhase("spin"), []);
+
+  useEffect(() => {
+    if (phase !== "spin") return;
+    const id = setTimeout(() => setPhase("done"), SPIN_MS);
+    return () => clearTimeout(id);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === "done" && active && !fired.current) {
+      fired.current = true;
+      onDone();
+    }
+  }, [phase, active, onDone]);
+
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-term-green">$</span>
+      <span className="flex-1">
+        {active && phase === "type" ? (
+          <TypedLine text={label} speed={8} onDone={onTyped} />
+        ) : (
+          <span>{label}</span>
+        )}
+      </span>
+      <span className="shrink-0">
+        {phase === "spin" && <Spinner className="text-term-yellow" />}
+        {phase === "done" && status}
+      </span>
+    </div>
+  );
+}
+
+// The ASCII wordmark, revealed in a single left-to-right clip sweep on a natural
+// play. clipPath is not a transform, so MotionConfig's reduced-motion handling
+// does not strip it - we gate the sweep on `animate` ourselves (skips and reduced
+// motion render it fully visible at once).
+function Wordmark({ animate }: { animate: boolean }) {
+  return (
+    <motion.pre
+      className="text-term-green/90 text-[10px] leading-[1.15] sm:text-xs select-none overflow-x-auto no-scrollbar"
+      initial={animate ? { clipPath: "inset(0 100% 0 0)" } : false}
+      animate={{ clipPath: "inset(0 0% 0 0)" }}
+      transition={{ duration: animate ? 0.4 : 0, ease: "easeOut" }}
+    >
 {String.raw` ___ _ _ _ __ _ _ _  _ __ _ _ __
 (_-<| | | |/ _\ || | / _\ '  \
 /__/ \_/\_|\__,_\_, | \__/_|_|_|
                 |__/  barik`}
-          </pre>
+    </motion.pre>
+  );
+}
+
+export function Welcome() {
+  const reduceMotion = useReducedMotion();
+  const [skipped, setSkipped] = useState(false);
+  const [step, setStep] = useState(0);
+
+  // The sequence only animates when motion is allowed and the visitor has not
+  // skipped. Once either is false, every line renders settled and the welcome
+  // block shows immediately - the same instant-final-state contract the
+  // typewriter already honours under reduced motion.
+  const playing = !reduceMotion && !skipped;
+  const bootDone = !playing || step >= BOOT_STEPS.length;
+
+  // Skippable handoff: while the sequence plays, any keypress, click, or tap
+  // completes it at once. Session focuses the active session's input on mount, so
+  // the prompt already has focus - collapsing the animation hands control straight
+  // to the visitor (essential for repeat visitors and recruiters in a hurry).
+  useEffect(() => {
+    if (!playing) return;
+    const skip = () => setSkipped(true);
+    window.addEventListener("keydown", skip);
+    window.addEventListener("pointerdown", skip);
+    return () => {
+      window.removeEventListener("keydown", skip);
+      window.removeEventListener("pointerdown", skip);
+    };
+  }, [playing]);
+
+  const shown = bootDone ? BOOT_STEPS.length : step + 1;
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-0.5 text-[13px] text-term-dim">
+        {BOOT_STEPS.slice(0, shown).map((s, idx) => (
+          <BootStep
+            key={idx}
+            label={s.label}
+            status={s.status}
+            active={playing && idx === step}
+            onDone={() => setStep((v) => Math.min(BOOT_STEPS.length, v + 1))}
+          />
+        ))}
+      </div>
+
+      {bootDone && (
+        <Reveal className="space-y-3 pt-1">
+          <Wordmark animate={playing} />
           <div className="text-term-text">
             Hey, I&apos;m <span className="text-term-green">{profile.name}</span>. This
             portfolio runs like a terminal.

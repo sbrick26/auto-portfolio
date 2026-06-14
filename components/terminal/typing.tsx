@@ -38,6 +38,23 @@ export function useTyped(text: string, speed = 16, enabled = true) {
   return { shown: text.slice(0, i), done: i >= text.length };
 }
 
+// A brief braille spinner for the boot sequence's status tokens: it cycles frames
+// while a step is "working", then the caller settles it to a final token (ok / a
+// value). Under reduced motion it renders a single static frame - no looping - so
+// the settle still reads without any animation.
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+export function Spinner({ speed = 70, className = "" }: { speed?: number; className?: string }) {
+  const reduceMotion = useReducedMotion();
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (reduceMotion) return;
+    const id = setInterval(() => setFrame((f) => (f + 1) % SPINNER_FRAMES.length), speed);
+    return () => clearInterval(id);
+  }, [reduceMotion, speed]);
+  return <span className={className}>{SPINNER_FRAMES[reduceMotion ? 0 : frame]}</span>;
+}
+
 export function Cursor({ className = "" }: { className?: string }) {
   return (
     <span
