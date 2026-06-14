@@ -76,28 +76,24 @@ describe("Session output-following", () => {
   });
 });
 
-describe("Session section rail", () => {
+describe("Session prev-output pill", () => {
   const multi: Block[] = [
     { id: 1, input: "help", node: <div>help output</div> },
     { id: 2, input: "resume", node: <div>resume output</div> },
     { id: 3, input: "skills", node: <div>skills output</div> },
   ];
 
-  it("does not render the rail for a single block", () => {
+  it("does not render the prev pill for a single block", () => {
     render(<Session blocks={blocks} active />);
-    expect(screen.queryByLabelText("jump to output")).toBeNull();
+    expect(screen.queryByLabelText("scroll to previous output")).toBeNull();
   });
 
-  it("renders a tick per block plus a top control once 2+ blocks exist", () => {
+  it("renders the prev pill once 2+ blocks exist", () => {
     render(<Session blocks={multi} active />);
-    expect(screen.getByLabelText("jump to output")).toBeDefined();
-    expect(screen.getByLabelText("jump to top")).toBeDefined();
-    expect(screen.getByLabelText("jump to help")).toBeDefined();
-    expect(screen.getByLabelText("jump to resume")).toBeDefined();
-    expect(screen.getByLabelText("jump to skills")).toBeDefined();
+    expect(screen.getByLabelText("scroll to previous output")).toBeDefined();
   });
 
-  it("scrolls a block to the top when its tick is clicked", () => {
+  it("scrolls a block to the top when the prev pill is clicked", () => {
     const calls: ScrollIntoViewOptions[] = [];
     const orig = window.HTMLElement.prototype.scrollIntoView;
     window.HTMLElement.prototype.scrollIntoView = function (
@@ -107,7 +103,7 @@ describe("Session section rail", () => {
     };
 
     render(<Session blocks={multi} active />);
-    fireEvent.click(screen.getByLabelText("jump to resume"));
+    fireEvent.click(screen.getByLabelText("scroll to previous output"));
 
     window.HTMLElement.prototype.scrollIntoView = orig;
     expect(calls).toHaveLength(1);

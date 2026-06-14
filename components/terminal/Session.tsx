@@ -20,12 +20,6 @@ function PromptEcho({ input }: { input: string }) {
   );
 }
 
-// The command name a rail tick advertises. The opening welcome block has no
-// echoed input, so it gets a friendly label instead of an empty tooltip.
-function blockLabel(input: string): string {
-  return input || "start";
-}
-
 export function Session({ blocks, active }: { blocks: Block[]; active: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -37,9 +31,9 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
   // jump-to-latest pill shows exactly when unpinned (there is content below).
   const [pinned, setPinned] = useState(true);
 
-  // Section rail state: a ref to each block's wrapper div (keyed by id) so a tick
-  // can scroll its block to the top, and the id of the block currently sitting at
-  // the top of the viewport (highlighted in the rail).
+  // Output-jump state: a ref to each block's wrapper div (keyed by id) so we can
+  // scroll a block to the top, and the id of the block currently sitting at the
+  // top of the viewport (the "prev output" pill steps up from here).
   const blockRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const visible = useRef<Map<number, boolean>>(new Map());
   const [activeBlock, setActiveBlock] = useState<number | null>(null);
@@ -114,13 +108,17 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
 
   // Track which block is nearest the top of the viewport. The rootMargin collapses
   // the active band to roughly the top third of the scroll area, so the active
-  // tick is the first block (in DOM order) still intersecting that band.
+  // block is the first one (in DOM order) still intersecting that band.
   useEffect(() => {
     const root = scrollRef.current;
     if (!root || blocks.length < 2) {
       setActiveBlock(blocks[0]?.id ?? null);
       return;
     }
+    // Default to the newest block: the view pins to the bottom on each new
+    // command, so that is where the reader starts. The observer refines this as
+    // they scroll up.
+    setActiveBlock(blocks[blocks.length - 1].id);
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -166,6 +164,12 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
     return () => window.removeEventListener("keydown", onKey);
   }, [active, blocks, activeBlock, scrollToBlock, scrollToTop]);
 
+  // The block the "prev output" pill jumps to: the one directly above whichever
+  // block is currently at the top of the viewport. No previous block (first
+  // block active, or an empty/single-block session) means no pill.
+  const activeIdx = blocks.findIndex((b) => b.id === activeBlock);
+  const prevId = activeIdx > 0 ? blocks[activeIdx - 1].id : null;
+
   return (
     <div
       className={active ? "flex h-full flex-col" : "hidden"}
@@ -204,80 +208,51 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
             ))}
           </div>
         </div>
-        {/* section rail: thin command ticks pinned to the right edge. Each tick
-            scrolls its block to the top; the active block highlights in green.
-            Labels stay collapsed (expanding on hover) so the rail never crowds the
-            narrow mobile width. */}
-        {blocks.length >= 2 && (
-          <nav
-            aria-label="jump to output"
-            className="absolute right-1 top-1/2 z-10 flex max-h-[80%] -translate-y-1/2 flex-col items-end gap-2 overflow-y-auto no-scrollbar py-1"
-          >
-            <button
-              type="button"
-              onClick={scrollToTop}
-              aria-label="jump to top"
-              title="top"
-              className="group flex items-center gap-1.5 text-term-faint transition-colors hover:text-term-green"
-            >
-              <span className="max-w-0 overflow-hidden whitespace-nowrap rounded bg-term-panel2/90 text-[10px] opacity-0 transition-all duration-150 group-hover:max-w-[140px] group-hover:px-1.5 group-hover:py-0.5 group-hover:opacity-100">
-                top
-              </span>
-              <span aria-hidden className="text-[10px] leading-none">
-                &uarr;
-              </span>
-            </button>
-            {blocks.map((b) => {
-              const isActive = b.id === activeBlock;
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => scrollToBlock(b.id)}
-                  aria-label={`jump to ${blockLabel(b.input)}`}
-                  aria-current={isActive ? "true" : undefined}
-                  title={blockLabel(b.input)}
-                  className="group flex items-center gap-1.5"
-                >
-                  <span
-                    className={`max-w-0 overflow-hidden whitespace-nowrap rounded bg-term-panel2/90 text-[10px] opacity-0 transition-all duration-150 group-hover:max-w-[140px] group-hover:px-1.5 group-hover:py-0.5 group-hover:opacity-100 ${
-                      isActive ? "text-term-green" : "text-term-dim"
-                    }`}
-                  >
-                    {blockLabel(b.input)}
-                  </span>
-                  <span
-                    className={`h-0.5 rounded-full transition-all ${
-                      isActive
-                        ? "w-4 bg-term-green"
-                        : "w-2.5 bg-term-faint group-hover:w-4 group-hover:bg-term-dim"
-                    }`}
-                  />
-                </button>
-              );
-            })}
-          </nav>
-        )}
-        <AnimatePresence>
-          {!pinned && (
-            <motion.button
-              type="button"
-              aria-label="scroll to latest output"
-              onClick={() => {
-                setPinned(true);
-                scrollToBottom(true);
-              }}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.15 }}
-              className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition hover:border-term-green active:scale-95"
-            >
-              <span aria-hidden>&darr;</span>
-              <span>latest</span>
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {/* Output-jump pills, stacked bottom-right: "prev" steps up one command
+            block (shown whenever there is one above the current view), "latest"
+            re-pins to the newest line (shown only when scrolled up). Same pill
+            styling for both; "prev" sits directly above "latest". */}
+        <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+          <AnimatePresence>
+            {prevId !== null && (
+              <motion.button
+                key="prev"
+                type="button"
+                aria-label="scroll to previous output"
+                onClick={() => scrollToBlock(prevId)}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.15 }}
+                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition hover:border-term-green active:scale-95"
+              >
+                <span aria-hidden>&uarr;</span>
+                <span>prev</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {!pinned && (
+              <motion.button
+                key="latest"
+                type="button"
+                aria-label="scroll to latest output"
+                onClick={() => {
+                  setPinned(true);
+                  scrollToBottom(true);
+                }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.15 }}
+                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition hover:border-term-green active:scale-95"
+              >
+                <span aria-hidden>&darr;</span>
+                <span>latest</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
       <Prompt inputRef={inputRef} />
     </div>

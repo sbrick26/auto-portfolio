@@ -20,7 +20,7 @@ class IntersectionObserverStub {
     return [];
   }
 }
-// the Session section rail tracks the topmost block with IntersectionObserver
+// the Session tracks the topmost block with IntersectionObserver
 window.IntersectionObserver =
   window.IntersectionObserver ?? (IntersectionObserverStub as unknown as typeof IntersectionObserver);
 
