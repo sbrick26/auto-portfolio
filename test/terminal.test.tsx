@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { Terminal } from "@/components/terminal/Terminal";
 import { profile } from "@/content/data";
 
@@ -183,14 +183,19 @@ describe("secret version command", () => {
   it("typing it works and shows the version", () => {
     render(<Terminal />);
     run("version");
-    expect(screen.getByText(/v\d+\.\d+\.\d+/)).toBeDefined();
+    // Scope to the version output row (the boot intro now also surfaces the
+    // version, so a bare screen-wide query would match in two places).
+    const row = screen.getByText("auto-portfolio").parentElement as HTMLElement;
+    expect(within(row).getByText(/^v\d+\.\d+\.\d+$/)).toBeDefined();
     expect(screen.getByText(/secret command/)).toBeDefined();
   });
 
   it("the palette footer shows the version", () => {
     render(<Terminal />);
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    expect(screen.getByText(/^v\d+\.\d+\.\d+$/)).toBeDefined();
+    // Scope to the palette footer (the boot intro also shows a version line).
+    const footer = screen.getByText("esc to close").parentElement as HTMLElement;
+    expect(within(footer).getByText(/^v\d+\.\d+\.\d+$/)).toBeDefined();
   });
 });
 
