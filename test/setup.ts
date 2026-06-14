@@ -12,6 +12,18 @@ class ResizeObserverStub {
 // recharts ResponsiveContainer needs ResizeObserver
 window.ResizeObserver = window.ResizeObserver ?? (ResizeObserverStub as unknown as typeof ResizeObserver);
 
+class IntersectionObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+// the Session section rail tracks the topmost block with IntersectionObserver
+window.IntersectionObserver =
+  window.IntersectionObserver ?? (IntersectionObserverStub as unknown as typeof IntersectionObserver);
+
 window.matchMedia =
   window.matchMedia ??
   ((query: string) =>

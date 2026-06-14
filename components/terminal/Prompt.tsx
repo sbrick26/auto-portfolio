@@ -25,14 +25,15 @@ export function Prompt({
       run(val);
       setVal("");
       setHi(null);
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" && !e.altKey) {
+      // bare ArrowUp walks history; Alt+ArrowUp belongs to the section rail
       e.preventDefault();
       if (history.length) {
         const ni = hi === null ? history.length - 1 : Math.max(0, hi - 1);
         setHi(ni);
         setVal(history[ni]);
       }
-    } else if (e.key === "ArrowDown") {
+    } else if (e.key === "ArrowDown" && !e.altKey) {
       e.preventDefault();
       if (hi !== null) {
         const ni = hi + 1;
