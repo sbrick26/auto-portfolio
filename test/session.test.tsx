@@ -36,12 +36,12 @@ describe("Session output-following", () => {
     // sitting at the bottom: no pill
     setGeometry(scroller, { scrollHeight: 1000, clientHeight: 300, scrollTop: 700 });
     fireEvent.scroll(scroller);
-    expect(screen.queryByLabelText("scroll to latest output")).toBeNull();
+    expect(screen.queryByLabelText("scroll to next output")).toBeNull();
 
     // scrolled well up: pill appears
     setGeometry(scroller, { scrollHeight: 1000, clientHeight: 300, scrollTop: 0 });
     fireEvent.scroll(scroller);
-    expect(screen.getByLabelText("scroll to latest output")).toBeDefined();
+    expect(screen.getByLabelText("scroll to next output")).toBeDefined();
   });
 
   it("re-pins and hides the pill when the pill is clicked", async () => {
@@ -50,7 +50,7 @@ describe("Session output-following", () => {
 
     setGeometry(scroller, { scrollHeight: 1000, clientHeight: 300, scrollTop: 0 });
     fireEvent.scroll(scroller);
-    const pill = screen.getByLabelText("scroll to latest output");
+    const pill = screen.getByLabelText("scroll to next output");
 
     fireEvent.click(pill);
     // the pill animates out via AnimatePresence, so await its removal
@@ -63,7 +63,7 @@ describe("Session output-following", () => {
 
     setGeometry(scroller, { scrollHeight: 1000, clientHeight: 300, scrollTop: 0 });
     fireEvent.scroll(scroller);
-    const pill = screen.getByLabelText("scroll to latest output");
+    const pill = screen.getByLabelText("scroll to next output");
 
     // a new command grows blocks.length -> follow resets, pill clears
     rerender(

@@ -28,8 +28,17 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
 
   // `pinned` is the follow intent: true means glue the view to the newest line as
   // output streams in. Scroll up past the threshold and it flips off; the
-  // jump-to-latest pill shows exactly when unpinned (there is content below).
+  // jump-to-next pill shows exactly when unpinned (there is content below).
   const [pinned, setPinned] = useState(true);
+  // A ref mirror of `pinned` the ResizeObserver reads instead of the state value.
+  // Deliberate jumps flip it synchronously, so the follow stops the instant you
+  // click rather than a render later - that lag is what made a mid-stream jump
+  // fight the auto-scroll and flicker. It also keeps the observer off `pinned`'s
+  // deps, so it no longer re-subscribes on every pin toggle.
+  const pinnedRef = useRef(true);
+  useEffect(() => {
+    pinnedRef.current = pinned;
+  }, [pinned]);
 
   // Output-jump state: a ref to each block's wrapper div (keyed by id) so we can
   // scroll a block to the top, and the id of the block currently sitting at the
@@ -56,7 +65,9 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
     const el = scrollRef.current;
     if (!el) return;
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setPinned(distance <= STICK_THRESHOLD);
+    const near = distance <= STICK_THRESHOLD;
+    pinnedRef.current = near;
+    setPinned(near);
   }, []);
 
   // A new command resets the follow: blocks.length grew, so glue back to the
@@ -80,11 +91,11 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
     const content = contentRef.current;
     if (!content) return;
     const ro = new ResizeObserver(() => {
-      if (pinned) scrollToBottom(false);
+      if (pinnedRef.current) scrollToBottom(false);
     });
     ro.observe(content);
     return () => ro.disconnect();
-  }, [pinned, scrollToBottom]);
+  }, [scrollToBottom]);
 
   useEffect(() => {
     if (active) inputRef.current?.focus();
@@ -94,6 +105,10 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
   // honouring reduced-motion. Used by both the rail ticks and the keyboard steps.
   const scrollToBlock = useCallback(
     (id: number) => {
+      // Stop following first: otherwise the streaming auto-scroll yanks us back
+      // down mid-jump and the view flickers between here and the bottom.
+      pinnedRef.current = false;
+      setPinned(false);
       blockRefs.current.get(id)?.scrollIntoView({
         block: "start",
         behavior: reduceMotion ? "auto" : "smooth",
@@ -103,6 +118,8 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
   );
 
   const scrollToTop = useCallback(() => {
+    pinnedRef.current = false;
+    setPinned(false);
     scrollRef.current?.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }, [reduceMotion]);
 
@@ -170,6 +187,20 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
   const activeIdx = blocks.findIndex((b) => b.id === activeBlock);
   const prevId = activeIdx > 0 ? blocks[activeIdx - 1].id : null;
 
+  // One shared enter/exit for both pills so they appear and leave the same way.
+  // A gentle ease-out (and a softer exit) reads smoother than the old linear
+  // fade; reduced-motion drops the slide and just crossfades.
+  const pillMotion = reduceMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : {
+        initial: { opacity: 0, y: 6 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 4 },
+      };
+  const pillTransition = reduceMotion
+    ? { duration: 0.12 }
+    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const };
+
   return (
     <div
       className={active ? "flex h-full flex-col" : "hidden"}
@@ -209,9 +240,9 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
           </div>
         </div>
         {/* Output-jump pills, stacked bottom-right: "prev" steps up one command
-            block (shown whenever there is one above the current view), "latest"
+            block (shown whenever there is one above the current view), "next"
             re-pins to the newest line (shown only when scrolled up). Same pill
-            styling for both; "prev" sits directly above "latest". */}
+            styling for both; "prev" sits directly above "next". */}
         <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
           <AnimatePresence>
             {prevId !== null && (
@@ -220,11 +251,11 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
                 type="button"
                 aria-label="scroll to previous output"
                 onClick={() => scrollToBlock(prevId)}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.15 }}
-                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition hover:border-term-green active:scale-95"
+                initial={pillMotion.initial}
+                animate={pillMotion.animate}
+                exit={pillMotion.exit}
+                transition={pillTransition}
+                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition-colors hover:border-term-green active:scale-95"
               >
                 <span aria-hidden>&uarr;</span>
                 <span>prev</span>
@@ -234,21 +265,22 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
           <AnimatePresence>
             {!pinned && (
               <motion.button
-                key="latest"
+                key="next"
                 type="button"
-                aria-label="scroll to latest output"
+                aria-label="scroll to next output"
                 onClick={() => {
+                  pinnedRef.current = true;
                   setPinned(true);
                   scrollToBottom(true);
                 }}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.15 }}
-                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition hover:border-term-green active:scale-95"
+                initial={pillMotion.initial}
+                animate={pillMotion.animate}
+                exit={pillMotion.exit}
+                transition={pillTransition}
+                className="pointer-events-auto flex items-center gap-1 rounded-full border border-term-green/60 bg-term-panel2/90 px-3 py-1.5 text-[12px] text-term-green shadow-lg backdrop-blur transition-colors hover:border-term-green active:scale-95"
               >
                 <span aria-hidden>&darr;</span>
-                <span>latest</span>
+                <span>next</span>
               </motion.button>
             )}
           </AnimatePresence>
