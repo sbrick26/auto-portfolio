@@ -232,20 +232,26 @@ export function AboutOutput() {
 
 /* ----------------------------- updates (tail) ---------------------------- */
 
+// Milliseconds per character for the updates feed. The log streams fast on a real
+// `tail -f`, so the reveal is quick (a snappy ~200 chars/sec) - it reads as a live
+// feed catching up rather than a slow typewriter, while still showing each line
+// land in order.
+const TAIL_SPEED = 5;
+
 function TailRow({ u, onDone }: { u: (typeof updates)[number]; onDone: () => void }) {
   const line = `${u.text}`;
   return (
     <motion.div
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3"
     >
       <span className="shrink-0 text-[12px] text-term-faint tabular-nums">
         {u.date} <span className="text-term-dim">{u.time}</span>
       </span>
       <span className="text-term-text/90">
-        <TypedLine text={line} speed={9} onDone={onDone} />
+        <TypedLine text={line} speed={TAIL_SPEED} onDone={onDone} />
         {u.tag && (
           <span className="ml-2 align-middle text-[12px] text-term-purple">#{u.tag}</span>
         )}
