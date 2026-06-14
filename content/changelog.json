@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.16.0",
+    "date": "2026-06-14",
+    "changes": [
+      "Section rail: a jump-to-top / prev-output / next-output navigator for long command results"
+    ]
+  },
+  {
     "version": "1.15.0",
     "date": "2026-06-14",
     "changes": [
