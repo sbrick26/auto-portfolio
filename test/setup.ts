@@ -1,6 +1,8 @@
 // jsdom is missing a few browser APIs the app uses; stub them for tests.
 
 window.HTMLElement.prototype.scrollIntoView = () => {};
+// jsdom logs "Not implemented" for scrollTo; Session uses it to follow output.
+window.HTMLElement.prototype.scrollTo = () => {};
 
 class ResizeObserverStub {
   observe() {}

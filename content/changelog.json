@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.15.0",
+    "date": "2026-06-14",
+    "changes": [
+      "Output-following: sticky-bottom auto-scroll that tracks streaming text, with a scroll-to-bottom pill"
+    ]
+  },
+  {
     "version": "1.14.0",
     "date": "2026-06-13",
     "changes": [
