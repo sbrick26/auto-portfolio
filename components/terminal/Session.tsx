@@ -102,7 +102,7 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
   }, [active]);
 
   // Scroll a given block to the top of the viewport (its prompt echo included),
-  // honouring reduced-motion. Used by both the rail ticks and the keyboard steps.
+  // honouring reduced-motion. Used by both the jump pills and the keyboard steps.
   const scrollToBlock = useCallback(
     (id: number) => {
       // Stop following first: otherwise the streaming auto-scroll yanks us back
@@ -158,9 +158,43 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
     return () => io.disconnect();
   }, [blocks]);
 
+  // True when the scroll position sits at the top of block `id` rather than
+  // scrolled down into it. Lets "prev" pause at the current section's top before
+  // stepping to the section above it.
+  const atSectionTop = useCallback((id: number) => {
+    const root = scrollRef.current;
+    const el = blockRefs.current.get(id);
+    if (!root || !el) return true;
+    const rel = el.getBoundingClientRect().top - root.getBoundingClientRect().top;
+    return rel >= -2;
+  }, []);
+
+  // "prev" walks UP one section at a time: first to the top of the section you
+  // are reading, then (once already at its top) to the section above it.
+  const jumpPrev = useCallback(() => {
+    const idx = blocks.findIndex((b) => b.id === activeBlock);
+    if (idx < 0) return;
+    if (!atSectionTop(blocks[idx].id)) scrollToBlock(blocks[idx].id);
+    else if (idx > 0) scrollToBlock(blocks[idx - 1].id);
+  }, [activeBlock, blocks, atSectionTop, scrollToBlock]);
+
+  // "next" walks DOWN one section at a time, to the top of the following section.
+  // From the last section there is nothing below, so it re-pins to the newest
+  // line instead - which also catches the view back up to streaming output.
+  const jumpNext = useCallback(() => {
+    const idx = blocks.findIndex((b) => b.id === activeBlock);
+    if (idx >= 0 && idx < blocks.length - 1) {
+      scrollToBlock(blocks[idx + 1].id);
+    } else {
+      pinnedRef.current = true;
+      setPinned(true);
+      scrollToBottom(true);
+    }
+  }, [activeBlock, blocks, scrollToBlock, scrollToBottom]);
+
   // Keyboard wayfinding for the active session. Alt+Arrow steps between output
-  // blocks and Alt+Home jumps to the very top; the Alt modifier keeps these clear
-  // of the prompt's bare ArrowUp/Down history navigation.
+  // sections and Alt+Home jumps to the very top; the Alt modifier keeps these
+  // clear of the prompt's bare ArrowUp/Down history navigation.
   useEffect(() => {
     if (!active) return;
     const onKey = (e: KeyboardEvent) => {
@@ -173,19 +207,17 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       if (blocks.length === 0) return;
       e.preventDefault();
-      const cur = activeBlock === null ? 0 : blocks.findIndex((b) => b.id === activeBlock);
-      const next = e.key === "ArrowUp" ? Math.max(0, cur - 1) : Math.min(blocks.length - 1, cur + 1);
-      scrollToBlock(blocks[next].id);
+      if (e.key === "ArrowUp") jumpPrev();
+      else jumpNext();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, blocks, activeBlock, scrollToBlock, scrollToTop]);
+  }, [active, blocks, jumpPrev, jumpNext, scrollToTop]);
 
-  // The block the "prev output" pill jumps to: the one directly above whichever
-  // block is currently at the top of the viewport. No previous block (first
-  // block active, or an empty/single-block session) means no pill.
+  // The "prev" pill is offered whenever a section sits above the current one (it
+  // also serves as the in-section "jump to the top of this section" step).
   const activeIdx = blocks.findIndex((b) => b.id === activeBlock);
-  const prevId = activeIdx > 0 ? blocks[activeIdx - 1].id : null;
+  const hasPrev = activeIdx > 0;
 
   // One shared enter/exit for both pills so they appear and leave the same way.
   // A gentle ease-out (and a softer exit) reads smoother than the old linear
@@ -239,18 +271,19 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
             ))}
           </div>
         </div>
-        {/* Output-jump pills, stacked bottom-right: "prev" steps up one command
-            block (shown whenever there is one above the current view), "next"
-            re-pins to the newest line (shown only when scrolled up). Same pill
-            styling for both; "prev" sits directly above "next". */}
+        {/* Output-jump pills, stacked bottom-right. Both step one section at a
+            time: "prev" walks up (this section's top, then the section above),
+            "next" walks down to the following section (re-pinning to the newest
+            line only once there is nothing below). Same pill styling for both;
+            "prev" sits directly above "next". */}
         <div className="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
           <AnimatePresence>
-            {prevId !== null && (
+            {hasPrev && (
               <motion.button
                 key="prev"
                 type="button"
                 aria-label="scroll to previous output"
-                onClick={() => scrollToBlock(prevId)}
+                onClick={jumpPrev}
                 initial={pillMotion.initial}
                 animate={pillMotion.animate}
                 exit={pillMotion.exit}
@@ -268,11 +301,7 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
                 key="next"
                 type="button"
                 aria-label="scroll to next output"
-                onClick={() => {
-                  pinnedRef.current = true;
-                  setPinned(true);
-                  scrollToBottom(true);
-                }}
+                onClick={jumpNext}
                 initial={pillMotion.initial}
                 animate={pillMotion.animate}
                 exit={pillMotion.exit}
