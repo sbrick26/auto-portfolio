@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.17.0",
+    "date": "2026-06-14",
+    "changes": [
+      "A real boot sequence: POST-style startup animation with progress, blinking cursor, and a skippable handoff to the prompt"
+    ]
+  },
+  {
     "version": "1.16.0",
     "date": "2026-06-14",
     "changes": [
