@@ -25,8 +25,10 @@ export const COMMANDS: CommandMeta[] = [
   { name: "version", description: "build version", aliases: ["ver"], hidden: true },
 ];
 
-// Commands surfaced as quick-tap chips, in order.
-export const QUICK = ["me", "about", "updates", "skills", "projects", "resume"];
+// Commands surfaced as quick-tap chips, in order. `pipeline` and `changelog`
+// sit at the end so the core "who am I" chips lead and the two "how this site
+// works" chips follow.
+export const QUICK = ["me", "about", "updates", "skills", "projects", "resume", "changelog", "pipeline"];
 
 export function findCommand(input: string): CommandMeta | undefined {
   const name = input.trim().split(/\s+/)[0]?.toLowerCase();
