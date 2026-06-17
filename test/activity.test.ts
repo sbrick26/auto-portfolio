@@ -6,6 +6,34 @@ import type { Update } from "@/content/data";
 
 const feed = updatesJson as Update[];
 
+// Exact-count / ordering / newest-first assertions run against this FIXED
+// fixture, never the live updates.json - so adding a real daily update can never
+// break them (that is exactly what broke the 16:00 check-in: a new entry shifted
+// the live counts and the newest date). Live-feed invariants below (every tag
+// maps to a real category) still run against the real feed, because those SHOULD
+// hold for live data and do not break when entries are merely appended.
+const FIXTURE: Update[] = [
+  // ai / agents: agents(1) + ibm-i(1) + client-work(3) = 5; newest = client-work 2026-06-12
+  { date: "2026-06-12", time: "10:00", text: "client-work newest", tag: "client-work" },
+  { date: "2026-06-05", time: "09:00", text: "client-work mid", tag: "client-work" },
+  { date: "2026-05-20", time: "09:00", text: "client-work old", tag: "client-work" },
+  { date: "2026-04-01", time: "09:00", text: "agents entry", tag: "agents" },
+  { date: "2026-03-01", time: "09:00", text: "ibm-i entry", tag: "ibm-i" },
+  // cloud / devops: infra(1) + pipeline(2) + launch(1) = 4
+  { date: "2026-02-01", time: "09:00", text: "infra entry", tag: "infra" },
+  { date: "2026-02-02", time: "09:00", text: "pipeline a", tag: "pipeline" },
+  { date: "2026-02-03", time: "09:00", text: "pipeline b", tag: "pipeline" },
+  { date: "2026-02-04", time: "09:00", text: "launch entry", tag: "launch" },
+  // web / mobile: portfolio(3)
+  { date: "2026-01-10", time: "09:00", text: "portfolio a", tag: "portfolio" },
+  { date: "2026-01-11", time: "09:00", text: "portfolio b", tag: "portfolio" },
+  { date: "2026-01-12", time: "09:00", text: "portfolio c", tag: "portfolio" },
+  // leadership / delivery: design(2)
+  { date: "2026-01-05", time: "09:00", text: "design a", tag: "design" },
+  { date: "2026-01-06", time: "09:00", text: "design b", tag: "design" },
+  // languages: intentionally none -> a fully dormant skill
+];
+
 describe("TAG_CATEGORY", () => {
   it("maps every tag the live feed uses to a real skill category", () => {
     const categories = new Set(skills.map((g) => g.category));
@@ -31,8 +59,8 @@ describe("buildSkillEvidence", () => {
     expect(evidence.map((e) => e.category)).toEqual(skills.map((g) => g.category));
   });
 
-  it("groups real updates under the right skill (no fabricated data)", () => {
-    const byCat = Object.fromEntries(buildSkillEvidence(feed).map((e) => [e.category, e]));
+  it("groups updates under the right skill by tag (fixture, stable counts)", () => {
+    const byCat = Object.fromEntries(buildSkillEvidence(FIXTURE).map((e) => [e.category, e]));
     // ai/agents: agents(1) + ibm-i(1) + client-work(3) = 5
     expect(byCat["ai / agents"].total).toBe(5);
     // cloud/devops: infra(1) + pipeline(2) + launch(1) = 4
@@ -60,7 +88,7 @@ describe("buildSkillEvidence", () => {
   });
 
   it("orders each skill's evidence newest first and reports lastActive", () => {
-    const byCat = Object.fromEntries(buildSkillEvidence(feed).map((e) => [e.category, e]));
+    const byCat = Object.fromEntries(buildSkillEvidence(FIXTURE).map((e) => [e.category, e]));
     const ai = byCat["ai / agents"];
     // newest ai/agents update is the 2026-06-12 client-work entry
     expect(ai.items[0].date).toBe("2026-06-12");
