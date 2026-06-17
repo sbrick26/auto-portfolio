@@ -1,39 +1,57 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { pipelineRun, type PipelineStage } from "@/lib/pipeline";
+import { pipelineRun } from "@/lib/pipeline";
 import { SectionLabel } from "./ui";
 
 // The `pipeline` command: an animated walk of the agent system that builds and
-// ships this site. A pulse of energy travels a weaving conduit (idea -> branch
-// -> review -> green CI -> preview -> approval -> prod), lighting each agent's
-// icon badge as it arrives, then loops. The values are real - the idea, version,
-// and date come from the live changelog via lib/pipeline.ts.
+// ships this site, drawn as a CLOSED LOOP. A pulse of energy orbits a ring of
+// agent badges (idea -> branch -> review -> green CI -> preview -> approval ->
+// prod -> back to the top), lighting each one as it arrives, then keeps going
+// round - because the system never stops improving the site. The run-specific
+// values (idea, version, date) are real, pulled from the live changelog via
+// lib/pipeline.ts.
 //
-// The shape is deliberately not a straight line: the badges zigzag down a
-// serpentine path and the energy visibly flows along it, so the fleet reads as a
-// living system rather than a static chart. Each agent carries its own glyph.
+// The circle is the daily build-and-ship loop. The legend beside it names each
+// node and stays in sync with the pulse. The "and it runs itself" panel calls
+// out the autonomous parts that drive the loop without a human in the seat:
+// self-research, the maintainer self-audit, and the always-on listener.
 //
-// Honors prefers-reduced-motion: every badge renders lit, the conduit is filled,
-// and nothing loops or flows - the full diagram, just static. The layout stays a
-// single vertical column (icon badges left, node cards right), so it reads the
-// same on a phone as on a wide screen without a separate mobile design.
+// Layout is a single column on a phone (ring on top, legend and autonomy panel
+// below) and a row on a wider screen (ring left, the rest "on the side"), so it
+// reads the same everywhere without a separate mobile design. Honors
+// prefers-reduced-motion: every badge and arc renders lit, the pulse is hidden,
+// and nothing orbits - the full loop, just static.
 
-// How long the pulse rests on each node before moving on, and how long it holds
-// at the end before the run replays. Tuned so the full ten-node play reads as a
-// deliberate walk, not a frantic blink.
-const STEP_MS = 900;
-const HOLD_MS = 2200;
+// How long the pulse rests on each node before moving to the next. Ten nodes at
+// this cadence make one lap read as a deliberate orbit, not a frantic blink, and
+// the loop simply repeats - no reset jump, because it is a circle.
+const STEP_MS = 850;
 
-// The badge band is BAND px wide; badges zigzag around its center (CX) by +/-AMP
-// so the conduit weaving between them reads as an organic flow, not a rail. BAND
-// is sized so a 36px badge offset by AMP still clears both gutter edges with a
-// couple px to spare (28 +/- 9 +/- 18 stays inside [0, 56]) - no clipping on a
-// narrow phone viewport. CX stays BAND/2 so the woven conduit reads centered.
-const BAND = 56;
-const CX = 28;
-const AMP = 9;
+// The ring lives in a square viewBox that scales to its container, so the whole
+// diagram shrinks intact on a narrow phone instead of clipping. C is the centre,
+// R the badge-ring radius, BADGE/ICON the badge box and glyph sizes (SVG units).
+const VIEW = 300;
+const C = 150;
+const R = 112;
+const BADGE = 30;
+const ICON = 22;
+
+// Position of badge i on the ring: start at the top (12 o'clock) and step
+// clockwise by an even slice for each node, so the loop closes back to the top.
+function pos(i: number, n: number) {
+  const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
+  return { x: C + R * Math.cos(a), y: C + R * Math.sin(a) };
+}
+
+// A clockwise arc connecting badge i to the next badge, wrapping the last back
+// to the first so the final segment visibly closes the circle.
+function arc(i: number, n: number) {
+  const p = pos(i, n);
+  const q = pos((i + 1) % n, n);
+  return `M ${p.x} ${p.y} A ${R} ${R} 0 0 1 ${q.x} ${q.y}`;
+}
 
 // A unique line glyph per agent, drawn in a shared 24x24 box and tinted by the
 // node's accent. Each one nods at what that agent actually does in the run.
@@ -118,11 +136,11 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-function NodeIcon({ stageKey }: { stageKey: string }) {
+function NodeIcon({ stageKey, size = 18 }: { stageKey: string; size?: number }) {
   return (
     <svg
-      width={18}
-      height={18}
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -136,152 +154,85 @@ function NodeIcon({ stageKey }: { stageKey: string }) {
   );
 }
 
-// The icon badge that sits on the conduit. Idle is dim; lit (active/done) takes
-// the node's accent; active gets a soft glow and a gentle breathing scale. `dx`
-// offsets the badge horizontally to draw the zigzag (composed with the scale via
-// framer's own x/scale so neither clobbers the other).
-function Badge({
-  stage,
-  state,
-  dx,
-  animate,
-}: {
-  stage: PipelineStage;
-  state: "idle" | "active" | "done";
-  dx: number;
-  animate: boolean;
-}) {
-  const lit = state !== "idle";
-  const isActive = state === "active";
+// The cycle glyph at the centre of the ring: two arrows chasing each other, the
+// "this loops forever" mark that sits under the self-improving caption.
+function CycleIcon() {
   return (
-    <motion.div
-      className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-300"
-      style={{
-        x: dx,
-        borderColor: lit ? stage.accent : "var(--color-term-border)",
-        background: "var(--color-term-panel)",
-        color: lit ? stage.accent : "var(--color-term-faint)",
-        boxShadow: isActive ? `0 0 14px -2px ${stage.accent}` : "none",
-      }}
-      animate={isActive && animate ? { scale: [1, 1.09, 1] } : { scale: 1 }}
-      transition={
-        isActive && animate
-          ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
-          : { duration: 0.3 }
-      }
+    <svg
+      width={26}
+      height={26}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--color-term-green)"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
     >
-      <NodeIcon stageKey={stage.key} />
-    </motion.div>
+      <path d="M4.5 9a7.5 7.5 0 0 1 12.9-2.9L20 9" />
+      <path d="M20 4.5V9h-4.5" />
+      <path d="M19.5 15a7.5 7.5 0 0 1-12.9 2.9L4 15" />
+      <path d="M4 19.5V15h4.5" />
+    </svg>
   );
 }
 
-function NodeCard({
-  stage,
-  state,
-}: {
-  stage: PipelineStage;
-  state: "idle" | "active" | "done";
-}) {
-  const lit = state !== "idle";
-  return (
-    <div
-      className="flex flex-col justify-center gap-0.5 py-1.5 transition-opacity duration-300"
-      style={{ opacity: lit ? 1 : 0.4 }}
-    >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span
-          className="text-[13px] transition-colors duration-300"
-          style={{ color: lit ? stage.accent : "var(--color-term-dim)" }}
-        >
-          {stage.node}
-        </span>
-        {/* The artifact the pulse carries onward - revealed once it has passed. */}
-        <motion.span
-          className="rounded border px-1.5 py-px text-[11px] tabular-nums"
-          style={{ borderColor: stage.accent, color: stage.accent }}
-          initial={false}
-          animate={{ opacity: lit ? 1 : 0, scale: state === "active" ? 1 : 0.96 }}
-          transition={{ duration: 0.25 }}
-        >
-          {stage.token}
-        </motion.span>
-      </div>
-      <span className="text-[12px] leading-snug text-term-faint">{stage.detail}</span>
-    </div>
-  );
-}
+// The autonomous behaviours that run the loop without a human driving - the
+// parts the owner asked to surface. Icons are reused from the agent glyphs.
+const AUTONOMY: { key: string; icon: string; title: string; detail: string }[] = [
+  {
+    key: "self-research",
+    icon: "ideation",
+    title: "self-research",
+    detail: "ideation scouts the web for improvements worth shipping, unprompted",
+  },
+  {
+    key: "self-audit",
+    icon: "reviewer",
+    title: "maintainer self-audit",
+    detail: "a daily check-in for dependency bumps, security, and drift",
+  },
+  {
+    key: "always-on",
+    icon: "front",
+    title: "always-on listener",
+    detail: "your texts and screenshots become queued or fix-now work",
+  },
+];
 
 export function PipelineDiagram() {
   const reduceMotion = useReducedMotion();
   const { stages, version, date, idea } = pipelineRun;
-  const last = stages.length - 1;
+  const n = stages.length;
 
-  // step = the node the pulse currently sits on while playing. Under reduced
-  // motion the displayed `active` pins to the end so everything renders lit and
-  // settled with no animation (useReducedMotion can resolve a frame late, so we
-  // derive the shown index rather than seeding state from it).
+  // step = the node the pulse currently sits on while orbiting. Under reduced
+  // motion the shown index pins to the last node so every badge and arc renders
+  // lit and settled (useReducedMotion can resolve a frame late, so we derive the
+  // shown index rather than seeding state from it).
   const [step, setStep] = useState(0);
-  const active = reduceMotion ? last : step;
   const flow = !reduceMotion;
+  const active = reduceMotion ? n - 1 : step;
+  // Arcs behind the pulse are lit; under reduced motion the whole ring is.
+  const litArcs = reduceMotion ? n : step;
 
-  // Measured vertical center of each badge row (relative to the column wrapper),
-  // so the weaving conduit and the traveling pulse track real layout - robust to
-  // card text that wraps to two lines on a narrow screen.
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [centers, setCenters] = useState<number[]>([]);
-  const [height, setHeight] = useState(0);
-
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const measure = () => {
-      const next = rowRefs.current.map((el) =>
-        el ? el.offsetTop + el.offsetHeight / 2 : 0,
-      );
-      setCenters(next);
-      setHeight(wrap.offsetHeight);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(wrap);
-    return () => ro.disconnect();
-  }, []);
-
-  // The run loop: step the pulse down one node at a time, hold at the bottom,
-  // then replay. Skipped entirely under reduced motion (active stays pinned).
+  // The orbit: advance one node, wrapping back to the top - no hold, no reset
+  // jump, because a loop just keeps going. Skipped under reduced motion.
   useEffect(() => {
     if (reduceMotion) return;
-    const wait = step >= last ? HOLD_MS : STEP_MS;
-    const id = setTimeout(() => {
-      setStep((a) => (a >= last ? 0 : a + 1));
-    }, wait);
+    const id = setTimeout(() => setStep((s) => (s + 1) % n), STEP_MS);
     return () => clearTimeout(id);
-  }, [step, last, reduceMotion]);
+  }, [step, reduceMotion, n]);
 
-  const measured = centers.length === stages.length && height > 0;
-  // Horizontal anchor of each badge - alternating sides of the band center.
-  const xAt = (i: number) => CX + (i % 2 ? AMP : -AMP);
-
-  // A smooth S-curve connector between two consecutive badges, weaving via
-  // vertical control points at their respective x. Returns an SVG path string.
-  const segPath = (i: number) => {
-    const x0 = xAt(i);
-    const x1 = xAt(i + 1);
-    const y0 = centers[i];
-    const y1 = centers[i + 1];
-    const dy = (y1 - y0) * 0.5;
-    return `M ${x0} ${y0} C ${x0} ${y0 + dy}, ${x1} ${y1 - dy}, ${x1} ${y1}`;
-  };
+  const pulse = pos(active, n);
 
   return (
-    <div className="max-w-2xl space-y-4">
+    <div className="max-w-3xl space-y-4">
       <div className="space-y-1.5">
         <SectionLabel>how this site ships itself</SectionLabel>
         <p className="text-[13px] leading-relaxed text-term-dim">
-          A fleet of agents builds and deploys this portfolio daily. Watch a change
-          flow from idea to production - the path it takes, and the values it
-          carries, are real.
+          A fleet of agents builds and deploys this portfolio on a loop. Watch a
+          change orbit from idea to production and back to the top - the path it
+          takes, and the values it carries, are real.
         </p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-term-faint">
           <span className="text-term-green">latest run</span>
@@ -292,87 +243,153 @@ export function PipelineDiagram() {
         </div>
       </div>
 
-      <div ref={wrapRef} className="relative">
-        {/* The conduit: a dim weaving track, the energized segments the pulse has
-            already crossed (flowing dashes), and the glowing pulse itself riding
-            the leading edge. Sits behind the badges. */}
-        <svg
-          className="pointer-events-none absolute left-0 top-0 z-0"
-          width={BAND}
-          height={height || undefined}
-          aria-hidden
-        >
-          {measured && (
-            <>
-              {stages.slice(0, last).map((s, i) => (
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-7">
+        {/* The loop: a ring of agent badges with a pulse orbiting it. Square and
+            viewBox-scaled, so it shrinks intact on a phone. */}
+        <div className="relative mx-auto aspect-square w-full max-w-[280px] shrink-0 md:mx-0 md:w-[280px]">
+          <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="h-full w-full" aria-hidden>
+            <circle
+              cx={C}
+              cy={C}
+              r={R}
+              fill="none"
+              stroke="var(--color-term-border)"
+              strokeWidth={2}
+            />
+            {stages.map((s, i) =>
+              i < litArcs ? (
                 <path
-                  key={`base-${s.key}`}
-                  d={segPath(i)}
+                  key={`arc-${s.key}`}
+                  d={arc(i, n)}
                   fill="none"
-                  stroke="var(--color-term-border)"
-                  strokeWidth={2}
-                />
-              ))}
-              {stages.slice(0, last).map((s, i) =>
-                active > i ? (
-                  <path
-                    key={`lit-${s.key}`}
-                    d={segPath(i)}
-                    fill="none"
-                    stroke={stages[i + 1].accent}
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                    strokeDasharray={flow ? "5 7" : undefined}
-                  >
-                    {flow && (
-                      <animate
-                        attributeName="stroke-dashoffset"
-                        values="12;0"
-                        dur="0.7s"
-                        repeatCount="indefinite"
-                      />
-                    )}
-                  </path>
-                ) : null,
-              )}
-              {flow && (
-                <motion.circle
-                  r={5}
-                  fill={stages[active].accent}
-                  initial={false}
-                  animate={{ cx: xAt(active), cy: centers[active] }}
-                  transition={{ duration: 0.45, ease: "easeInOut" }}
+                  stroke={stages[(i + 1) % n].accent}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeDasharray={flow ? "4 7" : undefined}
                 >
-                  <animate
-                    attributeName="fill-opacity"
-                    values="1;0.35;1"
-                    dur="1.1s"
-                    repeatCount="indefinite"
+                  {flow && (
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      values="11;0"
+                      dur="0.7s"
+                      repeatCount="indefinite"
+                    />
+                  )}
+                </path>
+              ) : null,
+            )}
+            {stages.map((s, i) => {
+              const p = pos(i, n);
+              const lit = i <= active;
+              const isActive = i === active;
+              return (
+                <g key={s.key}>
+                  <rect
+                    x={p.x - BADGE / 2}
+                    y={p.y - BADGE / 2}
+                    width={BADGE}
+                    height={BADGE}
+                    rx={9}
+                    fill="var(--color-term-panel)"
+                    stroke={lit ? s.accent : "var(--color-term-border)"}
+                    strokeWidth={1.5}
+                    style={isActive ? { filter: `drop-shadow(0 0 5px ${s.accent})` } : undefined}
                   />
-                </motion.circle>
-              )}
-            </>
-          )}
-        </svg>
-
-        <div className="space-y-1">
-          {stages.map((s, i) => {
-            const state = i === active ? "active" : i < active ? "done" : "idle";
-            return (
-              <div
-                key={s.key}
-                ref={(el) => {
-                  rowRefs.current[i] = el;
-                }}
-                className="flex items-stretch gap-3"
+                  <g
+                    transform={`translate(${p.x - ICON / 2} ${p.y - ICON / 2}) scale(${ICON / 24})`}
+                    fill="none"
+                    stroke={lit ? s.accent : "var(--color-term-faint)"}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {ICONS[s.key]}
+                  </g>
+                </g>
+              );
+            })}
+            {flow && (
+              <motion.circle
+                r={5}
+                fill={stages[active].accent}
+                initial={false}
+                animate={{ cx: pulse.x, cy: pulse.y }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
               >
-                <div className="relative z-10 flex shrink-0 items-center justify-center" style={{ width: BAND }}>
-                  <Badge stage={s} state={state} dx={xAt(i) - CX} animate={flow} />
-                </div>
-                <NodeCard stage={s} state={state} />
-              </div>
-            );
-          })}
+                <animate
+                  attributeName="fill-opacity"
+                  values="1;0.4;1"
+                  dur="1.1s"
+                  repeatCount="indefinite"
+                />
+              </motion.circle>
+            )}
+          </svg>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5 text-center">
+            <CycleIcon />
+            <span className="text-[11px] text-term-green">self-improving</span>
+            <span className="text-[10px] text-term-faint">ships itself daily</span>
+          </div>
+        </div>
+
+        {/* On the side: the numbered legend (in sync with the pulse) and the
+            autonomous parts that drive the loop on their own. */}
+        <div className="flex-1 space-y-4">
+          <div className="space-y-1.5">
+            <SectionLabel>the daily loop</SectionLabel>
+            <ol className="space-y-1">
+              {stages.map((s, i) => {
+                const lit = i <= active;
+                const isActive = i === active;
+                return (
+                  <li
+                    key={s.key}
+                    className="flex items-baseline gap-2 transition-opacity duration-300"
+                    style={{ opacity: lit ? 1 : 0.5 }}
+                  >
+                    <span
+                      className="w-3.5 shrink-0 text-right text-[11px] tabular-nums"
+                      style={{ color: lit ? s.accent : "var(--color-term-faint)" }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span
+                      className="text-[13px] transition-colors duration-300"
+                      style={{ color: lit ? s.accent : "var(--color-term-dim)" }}
+                    >
+                      {s.node}
+                    </span>
+                    <span className="text-[12px] text-term-faint">{s.detail}</span>
+                    {isActive && flow && (
+                      <span
+                        className="ml-auto shrink-0 rounded border px-1.5 py-px text-[10px] tabular-nums"
+                        style={{ borderColor: s.accent, color: s.accent }}
+                      >
+                        {s.token}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className="space-y-1.5">
+            <SectionLabel>and it runs itself</SectionLabel>
+            <ul className="space-y-2">
+              {AUTONOMY.map((a) => (
+                <li key={a.key} className="flex gap-2.5">
+                  <span className="mt-0.5 shrink-0 text-term-dim">
+                    <NodeIcon stageKey={a.icon} size={16} />
+                  </span>
+                  <div className="space-y-0.5">
+                    <span className="text-[13px] text-term-text/85">{a.title}</span>
+                    <p className="text-[12px] leading-snug text-term-faint">{a.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 

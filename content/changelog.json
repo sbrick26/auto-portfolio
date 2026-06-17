@@ -3,7 +3,7 @@
     "version": "1.20.0",
     "date": "2026-06-16",
     "changes": [
-      "can we add a pipeline and changelog buttons to the bottom/in"
+      "`pipeline` and `changelog` quick-tap chips: the two 'how this site works' commands, one tap from the prompt"
     ]
   },
   {
@@ -17,7 +17,7 @@
     "version": "1.18.0",
     "date": "2026-06-14",
     "changes": [
-      "can we make the output for updates come faster rn the typing"
+      "Snappier updates feed: the command output types in at a quicker clip"
     ]
   },
   {
