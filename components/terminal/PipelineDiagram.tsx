@@ -15,14 +15,22 @@ import { SectionLabel } from "./ui";
 //
 // The circle is the daily build-and-ship loop. The legend beside it names each
 // node and stays in sync with the pulse. The "and it runs itself" panel calls
-// out the autonomous parts that drive the loop without a human in the seat:
-// self-research, the maintainer self-audit, and the always-on listener.
+// out the autonomous parts that drive the loop without a human in the seat: the
+// daily improvement loop, the maintainer self-audit, the career check-in (where
+// the archivist and resume-writer keep the resume current), and the always-on
+// listener.
 //
 // Layout is a single column on a phone (ring on top, legend and autonomy panel
 // below) and a row on a wider screen (ring left, the rest "on the side"), so it
 // reads the same everywhere without a separate mobile design. Honors
 // prefers-reduced-motion: every badge and arc renders lit, the pulse is hidden,
 // and nothing orbits - the full loop, just static.
+//
+// The legend is laid out as a grid with a fixed column for the per-node token
+// badge, and the badge is always rendered (its visibility toggled with opacity).
+// That keeps every row's height and width constant as the pulse moves, so the
+// list never reflows mid-orbit - which on a phone used to grow a row and shove
+// the whole page down, then snap it back when the pulse left.
 
 // How long the pulse rests on each node before moving to the next. Ten nodes at
 // this cadence make one lap read as a deliberate orbit, not a frantic blink, and
@@ -134,6 +142,21 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M9.7 14.6 12 12.3l2.3 2.3" />
     </>
   ),
+  // scheduled: a clock - the daily loop that fires itself on a timer
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  // career check-in: a document - facts filed, the resume kept current
+  doc: (
+    <>
+      <path d="M6.5 3h6.5l4.5 4.5V21H6.5z" />
+      <path d="M13 3v4.5h4.5" />
+      <path d="M9.2 13h5.6M9.2 16.3h5.6" />
+    </>
+  ),
 };
 
 function NodeIcon({ stageKey, size = 18 }: { stageKey: string; size?: number }) {
@@ -181,22 +204,31 @@ function CycleIcon() {
 // parts the owner asked to surface. Icons are reused from the agent glyphs.
 const AUTONOMY: { key: string; icon: string; title: string; detail: string }[] = [
   {
-    key: "self-research",
-    icon: "ideation",
-    title: "self-research",
-    detail: "ideation scouts the web for improvements worth shipping, unprompted",
+    key: "daily-loop",
+    icon: "clock",
+    title: "daily improvement loop",
+    detail:
+      "fires every morning unprompted: ideation scouts a change worth shipping and the loop above builds and ships it",
   },
   {
     key: "self-audit",
     icon: "reviewer",
     title: "maintainer self-audit",
-    detail: "a daily check-in for dependency bumps, security, and drift",
+    detail:
+      "the reviewer watches dependencies, security, and drift, raising fixes before anything rots",
+  },
+  {
+    key: "career-checkin",
+    icon: "doc",
+    title: "career check-in",
+    detail:
+      "interviews you, the archivist files the facts, and resume-writer refreshes the resume when warranted",
   },
   {
     key: "always-on",
     icon: "front",
     title: "always-on listener",
-    detail: "your texts and screenshots become queued or fix-now work",
+    detail: "between runs, your texts and screenshots become fix-now or queued work",
   },
 ];
 
@@ -337,18 +369,18 @@ export function PipelineDiagram() {
         <div className="flex-1 space-y-4">
           <div className="space-y-1.5">
             <SectionLabel>the daily loop</SectionLabel>
-            <ol className="space-y-1">
+            <ol className="space-y-2">
               {stages.map((s, i) => {
                 const lit = i <= active;
-                const isActive = i === active;
+                const showToken = i === active && flow;
                 return (
                   <li
                     key={s.key}
-                    className="flex items-baseline gap-2 transition-opacity duration-300"
+                    className="grid grid-cols-[0.9rem_1fr_auto] items-baseline gap-x-2 gap-y-0.5 transition-opacity duration-300"
                     style={{ opacity: lit ? 1 : 0.5 }}
                   >
                     <span
-                      className="w-3.5 shrink-0 text-right text-[11px] tabular-nums"
+                      className="text-right text-[11px] tabular-nums"
                       style={{ color: lit ? s.accent : "var(--color-term-faint)" }}
                     >
                       {i + 1}
@@ -359,15 +391,23 @@ export function PipelineDiagram() {
                     >
                       {s.node}
                     </span>
-                    <span className="text-[12px] text-term-faint">{s.detail}</span>
-                    {isActive && flow && (
-                      <span
-                        className="ml-auto shrink-0 rounded border px-1.5 py-px text-[10px] tabular-nums"
-                        style={{ borderColor: s.accent, color: s.accent }}
-                      >
-                        {s.token}
-                      </span>
-                    )}
+                    {/* Always rendered so the column reserves its width and the
+                        row keeps its height; visibility rides on opacity, so the
+                        list never reflows as the pulse moves. */}
+                    <span
+                      className="justify-self-end rounded border px-1.5 py-px text-[10px] tabular-nums transition-opacity duration-200"
+                      style={{
+                        borderColor: s.accent,
+                        color: s.accent,
+                        opacity: showToken ? 1 : 0,
+                      }}
+                      aria-hidden={!showToken}
+                    >
+                      {s.token}
+                    </span>
+                    <span className="col-span-2 col-start-2 text-[12px] leading-snug text-term-faint">
+                      {s.detail}
+                    </span>
                   </li>
                 );
               })}
