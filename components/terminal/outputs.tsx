@@ -239,7 +239,18 @@ export function AboutOutput() {
 // land in order.
 const TAIL_SPEED = 5;
 
-function TailRow({ u, onDone }: { u: (typeof updates)[number]; onDone: () => void }) {
+// One feed row. The live window types itself in (the `tail -f` reveal); the older
+// history, once unfolded, renders instantly (`instant`) so it just appears above
+// the live lines rather than re-running the typewriter for the whole backlog.
+function TailRow({
+  u,
+  instant = false,
+  onDone,
+}: {
+  u: (typeof updates)[number];
+  instant?: boolean;
+  onDone?: () => void;
+}) {
   const line = `${u.text}`;
   return (
     <motion.div
@@ -252,7 +263,7 @@ function TailRow({ u, onDone }: { u: (typeof updates)[number]; onDone: () => voi
         {u.date} <span className="text-term-dim">{u.time}</span>
       </span>
       <span className="text-term-text/90">
-        <TypedLine text={line} speed={TAIL_SPEED} onDone={onDone} />
+        {instant ? line : <TypedLine text={line} speed={TAIL_SPEED} onDone={onDone} />}
         {u.tag && (
           <span className="ml-2 align-middle text-[12px] text-term-purple">#{u.tag}</span>
         )}
@@ -261,9 +272,20 @@ function TailRow({ u, onDone }: { u: (typeof updates)[number]; onDone: () => voi
   );
 }
 
+// How many of the newest updates the feed streams before folding the rest behind
+// a "show all" tap. updates.json is newest-last, so this is the tail of the list.
+const UPDATES_RECENT = 5;
+
 export function UpdatesOutput() {
+  const [expanded, setExpanded] = useState(false);
+  // The feed reads like `tail -f`: oldest at the top, newest at the bottom. Start
+  // on just the most recent few; the older history reveals instantly above the
+  // live window when unfolded.
+  const start = Math.max(0, updates.length - UPDATES_RECENT);
+  const older = updates.slice(0, start);
+  const recent = updates.slice(start);
   const [count, setCount] = useState(1);
-  const allShown = count >= updates.length;
+  const recentShown = count >= recent.length;
   // The pulse is an opacity loop, which MotionConfig reducedMotion="user" does
   // not suppress (it only disables transform/layout). Render a static, full
   // opacity dot when reduced motion is requested - the green dot still signals
@@ -280,16 +302,26 @@ export function UpdatesOutput() {
         <span className="text-term-green">live</span>
         <span className="text-term-faint">tail -f ~/work/updates.log</span>
       </div>
+      {!expanded && older.length > 0 && recentShown && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-1.5 rounded-md border border-term-border bg-term-panel px-3 py-1.5 text-[12px] text-term-dim transition hover:border-term-green/50 hover:text-term-green active:scale-[0.97]"
+        >
+          <span aria-hidden>&uarr;</span>
+          <span>show all {updates.length} updates</span>
+        </button>
+      )}
       <div className="space-y-1.5">
-        {updates.slice(0, count).map((u, i) => (
+        {expanded && older.map((u, i) => <TailRow key={`o-${i}`} u={u} instant />)}
+        {recent.slice(0, count).map((u, i) => (
           <TailRow
-            key={i}
+            key={`r-${i}`}
             u={u}
-            onDone={() => setCount((c) => Math.max(c, Math.min(updates.length, i + 2)))}
+            onDone={() => setCount((c) => Math.max(c, Math.min(recent.length, i + 2)))}
           />
         ))}
       </div>
-      {allShown && (
+      {recentShown && (
         <div className="flex items-center gap-1.5 pt-1 text-[12px] text-term-faint">
           <span>waiting for next update</span>
           <Cursor />
@@ -613,10 +645,17 @@ export function HelpOutput() {
 
 /* ------------------------------- changelog ------------------------------- */
 
+// How many versions the changelog shows before it folds the rest behind a
+// "show all" tap - the recent releases lead, the full history is one tap away.
+const CHANGELOG_RECENT = 5;
+
 export function ChangelogOutput() {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? changelog : changelog.slice(0, CHANGELOG_RECENT);
+  const hidden = changelog.length - shown.length;
   return (
     <div className="max-w-2xl space-y-4">
-      {changelog.map((e, i) => (
+      {shown.map((e, i) => (
         <Reveal key={e.version} i={i}>
           <div className="flex flex-wrap items-baseline gap-x-3">
             <span className={i === 0 ? "text-term-green" : "text-term-cyan"}>
@@ -639,6 +678,15 @@ export function ChangelogOutput() {
           </ul>
         </Reveal>
       ))}
+      {hidden > 0 && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-1.5 rounded-md border border-term-border bg-term-panel px-3 py-1.5 text-[12px] text-term-dim transition hover:border-term-green/50 hover:text-term-green active:scale-[0.97]"
+        >
+          <span>show all {changelog.length} versions</span>
+          <span aria-hidden>&darr;</span>
+        </button>
+      )}
     </div>
   );
 }

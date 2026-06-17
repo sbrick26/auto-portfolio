@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Prompt } from "./Prompt";
 
-export type Block = { id: number; input: string; node: React.ReactNode };
+export type Block = { id: number; input: string; node: React.ReactNode; anchor?: "top" };
 
 // How close (px) to the bottom still counts as "pinned" / "at bottom". Gives the
 // reader a little slack so a stray pixel doesn't unstick the follow.
@@ -70,19 +70,37 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
     setPinned(near);
   }, []);
 
-  // A new command resets the follow: blocks.length grew, so glue back to the
-  // newest line regardless of where a stale scroll left us. Re-pinning happens
-  // during render (sanctioned React pattern, avoids a setState-in-effect cascade);
-  // the actual scroll waits for the new block to lay out, in an effect below.
+  // Where a fresh command lands. `updates` is a live tail: it follows the newest
+  // line at the bottom as the feed streams in. Every other section (marked
+  // anchor:"top") anchors its top to the top of the viewport, so you read it from
+  // the start - prompt echo first - instead of being dropped at its end.
+  const newestId = blocks[blocks.length - 1]?.id;
+  const followNewest = blocks[blocks.length - 1]?.anchor !== "top";
+
+  // A new command resets the follow intent: blocks.length grew, so re-pin (tail)
+  // or unpin (top-anchored) regardless of where a stale scroll left us. The flip
+  // happens during render (sanctioned React pattern, avoids a setState-in-effect
+  // cascade); the actual scroll waits for the new block to lay out, below.
   const [prevLen, setPrevLen] = useState(blocks.length);
   if (prevLen !== blocks.length) {
     setPrevLen(blocks.length);
-    setPinned(true);
+    setPinned(followNewest);
   }
 
   useEffect(() => {
-    scrollToBottom(true);
-  }, [blocks.length, scrollToBottom]);
+    if (followNewest) {
+      pinnedRef.current = true;
+      scrollToBottom(true);
+    } else if (newestId != null) {
+      // Stop following first so the streaming auto-scroll can't yank the section's
+      // top back down, then bring the new block's top into view at the top.
+      pinnedRef.current = false;
+      blockRefs.current.get(newestId)?.scrollIntoView({
+        block: "start",
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    }
+  }, [blocks.length, followNewest, newestId, scrollToBottom, reduceMotion]);
 
   // The marquee outputs (boot type-out, updates rows, skills bars/radar) animate
   // their HEIGHT after a block mounts without changing blocks.length. Follow that
