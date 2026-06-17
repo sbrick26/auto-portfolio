@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.20.0",
+    "date": "2026-06-16",
+    "changes": [
+      "can we add a pipeline and changelog buttons to the bottom/in"
+    ]
+  },
+  {
     "version": "1.19.0",
     "date": "2026-06-16",
     "changes": [
