@@ -18,14 +18,17 @@ const nid = () => {
 
 type Tab = { id: number; title: string; blocks: Block[] };
 
-function renderInput(input: string): { clear?: boolean; node?: React.ReactNode; title?: string } {
+function renderInput(input: string): { clear?: boolean; node?: React.ReactNode; title?: string; anchor?: "top" } {
   const cmd = findCommand(input);
   if (cmd?.special === "clear") return { clear: true };
+  // `updates` is a live tail and follows the bottom; every other section (and the
+  // not-found message) anchors its top to the top of the viewport when it prints.
+  const anchor = cmd?.name === "updates" ? undefined : ("top" as const);
   if (cmd && RENDERERS[cmd.name]) {
     const args = input.split(/\s+/).slice(1).join(" ");
-    return { node: RENDERERS[cmd.name](args), title: cmd.name };
+    return { node: RENDERERS[cmd.name](args), title: cmd.name, anchor };
   }
-  return { node: <ErrorOutput input={input} /> };
+  return { node: <ErrorOutput input={input} />, anchor };
 }
 
 export function Terminal() {
@@ -53,7 +56,7 @@ export function Terminal() {
         return {
           ...t,
           title: res.title ?? t.title,
-          blocks: [...t.blocks, { id: nid(), input, node: res.node }],
+          blocks: [...t.blocks, { id: nid(), input, node: res.node, anchor: res.anchor }],
         };
       })
     );
@@ -64,7 +67,7 @@ export function Terminal() {
     if (cmd) {
       const res = renderInput(cmd);
       if (!res.clear) {
-        tab.blocks = [{ id: nid(), input: cmd, node: res.node }];
+        tab.blocks = [{ id: nid(), input: cmd, node: res.node, anchor: res.anchor }];
         tab.title = res.title ?? "shell";
       }
     }
