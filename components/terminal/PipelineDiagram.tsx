@@ -27,9 +27,12 @@ const STEP_MS = 900;
 const HOLD_MS = 2200;
 
 // The badge band is BAND px wide; badges zigzag around its center (CX) by +/-AMP
-// so the conduit weaving between them reads as an organic flow, not a rail.
-const BAND = 52;
-const CX = 26;
+// so the conduit weaving between them reads as an organic flow, not a rail. BAND
+// is sized so a 36px badge offset by AMP still clears both gutter edges with a
+// couple px to spare (28 +/- 9 +/- 18 stays inside [0, 56]) - no clipping on a
+// narrow phone viewport. CX stays BAND/2 so the woven conduit reads centered.
+const BAND = 56;
+const CX = 28;
 const AMP = 9;
 
 // A unique line glyph per agent, drawn in a shared 24x24 box and tinted by the
