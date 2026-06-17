@@ -94,6 +94,7 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   it("contains no client names (engagements stay generalized)", () => {
     // base64-encoded so this public test file does not itself name the clients
     const clientNames = [
+      "Q29sb3JhZG8gUEVSQQ==",
       "TmlhZ2FyYQ==",
       "VEtP",
       "V1dF",
