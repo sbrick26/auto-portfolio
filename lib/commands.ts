@@ -19,6 +19,7 @@ export const COMMANDS: CommandMeta[] = [
   { name: "resume", description: "the one-page resume", aliases: ["cv"] },
   { name: "contact", description: "how to reach me", aliases: ["email"] },
   { name: "changelog", description: "what shipped, per version", aliases: ["releases"] },
+  { name: "pipeline", description: "watch the agents that build this site", aliases: ["agents"] },
   { name: "clear", description: "clear this tab", aliases: ["cls"], special: "clear" },
   // secret: not in help, chips, palette, or completion. Typing it is the easter egg.
   { name: "version", description: "build version", aliases: ["ver"], hidden: true },

@@ -15,6 +15,7 @@ import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor, Spinner } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
+import { PipelineDiagram } from "./PipelineDiagram";
 
 /* ----------------------------- welcome / boot ---------------------------- */
 
@@ -690,5 +691,6 @@ export const RENDERERS: Record<string, (args?: string) => React.ReactNode> = {
   resume: () => <ResumeOutput />,
   contact: () => <ContactOutput />,
   changelog: () => <ChangelogOutput />,
+  pipeline: () => <PipelineDiagram />,
   version: () => <VersionOutput />,
 };

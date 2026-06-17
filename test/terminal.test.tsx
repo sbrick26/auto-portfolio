@@ -49,6 +49,20 @@ describe("Terminal", () => {
     expect(screen.getByText(/command not found: sudo/)).toBeDefined();
   });
 
+  it("renders the pipeline diagram with the agent nodes", () => {
+    render(<Terminal />);
+    run("pipeline");
+    expect(screen.getAllByText("front agent").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("reviewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("AWS · imsway.dev").length).toBeGreaterThan(0);
+  });
+
+  it("resolves the agents alias to the pipeline diagram", () => {
+    render(<Terminal />);
+    run("agents");
+    expect(screen.getAllByText("portfolio lead").length).toBeGreaterThan(0);
+  });
+
   it("clear empties the tab", () => {
     render(<Terminal />);
     run("contact");

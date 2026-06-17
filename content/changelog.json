@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.19.0",
+    "date": "2026-06-16",
+    "changes": [
+      "`pipeline` command: a live animated visualization of the agent system that builds this very site"
+    ]
+  },
+  {
     "version": "1.18.0",
     "date": "2026-06-14",
     "changes": [
