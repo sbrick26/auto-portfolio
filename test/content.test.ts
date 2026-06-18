@@ -94,6 +94,18 @@ describe("privacy guard: nothing sensitive ships to the public site", () => {
   it("contains no client names (engagements stay generalized)", () => {
     // base64-encoded so this public test file does not itself name the clients
     const clientNames = [
+      "THVjaWRMaW5r",
+      "U3Rlcmxpbmc=",
+      "SUJNIFN0ZXJsaW5n",
+      "U3RlcmxpbmcgT3JkZXIgTWFuYWdlbWVudA==",
+      "TWlkV2VzdCBQYXJ0cw==",
+      "TWlkV2VzdCBQYXJ0cyBDbw==",
+      "TVdQQVJUUw==",
+      "UEcmRQ==",
+      "UEdF",
+      "UGFjaWZpYyBHYXMgYW5kIEVsZWN0cmlj",
+      "UGFjaWZpYyBHYXMgJiBFbGVjdHJpYw==",
+      "ZVBsdXM=",
       "Q29sb3JhZG8gUEVSQQ==",
       "TmlhZ2FyYQ==",
       "VEtP",
