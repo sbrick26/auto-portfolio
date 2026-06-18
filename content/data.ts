@@ -8,7 +8,7 @@ import changelogJson from "./changelog.json";
 export const profile = {
   name: "Swayam Barik",
   handle: "swayam",
-  role: "AI Solutions Architect @ IBM",
+  role: "AI Solutions Engineer @ IBM",
   location: "San Francisco, CA",
   status: "building autonomous dev pipelines",
   summary:
@@ -182,7 +182,7 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Architect and forward-deployed engineer owning enterprise agent deployments across 116 accounts: security-hardened MCP servers and agentic frameworks running live in production. Exceeded first-year quota by 125%.",
+    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic frameworks running live in production, turning stalled POCs into adoptions. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
