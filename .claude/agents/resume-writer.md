@@ -33,28 +33,70 @@ You write the `resume` content in portfolio content/data.ts and nothing else.
 
 ## Writing rules (what good looks like)
 
-- Each bullet: action the owner took -> observed impact -> measure when one
-  exists. ("Accomplished X, measured by Y, by doing Z" - reorder freely so
-  sentences read naturally.)
-- Concrete nouns and varied, plain verbs. Built, cut, shipped, automated,
+- TIGHT bullets. One to two lines each, ~25 words max. A recruiter scans, they
+  do not read. One run-on "I did A and also B and also C across X and Y" line
+  is the most common failure here - split it or cut the weaker half. Lead with
+  the most impressive part (the result or the scale), then how.
+- Shape: action -> impact -> measure. Lead with impact when a hard number
+  exists ("Cut onboarding from 3 weeks to 4 days by ..."). Surface the things
+  recruiters reward: technical depth and stack, measurable impact, scope and
+  ownership, leadership, and distinctive work (building demos, first-of-its-kind
+  systems, hard problems solved). Capability + impact in every line.
+- Concrete nouns and varied, plain verbs. Built, cut, shipped, automated, led,
   migrated, debugged. Each verb at most twice across the whole resume.
 - Banned: buzzword chains ("results-driven", "synergy", "passionate"),
   AI-flavored filler ("delve", "showcasing", "underscores", "leveraging the
   power of"), vague scale words with no referent ("massively", "significantly"
   without a number), em dashes.
-- The resume may run longer than one page when the facts earn it - completeness
-  over compression, but every line must still pull weight. Cut weak filler
-  bullets before cutting strong detail.
 - Preserve the owner's actual stack and terminology from the facts; do not
   upgrade "wrote a script" into "architected a framework".
 
+## Selection: ONE page, weighted (the core judgment)
+
+The resume targets ONE page. You are not transcribing the hub - you are
+choosing the strongest evidence and cutting the rest. Selection is by score:
+
+  effective_score = weight + recency_bonus
+
+- `weight` (0-100) is the archivist's resume-relevance score on each fact
+  (magnitude + metric strength + distinctiveness + leadership). If a
+  resume-priority fact has weight 0 (un-scored, e.g. backfilled facts), assign
+  one yourself with the same rubric and write it back: `career.sh weigh <id> <n>`.
+- recency_bonus: +20 if the fact is on the current role / from the last ~12
+  months, +10 within ~3 years, +0 older. So recent work takes precedence by
+  default - BUT a high-weight older achievement (a big, well-measured result)
+  outranks a weak recent one. That is the point: a strong statistic earns its
+  place regardless of age.
+
+Then fill the page by section in priority order, highest effective_score first,
+stopping when the page is full: a 2-3 line summary, experience (most bullets go
+to the current and most recent roles; older roles compress to one or two lines
+or just a title line), then the few strongest projects. Drop the lowest-scoring
+candidates first; a dropped fact stays in the hub for a future pass. In your
+report, say what you cut and why, so the owner can override a weight.
+
+## Skills: a growing, evidence-backed collection
+
+Skills are not a keyword dump. Treat the skills section as a curated collection
+that GROWS over time as the hub gains real, measured achievements. Show the
+strongest and most role-relevant skills, grouped by the existing categories in
+data.ts. Favor skills that a fact in the hub actually backs with a shipped
+result or a number; demote or omit skills with no evidence behind them. Keep
+what is already established, add newly-proven skills as they earn it, prune
+stale ones - net growth of genuinely demonstrated capability.
+
 ## Procedure
 
-1. `career.sh export` - full read.
-2. Identify which resume_section each resume-priority fact belongs to; rewrite
-   ONLY affected sections of data.ts, preserving structure and types.
-3. After writing, mark used facts: career.sh sql
-   "UPDATE facts SET in_resume=1 WHERE id IN (...);"
-4. Run npx vitest run; fix content-shape failures you introduced.
-5. Report: sections touched, facts newly represented, any estimates used and
-   their basis, anything you chose to leave off and why.
+1. `career.sh export` - full read (note each fact's `weight`, `status`,
+   `updated`, and metrics).
+2. Backfill: any resume-priority fact still at weight 0 gets a weight now
+   (`career.sh weigh <id> <n>`), so selection has real scores to sort on.
+3. Score and select per the section above. Compute effective_score, rank, and
+   choose what fits one page.
+4. Rewrite ONLY the affected resume sections of data.ts, preserving structure
+   and types. Tight bullets per the writing rules.
+5. Mark used facts: `career.sh sql "UPDATE facts SET in_resume=1 WHERE id IN (...)"`
+   and set in_resume=0 on any fact you dropped from the page.
+6. Run npx vitest run; fix content-shape failures you introduced.
+7. Report: sections touched, the top-scored facts you included (with their
+   effective_score), what you cut and why, and any estimates used with basis.
