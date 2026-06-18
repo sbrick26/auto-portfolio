@@ -1,25 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 
-// The resume MUST fit ONE printed Letter page in a real browser save-as-PDF.
-// A headless page.pdf alone is NOT trustworthy: if the web font has not loaded,
-// Chromium falls back to a narrower system font, the content looks shorter, and
-// it silently "fits" one page while the owner's real browser (with the real
-// font) spills to two. So this gate is deliberately strict:
-//   1. wait for document.fonts.ready (render with the SAME font the owner sees),
-//   2. measure the printable .resume-doc at the true print content width,
-//   3. require it to fit one page WITH a safety margin (so marginal real-browser
-//      differences still fit), AND
-//   4. require page.pdf (preferCSSPageSize -> honors @page Letter/0.45in) to be
-//      exactly one page with real content.
-// WORST-CASE geometry = Chrome's interactive "Default" margins (~1in), which is
-// what made the owner's real export two pages: a narrower content box wraps more
-// text, so the resume is TALLER than a 0.5in-margin layout. Measuring at the
-// narrow 1in width is the faithful test - if it fits here it fits at any tighter
-// margin. (Measuring at 720px earlier assumed 0.5in and under-read the height.)
-const PRINT_W = 624; // Letter 8.5in - 2x1in margins = 6.5in
-const PAGE_USABLE_H = 864; // Letter 11in - 2x1in margins = 9in
-const SAFE_H = 800; // 864 usable minus headroom for headers/footers + rounding
+// The downloadable resume is now a FIXED-geometry PDF (gen-resume-pdf.spec.ts:
+// Letter, 0.5in margins, no headers/footers) that the "save as PDF" button
+// serves directly - so the real output geometry is known and constant, not the
+// user's print dialog. This gate measures the print view at that exact geometry
+// (with the real font loaded - a headless fallback font mis-measures) and is
+// also the FILL target: the resume should fill toward one page, not sit
+// half-empty. gen-resume-pdf is the hard 1-page assertion; this guards the fill
+// stays under one page with a small margin.
+const PRINT_W = 720; // Letter 8.5in - 2x0.5in margins = 7.5in
+const PAGE_USABLE_H = 960; // Letter 11in - 2x0.5in margins = 10in
+const SAFE_H = 905; // fill toward here; ~55px under usable so it stays one page
 
 test.describe("resume one-page guarantee", () => {
   test("the resume fits one Letter page (fonts loaded, with margin)", async ({ page, browserName }, testInfo) => {

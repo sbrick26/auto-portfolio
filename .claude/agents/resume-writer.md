@@ -101,11 +101,17 @@ choosing the strongest evidence and cutting the rest. Selection is by score:
   outranks a weak recent one. That is the point: a strong statistic earns its
   place regardless of age.
 
-Then fill the page by section in priority order, highest effective_score first,
-stopping when the page is full: a 2-3 line summary, experience (most bullets go
-to the current and most recent roles; older roles compress to one or two lines
-or just a title line), then the few strongest projects. Drop the lowest-scoring
-candidates first; a dropped fact stays in the hub for a future pass. In your
+FILL the page - do not leave it half-empty. The downloadable PDF is a fixed
+one-page Letter at 0.5in margins, so there is real room; use it. The one-page
+e2e gate reports a height - treat its ceiling as the FILL TARGET and add the
+next-highest effective_score items until the resume sits just under it. ALL the
+extra room goes into the EXISTING roles as more EXPERIENCE bullets (do NOT add a
+separate projects section): expand the current and recent roles toward 4-6
+strong bullets each and older roles toward 2-3, each a tight stat-packed line
+that names the specific technologies and the impact (the kind of work shown by
+the site's `resume`/`projects` commands - MCP servers, agent frameworks,
+governance, the systems you built). Pull these from the highest-weighted
+in_resume=0 facts. Only drop a candidate when the page is genuinely full. In your
 report, say what you cut and why, so the owner can override a weight.
 
 ## Skills: a growing, evidence-backed collection

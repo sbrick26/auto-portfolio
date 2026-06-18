@@ -190,10 +190,11 @@ export const resume = {
       when: "Jan 2026 - Present",
       points: [
         "Built 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
+        "Drove an AI agent end to end on a live IBM i via Bob 2.0: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
         "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
-        "Engineered the AIDLC guardrails framework (NIST/FedRAMP policy, audit trails, CI diff gate) and a 3-agent bake-off platform making IBM-vs-competitor claims reproducible.",
+        "Engineered the 3-layer AIDLC guardrails framework - NIST/FedRAMP policy, audit trails, CI diff gate - making enforced agent governance visible to a utility/energy client.",
         "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a hackathon, 10 times at 15-20 engineers each.",
-        "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible cost, security, and test evidence per tool.",
+        "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible per-tool cost, security, and test evidence.",
       ],
     },
     {
@@ -203,6 +204,8 @@ export const resume = {
       points: [
         "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI, and demoing live at AWS re:Invent to ~400 booth attendees.",
         "Tech-led 2 IBM i RPG-modernization Bobathons for major US trucking firms; both clients purchased Bob, and the reusable 6-phase template spread across Horizon markets.",
+        "Diagnosed 2 watsonx Orchestrate product gaps on a beverage-manufacturer PoX and built a custom Python connector wrapper; WXO shipped nested-folder support as a feature ~1 month later.",
+        "Created repeatable client-specific watsonx demo frameworks mapping business pain to quantifiable watsonx.ai and Orchestrate outcomes, cutting time-to-close across 20+ accounts.",
       ],
     },
     {
@@ -211,6 +214,7 @@ export const resume = {
       when: "Feb 2022 - Apr 2025",
       points: [
         "Built a real-time grid-dispatch integration (80% success under overload) and shipped an RBAC system to AWS Marketplace serving hundreds of accounts; led a 5-person team.",
+        "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and led a PWA migration that lifted mobile app usage ~50%.",
       ],
     },
     {
@@ -220,6 +224,7 @@ export const resume = {
       points: [
         "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
         "Shipped Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
+        "Engineered 2 reusable API-driven iOS components - a stateful Connect/Follow action button and a re-orderable skills module - adopted across multiple profile sections.",
       ],
     },
     {
