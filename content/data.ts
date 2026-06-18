@@ -128,17 +128,25 @@ export const projects: Project[] = [
     status: "shipped",
   },
   {
-    name: "data cleansing agent",
+    name: "coding-agent bake-off platform",
     blurb:
-      "An AI-readiness demo for a state government agency: an agent that finds and fixes quality issues in citizen records through a least-privilege MCP server, fully container-isolated for security review.",
-    stack: ["Node.js", "MCP", "Informix", "Docker"],
+      "I built a local web app that benchmarks three coding agents side by side on identical scenarios. Each gets a fresh isolated repo, streams into a three-column live UI, and produces an objectively verified report: cost, time, tokens, tests added, git diff, and a security verdict from pytest, semgrep, and a per-scenario verify.sh. This is the evidence engine behind IBM competitive displacement: marketing claims become reproducible numbers.",
+    stack: ["FastAPI", "SSE", "semgrep", "pytest", "SQLite"],
     status: "shipped",
   },
   {
-    name: "trading-bot",
-    blurb: "Algorithmic trading experiments. Next project the agent pipeline will manage.", // TODO confirm wording with user
-    stack: ["Python"],
-    status: "building",
+    name: "order-management agent (MCP)",
+    blurb:
+      "I built an MCP platform over a live enterprise order-management suite for natural-language diagnosis and remediation of production issues. A Python MCP server exposes ~20 tools across four namespaces plus a catch-all over all 1,060 platform APIs, reusing a persistent SSH tunnel for ~50ms calls. Demonstrated an agent fixing a real production bug end to end, from log stack trace to deploy, cutting MTTR from hours to minutes with full audit trails.",
+    stack: ["MCP", "Python", "SSH ControlMaster", "Java / Liberty"],
+    status: "shipped",
+  },
+  {
+    name: "data cleansing agent",
+    blurb:
+      "An AI-readiness demo for a state government agency: an agent finds and fixes quality issues across ~1,000 citizen records through a least-privilege Informix MCP server (4 tools), fully container-isolated for security review. Reaches 95%+ standardized formats and zero duplicates, turning days of manual work into minutes.",
+    stack: ["Node.js", "MCP", "Informix", "Docker"],
+    status: "shipped",
   },
 ];
 
@@ -167,19 +175,19 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Architect and forward-deployed engineer who owns enterprise agent deployments end to end across a portfolio of 116 accounts: from stakeholder discovery to security-hardened MCP servers running live in production. I turn stalled POCs into adoptions and codify the wins into reusable frameworks other teams reuse. Exceeded first-year quota by 125%.",
+    "AI Solutions Architect and forward-deployed engineer who owns enterprise agent deployments end to end across a portfolio of 116 accounts, from stakeholder discovery to security-hardened MCP servers running live in production. I turn stalled POCs into adoptions and codify the wins into reusable frameworks other teams reuse. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "I own technical strategy across 116 enterprise accounts in the western US, scoping and leading 4-to-6-week agent POCs across tech, finance, government, healthcare, gaming, and manufacturing.",
-        "I architected a security-hardened MCP server (write allowlists, blocked destructive ops, SSH-tunneled, driver-escaped bindings) that lets an AI agent modernize legacy RPG on live IBM i; it cleared enterprise security review and two major transport and logistics companies bought the product.",
-        "I built a watsonx Orchestrate HR agent running live against real Workday and ServiceNow tenants for a global sports entertainment company, secured via OAuth 2.0 and OpenAPI tool contracts; it moved the account straight to pricing and deployment.",
-        "I shipped an Orchestrate email-triage agent over a client mailbox taking 2,000-3,000 EDI alerts a day, LLM-classifying the ~1% critical and routing Teams alerts; it won the platform bake-off against Microsoft Copilot Studio.",
-        "I conceived and ran a full-day enterprise hackathon series as tech lead and productized it into a reusable 6-phase template; 10 events run to date at ~15-20 engineers each, the template adopted across multiple markets and two clients buying after theirs.",
-        "I founded and lead a cross-org initiative, directing 5 interns to build a reusable, guardrailed library of agent skills, modes, and MCP servers spanning 10+ IBM products to accelerate POC delivery.",
+        "Built and hardened the MCP server that lets an AI agent modernize legacy RPG on a live IBM i over SSH (write allowlists, blocked destructive ops, driver-escaped bindings); it cleared enterprise security review and two major transport and logistics firms bought the product.",
+        "Built production watsonx Orchestrate agents running live against real client tenants: an HR agent over Workday and ServiceNow for a global sports entertainment company, and an email-triage agent classifying 2,000-3,000 EDI alerts a day that beat Microsoft Copilot Studio in a head-to-head bake-off.",
+        "Founded and lead a cross-org initiative, directing 5 interns to ship a guardrailed library of reusable agent skills, modes, and MCP servers spanning 10+ IBM products to spin up POCs faster.",
+        "Created Bobathon, a full-day enterprise hackathon series, and productized it into a reusable 6-phase template; 10 run to date at ~15-20 engineers each, adopted across markets, with two transport clients buying after theirs.",
+        "Built a coding-agent bake-off platform that runs three agents in parallel on identical tasks with isolated repos and objective verification (pytest, semgrep, per-tool cost), turning competitive displacement claims into reproducible numbers.",
+        "Own technical strategy across 116 enterprise accounts in the western US, scoping and leading 4-to-6-week agent POCs across tech, finance, government, healthcare, gaming, and manufacturing.",
       ],
     },
     {
@@ -187,8 +195,8 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "I exceeded first-year quota by 125%, owning technical evaluations end to end across 20+ enterprise accounts and differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
-        "I built repeatable, client-specific demo frameworks mapping business pain to quantifiable watsonx outcomes, cutting time-to-close across the territory.",
+        "Exceeded first-year quota by 125%, owning technical evaluations end to end across 20+ accounts and differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
+        "Designed and presented a live watsonx demo at AWS re:Invent that drew ~400 attendees to the IBM booth and generated hundreds of inbound conversations and pipeline opportunities.",
       ],
     },
     {
@@ -196,8 +204,7 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "I delivered full-stack web, mobile, and IoT energy platforms (TypeScript, React, Next.js, Node, AWS, MongoDB) and led a 5-person offshore team through standups and sprint planning.",
-        "I engineered a real-time grid-dispatch integration hitting an 80% success rate during overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
+        "Engineered a real-time grid-dispatch integration hitting an 80% success rate during overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts, leading a 5-person offshore team.",
       ],
     },
     {
@@ -205,7 +212,7 @@ export const resume = {
       org: "LinkedIn",
       when: "Jun 2022 - Jan 2024",
       points: [
-        "I shipped iOS profile features in Swift and Objective-C: Top Skills (600K+ members engaged, ~10% weekly-active lift), Career Break (~11% more additions), Next Best Action (~14% more profile updates), run with LIX/T-REX A/B experiments.",
+        "Shipped iOS profile features in Swift and Objective-C with LIX/T-REX A/B experiments: Top Skills (600K+ members engaged, ~10% weekly-active lift), Career Break (~11% more additions), and Next Best Action (~14% more profile updates).",
       ],
     },
     {
@@ -213,7 +220,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "I built a Python and Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI, cutting outsourcing costs 80% by automating manual review.",
+        "Built a Python and Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI, cutting outsourcing costs 80% by automating manual review.",
       ],
     },
   ] as ResumeItem[],
