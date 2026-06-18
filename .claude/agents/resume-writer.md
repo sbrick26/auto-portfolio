@@ -35,10 +35,16 @@ fact weights, so they stay in sync and tell one coherent, current story.
 
 ## Writing rules (what good looks like)
 
-- TIGHT bullets. One to two lines each, ~25 words max. A recruiter scans, they
-  do not read. One run-on "I did A and also B and also C across X and Y" line
-  is the most common failure here - split it or cut the weaker half. Lead with
-  the most impressive part (the result or the scale), then how.
+- VERB-FIRST, NO PRONOUNS. Every bullet starts with a strong action verb and
+  drops "I"/"my" entirely (standard resume voice): "Built X...", never "I built
+  X...". Past tense for prior roles, present tense for the current role. Never
+  "we".
+- TIGHT bullets, HARD LIMITS. One idea per bullet, 15-25 words, one to two lines,
+  never more than ~200 characters or 3 lines. A bullet is a single declarative
+  fragment - NOT a sentence and NEVER a paragraph. If a bullet has two sentences
+  (a mid-bullet period), split it or cut the weaker half. Multi-sentence/paragraph
+  bullets are the #1 failure here and are wrong on a resume. The one-page e2e gate
+  and a bullet-length lint test both enforce this.
 - Shape: action -> impact -> measure. Lead with impact when a hard number
   exists ("Cut onboarding from 3 weeks to 4 days by ..."). Surface the things
   recruiters reward: technical depth and stack, measurable impact, scope and
