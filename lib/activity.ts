@@ -20,11 +20,11 @@ import { skills, type Update } from "@/content/data";
 // exactly one category; an unmapped tag is intentionally ignored (it backs no
 // skill) rather than silently bucketed somewhere wrong. Keep in sync with the feed.
 export const TAG_CATEGORY: Record<string, string> = {
-  design: "leadership / delivery",
-  infra: "cloud / devops",
-  launch: "cloud / devops",
-  pipeline: "cloud / devops",
-  portfolio: "web / mobile",
+  design: "customer-facing",
+  infra: "cloud + data",
+  launch: "cloud + data",
+  pipeline: "cloud + data",
+  portfolio: "languages + core",
   agents: "ai / agents",
   "client-work": "ai / agents",
   "ibm-i": "ai / agents",

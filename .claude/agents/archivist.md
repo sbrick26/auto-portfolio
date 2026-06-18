@@ -28,9 +28,13 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    (what changed), metrics as JSON [{value, unit, basis, how_estimated}] where
    basis is "direct" (owner stated it) or "estimated" (derivable - record how).
    NEVER invent a number. If an achievement has impact but no measure, leave
-   metrics empty and queue a question: `career.sh ask <fact_id> "..."` -
-   short, concrete, answerable from memory ("Roughly how many users hit the
-   dashboard weekly?"). Max 3 open questions at a time; do not nag.
+   metrics empty and queue a question: `career.sh ask <fact_id> "..."`. Aim the
+   questions at what makes a fact SENIOR, not just a raw count: scale (users,
+   accounts, data, dollars, team size), architecture ownership ("did you design
+   it or implement to spec?"), the business outcome ("did it close the deal /
+   ship to prod / get adopted, by how many?"), and difficulty ("what was the
+   hard part?"). Short, concrete, answerable from memory. Max 3 open questions
+   at a time; do not nag.
 6. If the material contains answers to open questions (`career.sh questions`),
    record them with `career.sh answer <id> "<text>"` and fold the number into
    the fact's metrics with basis "direct".
@@ -52,10 +56,23 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    - Leadership / scope (0-15): led people, drove a cross-team effort, owned a
      product area.
    Recency is NOT part of weight (the resume-writer applies recency separately).
-   Re-weigh a fact when new information changes its magnitude or adds a metric.
+   Past work stays high-weight when it was genuinely big or senior - strong
+   LinkedIn or Qureez-era work outscores a minor recent task; do not under-weigh
+   a fact just because it is older.
    Skills get a weight too: how strong is the evidence behind it - a skill
    backed by a big shipped result scores high; a buzzword with no evidence
    scores near 0 and should not be filed as a skill at all.
+7b. RE-RANK + SYNTHESIZE every ingestion (not just the new fact). New material
+   shifts the whole picture, so re-weigh related and competing facts too, so the
+   scores stay comparable across the entire hub. SYNTHESIZE: when several facts
+   combine into a bigger story or a stronger statistic (a project + its adoption
+   + its scale; repeated updates that add up to an initiative), fold that
+   combined narrative and its strongest derivable stat into the lead fact's
+   detail/impact/metrics, and raise its weight to match the real, combined
+   significance - so the resume-writer can lead with the synthesized result, not
+   the scattered pieces. PROJECTS: file substantial builds as `project`-type
+   facts with `resume_section` = projects and a weight, so the public projects
+   section can be regenerated from the strongest ones.
 8. CLIENT REGISTRY: when material names a client not yet listed in
    career-corpus/clients.txt, append the real name there - one per line, plus
    common variants (hyphenated, abbreviated). This private registry drives the
@@ -76,6 +93,10 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
 - facts added / merged (counts + one-line titles)
 - questions queued or answered
 - updates.json entries appended
+- weights set or changed (fact id -> new weight) and any facts synthesized
 - final line, exactly one of:
-  RESUME_REFRESH: yes   (resume-priority facts were added or materially changed)
+  RESUME_REFRESH: yes   (resume-priority facts were added, materially changed,
+                         OR re-weighed so the top-of-page set or ordering would
+                         change - a higher-impact or more senior item now
+                         outranks something currently on the resume)
   RESUME_REFRESH: no

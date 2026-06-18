@@ -218,9 +218,9 @@ describe("skills --activity", () => {
     render(<Terminal />);
     run("skills --activity");
     expect(screen.getAllByText("skill activity").length).toBeGreaterThan(0);
-    // tap the web/mobile skill -> its tagged evidence surfaces
-    const webBtn = screen.getAllByRole("button", { name: /web \/ mobile/ });
-    fireEvent.click(webBtn[webBtn.length - 1]);
+    // tap the languages/core skill -> its tagged #portfolio evidence surfaces
+    const coreBtn = screen.getAllByRole("button", { name: /languages \+ core/ });
+    fireEvent.click(coreBtn[coreBtn.length - 1]);
     expect(screen.getAllByText("#portfolio").length).toBeGreaterThan(0);
   });
 

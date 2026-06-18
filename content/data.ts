@@ -8,7 +8,7 @@ import changelogJson from "./changelog.json";
 export const profile = {
   name: "Swayam Barik",
   handle: "swayam",
-  role: "AI Solutions Engineer @ IBM",
+  role: "AI Solutions Architect @ IBM",
   location: "San Francisco, CA",
   status: "building autonomous dev pipelines",
   summary:
@@ -30,61 +30,53 @@ export const about: string[] = [
 export type Skill = { name: string; level: number }; // level 0-100
 export type SkillGroup = { category: string; accent: string; items: Skill[] };
 
-// Comprehensive on purpose: languages, AI/agents, web/mobile, cloud/devops,
-// and the leadership/delivery track (startup PM + enterprise technical sales).
+// Grouped for an AI Solutions Architect screen, not a keyword dump. Lead with
+// the core stack (Python + SQL), then AI/agents (where the evidence is), then
+// cloud and data, and an explicit customer-facing row. Each skill is backed by
+// a shipped, measured fact in the career hub.
 export const skills: SkillGroup[] = [
+  {
+    category: "languages + core",
+    accent: "var(--color-term-blue)",
+    items: [
+      { name: "Python", level: 88 },
+      { name: "SQL / Db2", level: 80 },
+      { name: "TypeScript / JS", level: 90 },
+      { name: "Swift / Obj-C", level: 76 },
+    ],
+  },
   {
     category: "ai / agents",
     accent: "var(--color-term-orange)",
     items: [
-      { name: "IBM Bob", level: 93 },
-      { name: "watsonx Orchestrate", level: 90 },
-      { name: "Agentic systems", level: 88 },
-      { name: "MCP servers", level: 86 },
-      { name: "watsonx Code Assistant", level: 82 },
-      { name: "RAG / LangChain", level: 80 },
+      { name: "Agent orchestration (watsonx Orchestrate, Agent SDK)", level: 90 },
+      { name: "MCP servers (build + harden)", level: 88 },
+      { name: "LLM APIs + prompt engineering", level: 88 },
+      { name: "Evals + bake-offs", level: 84 },
+      { name: "RAG / LangGraph", level: 80 },
+      { name: "IBM Bob / watsonx Code Assistant", level: 90 },
     ],
   },
   {
-    category: "languages",
-    accent: "var(--color-term-blue)",
-    items: [
-      { name: "TypeScript / JS", level: 90 },
-      { name: "Python", level: 85 },
-      { name: "Swift / Obj-C", level: 78 },
-      { name: "SQL", level: 74 },
-    ],
-  },
-  {
-    category: "web / mobile",
-    accent: "var(--color-term-purple)",
-    items: [
-      { name: "React / Next.js", level: 88 },
-      { name: "Node / Express / GraphQL", level: 82 },
-      { name: "iOS (UIKit)", level: 78 },
-      { name: "PWA", level: 76 },
-    ],
-  },
-  {
-    category: "cloud / devops",
+    category: "cloud + data",
     accent: "var(--color-term-green)",
     items: [
       { name: "AWS (deploy + Marketplace)", level: 82 },
-      { name: "CI / CD pipelines", level: 80 },
-      { name: "Docker", level: 76 },
-      { name: "MongoDB / Firebase", level: 76 },
-      { name: "OAuth 2.0 / OpenAPI", level: 78 },
+      { name: "OAuth 2.0 / OpenAPI integrations", level: 86 },
+      { name: "Microsoft Graph / Workday / ServiceNow", level: 82 },
+      { name: "Docker + CI/CD", level: 80 },
+      { name: "MongoDB / Firebase / Informix", level: 76 },
     ],
   },
   {
-    category: "leadership / delivery",
+    category: "customer-facing",
     accent: "var(--color-term-cyan)",
     items: [
-      { name: "POC design + technical sales", level: 92 },
-      { name: "Agile / sprint leadership", level: 86 },
-      { name: "Tech lead / team leadership", level: 84 },
-      { name: "Product (PRDs, JIRA, Confluence)", level: 82 },
-      { name: "A/B experimentation", level: 78 },
+      { name: "POC design + deployment ownership", level: 92 },
+      { name: "Technical scoping + discovery", level: 88 },
+      { name: "Stakeholder management (exec + eng)", level: 86 },
+      { name: "Competitive displacement + ROI", level: 86 },
+      { name: "Tech lead / team + intern leadership", level: 84 },
     ],
   },
 ];
@@ -108,45 +100,38 @@ export const projects: Project[] = [
     link: "https://github.com/sbrick26/auto-portfolio",
   },
   {
-    name: "email triage agent",
+    name: "IBM i modernization MCP server",
     blurb:
-      "Agent for a national beverage manufacturer drowning in 2-3K EDI alert emails a day: classifies by severity, files into priority folders, fires Teams alerts on criticals. Won a platform bakeoff vs Copilot Studio.",
-    stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
+      "I built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. Designed to survive enterprise security review; two major transport and logistics companies adopted the product after the demo.",
+    stack: ["TypeScript", "MCP", "IBM i / RPG", "Db2", "SSH"],
+    status: "shipped",
+  },
+  {
+    name: "end-to-end RPG modernization demo (Bob 2.0)",
+    blurb:
+      "I built a demo that drove an agent fully autonomously over a live IBM i: business-rule extraction on a single 10,000+ line legacy file, parallel tool calls, fixed-to-free RPG modernization, then compile-run-test on the box. Demoed to a state public pension fund now in purchase conversations; rolling into the hackathon circuit.",
+    stack: ["IBM Bob 2.0", "MCP", "IBM i / RPG", "Db2"],
     status: "shipped",
   },
   {
     name: "enterprise HR agent",
     blurb:
-      "HR agent for a global sports entertainment company: new-hire and promotion workflows end to end across live Workday and ServiceNow tenants, with compensation checks against internal banding policy before any change.",
-    stack: ["watsonx Orchestrate", "Workday", "ServiceNow", "OpenAPI"],
+      "I designed and built a watsonx Orchestrate HR agent for a global sports entertainment company, running live against real Workday and ServiceNow tenants inside a custom portal. A two-layer architecture (reusable app integrations + use-case orchestrators) handles job changes, promotion letters, and compensation checks against banding policy before any write. Moved the account to pricing and deployment.",
+    stack: ["watsonx Orchestrate", "Workday", "ServiceNow", "OAuth 2.0", "OpenAPI"],
     status: "shipped",
   },
   {
-    name: "IBM i modernization MCP server",
+    name: "email triage agent",
     blurb:
-      "Secure MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, safe bindings. Demoed to major transport and logistics companies; two adopted the product.",
-    stack: ["TypeScript", "MCP", "IBM i", "RPG", "Db2"],
+      "I shipped an agent for a national beverage manufacturer drowning in 2,000-3,000 EDI alert emails a day: an LLM classifies each by severity, files it into priority folders, and fires Teams alerts on the ~1% critical. Secured Graph access via OAuth 2.0 delegated scopes. Won the platform bake-off vs Copilot Studio.",
+    stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
     status: "shipped",
   },
   {
     name: "data cleansing agent",
     blurb:
-      "AI-readiness demo for a state government agency: an agent that finds and fixes quality issues in citizen records through a least-privilege MCP server, fully container-isolated for security review.",
+      "An AI-readiness demo for a state government agency: an agent that finds and fixes quality issues in citizen records through a least-privilege MCP server, fully container-isolated for security review.",
     stack: ["Node.js", "MCP", "Informix", "Docker"],
-    status: "shipped",
-  },
-  {
-    name: "bobwork: agent council UI",
-    blurb:
-      "Web app for an AI coding CLI with a council mode: 5 parallel agent instances answer, peer-review each other, and a chairman synthesizes the result. Full automated test pipeline gating every merge.",
-    stack: ["Next.js", "Node.js", "SQLite", "WebSockets"],
-    status: "shipped",
-  },
-  {
-    name: "agent-driven SDLC demo",
-    blurb:
-      "Full lifecycle automation: an agent picks up a Jira ticket, drafts before/after designs in Figma, implements after approval, iterates until the build matches the design, and opens a PR through CI. Jira, Figma, and GitHub each wired up as custom MCP servers.",
-    stack: ["React", "Node.js", "MCP", "Jira", "Figma", "CI/CD"],
     status: "shipped",
   },
   {
@@ -182,19 +167,19 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Engineer at IBM who builds enterprise agent POCs end to end, from secure MCP servers to live Workday and IBM i integrations. Full-stack background spanning iOS at LinkedIn and energy-tech startups; exceeded first-year quota by 125%.",
+    "AI Solutions Architect and forward-deployed engineer who owns enterprise agent deployments end to end across a portfolio of 116 accounts: from stakeholder discovery to security-hardened MCP servers running live in production. I turn stalled POCs into adoptions and codify the wins into reusable frameworks other teams reuse. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "Own technical strategy across 116 enterprise accounts in the western US, spanning tech, finance, government, healthcare, gaming, and manufacturing.",
-        "Built secure MCP servers that let AI agents modernize legacy RPG on live IBM i systems over SSH (write allowlists, blocked destructive ops); two major transport and logistics companies adopted the product after demos.",
-        "Shipped a watsonx Orchestrate email-triage agent over a 2,000-3,000-emails-a-day client mailbox that won a platform bakeoff vs Copilot Studio.",
-        "Built a watsonx Orchestrate HR agent running live against real Workday and ServiceNow tenants, which moved the deal straight to pricing and deployment.",
-        "Conceived and ran a full-day enterprise hackathon series as tech lead, productized into a reusable template now used across multiple markets; 10 events run to date, two clients purchased after theirs.",
-        "Founded and lead a cross-org initiative directing 5 interns to build a reusable agent skills and MCP library spanning 10+ IBM products, with guardrails built in for fast POC delivery.",
+        "I own technical strategy across 116 enterprise accounts in the western US, scoping and leading 4-to-6-week agent POCs across tech, finance, government, healthcare, gaming, and manufacturing.",
+        "I architected a security-hardened MCP server (write allowlists, blocked destructive ops, SSH-tunneled, driver-escaped bindings) that lets an AI agent modernize legacy RPG on live IBM i; it cleared enterprise security review and two major transport and logistics companies bought the product.",
+        "I built a watsonx Orchestrate HR agent running live against real Workday and ServiceNow tenants for a global sports entertainment company, secured via OAuth 2.0 and OpenAPI tool contracts; it moved the account straight to pricing and deployment.",
+        "I shipped an Orchestrate email-triage agent over a client mailbox taking 2,000-3,000 EDI alerts a day, LLM-classifying the ~1% critical and routing Teams alerts; it won the platform bake-off against Microsoft Copilot Studio.",
+        "I conceived and ran a full-day enterprise hackathon series as tech lead and productized it into a reusable 6-phase template; 10 events run to date at ~15-20 engineers each, the template adopted across multiple markets and two clients buying after theirs.",
+        "I founded and lead a cross-org initiative, directing 5 interns to build a reusable, guardrailed library of agent skills, modes, and MCP servers spanning 10+ IBM products to accelerate POC delivery.",
       ],
     },
     {
@@ -202,9 +187,8 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "Exceeded first-year quota by 125% owning technical evaluations end to end across 20+ enterprise accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
-        "Designed and presented a live watsonx demo at AWS re:Invent, generating hundreds of inbound conversations and new pipeline opportunities across industries.",
-        "Built repeatable, client-specific demo frameworks mapping business pain points to quantifiable watsonx outcomes, cutting time-to-close.",
+        "I exceeded first-year quota by 125%, owning technical evaluations end to end across 20+ enterprise accounts and differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
+        "I built repeatable, client-specific demo frameworks mapping business pain to quantifiable watsonx outcomes, cutting time-to-close across the territory.",
       ],
     },
     {
@@ -212,9 +196,8 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "Delivered full-stack web, mobile, and IoT energy platforms (TypeScript, React, Next.js, Node, AWS, MongoDB) managing consumption across large commercial buildings.",
-        "Built an ERCOT integration hitting an 80% success rate during grid overload events; deployed an RBAC system to AWS Marketplace serving hundreds of accounts.",
-        "Led daily standups and sprint planning for a 5-person offshore team; a PWA migration lifted mobile usage roughly 50%.",
+        "I delivered full-stack web, mobile, and IoT energy platforms (TypeScript, React, Next.js, Node, AWS, MongoDB) and led a 5-person offshore team through standups and sprint planning.",
+        "I engineered a real-time grid-dispatch integration hitting an 80% success rate during overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
       ],
     },
     {
@@ -222,8 +205,7 @@ export const resume = {
       org: "LinkedIn",
       when: "Jun 2022 - Jan 2024",
       points: [
-        "Shipped iOS profile features in Swift and Objective-C: Top Skills (600K+ members engaged, ~10% WAU lift), Career Break (~11% more additions), Next Best Action (~14% more profile updates).",
-        "Engineered reusable API-driven UI components adopted across profile sections; ran A/B experiments with LIX and T-REX.",
+        "I shipped iOS profile features in Swift and Objective-C: Top Skills (600K+ members engaged, ~10% weekly-active lift), Career Break (~11% more additions), Next Best Action (~14% more profile updates), run with LIX/T-REX A/B experiments.",
       ],
     },
     {
@@ -231,7 +213,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Built a Python and Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI; cut outsourcing costs 80% by automating manual review.",
+        "I built a Python and Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI, cutting outsourcing costs 80% by automating manual review.",
       ],
     },
   ] as ResumeItem[],

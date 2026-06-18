@@ -63,16 +63,12 @@ describe("buildSkillEvidence", () => {
     const byCat = Object.fromEntries(buildSkillEvidence(FIXTURE).map((e) => [e.category, e]));
     // ai/agents: agents(1) + ibm-i(1) + client-work(3) = 5
     expect(byCat["ai / agents"].total).toBe(5);
-    // cloud/devops: infra(1) + pipeline(2) + launch(1) = 4
-    expect(byCat["cloud / devops"].total).toBe(4);
-    // web/mobile: portfolio(3)
-    expect(byCat["web / mobile"].total).toBe(3);
-    // leadership/delivery: design(2)
-    expect(byCat["leadership / delivery"].total).toBe(2);
-    // languages: nothing in the feed maps here -> a fully dormant skill
-    expect(byCat["languages"].total).toBe(0);
-    expect(byCat["languages"].items).toEqual([]);
-    expect(byCat["languages"].lastActive).toBeNull();
+    // cloud + data: infra(1) + pipeline(2) + launch(1) = 4
+    expect(byCat["cloud + data"].total).toBe(4);
+    // languages + core: portfolio(3)
+    expect(byCat["languages + core"].total).toBe(3);
+    // customer-facing: design(2)
+    expect(byCat["customer-facing"].total).toBe(2);
   });
 
   it("every evidence item carries the real update fields and a mapped tag", () => {
