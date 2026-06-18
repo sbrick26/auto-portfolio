@@ -74,6 +74,14 @@ body {
    it exists solely for print. */
 .resume-doc { display: none; }
 
+/* Deterministic print geometry so the saved PDF is the same everywhere (and so
+   the one-page e2e gate renders exactly what a browser prints): fixed Letter
+   size and margins, not the browser dialog's variable defaults. */
+@page {
+  size: Letter;
+  margin: 0.45in;
+}
+
 @media print {
   :root { color-scheme: light; }
 
@@ -90,9 +98,9 @@ body {
     color: #111;
     background: #fff;
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-size: 9pt;
-    line-height: 1.3;
-    max-width: 720px;
+    font-size: 8.5pt;
+    line-height: 1.25;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0;
   }

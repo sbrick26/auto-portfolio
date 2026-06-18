@@ -64,7 +64,13 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    scores near 0 and should not be filed as a skill at all.
 7b. RE-RANK + SYNTHESIZE every ingestion (not just the new fact). New material
    shifts the whole picture, so re-weigh related and competing facts too, so the
-   scores stay comparable across the entire hub. SYNTHESIZE: when several facts
+   scores stay comparable across the entire hub. Each pass, actively ask: across
+   EVERYTHING now known, what are the highest-IMPACT and most-INTERESTING items
+   (the distinctive, hard, or cool things made - not the routine ones)? Those
+   should carry the top weights. For a daily add specifically: check whether the
+   new item can be measured (queue a metric question if not), whether it
+   strengthens or combines with an existing fact, and whether it now outranks
+   something - and re-weigh accordingly. SYNTHESIZE: when several facts
    combine into a bigger story or a stronger statistic (a project + its adoption
    + its scale; repeated updates that add up to an initiative), fold that
    combined narrative and its strongest derivable stat into the lead fact's

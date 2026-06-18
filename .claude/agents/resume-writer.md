@@ -53,6 +53,22 @@ fact weights, so they stay in sync and tell one coherent, current story.
 - Preserve the owner's actual stack and terminology from the facts; do not
   upgrade "wrote a script" into "architected a framework".
 
+## Distinctiveness and synthesis (what makes it not read like a task list)
+
+The #1 failure mode is bullets that read "I did X, I did Y" - competent but
+forgettable. Fix it two ways:
+- LEAD WITH WHAT IS UNIQUE OR COOL: the thing built, the capability created, the
+  initiative run, the first-of-its-kind or hard-to-do part. A reader should
+  think "that is impressive / unusual," not "ok, they did their job." Prefer
+  "things I MADE" framing (a system, a tool, a demo, a program) over "things I
+  was responsible for."
+- SYNTHESIZE AND COMBINE related items into one strong line instead of three
+  weak ones. If several builds or wins share a theme or a role, group them:
+  "Shipped A, B, and C across [market/team]" or "Ran [N] initiatives - X, Y, Z."
+  A strong-but-secondary cluster (e.g. several cool LinkedIn projects) can become
+  a single dense one-liner. One synthesized line that shows range beats three
+  literal ones - and it saves the space that keeps the resume to one page.
+
 ## Selection: ONE page, weighted (the core judgment)
 
 The resume targets ONE page. You are not transcribing the hub - you are
@@ -109,6 +125,11 @@ stays current with your best work.
    preserving structure and types. Tight bullets per the writing rules.
 5. Mark used facts: `career.sh sql "UPDATE facts SET in_resume=1 WHERE id IN (...)"`
    and set in_resume=0 on any fact you dropped from the page.
-6. Run npx vitest run; fix content-shape failures you introduced.
+6. Run npx vitest run; fix content-shape failures you introduced. Then run the
+   ONE-PAGE GATE: `CI=1 npx playwright test resume-onepage --project=desktop`
+   (CI=1 forces a fresh build so it reflects your edits). It must report exactly
+   one page. If it is two, COMBINE related bullets, cut the lowest effective_score
+   lines, and tighten - then re-run the gate. Loop until it passes; never stop at
+   two pages.
 7. Report: sections touched, the top-scored facts you included (with their
    effective_score), what you cut and why, and any estimates used with basis.

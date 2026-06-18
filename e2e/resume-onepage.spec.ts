@@ -34,13 +34,18 @@ test.describe("resume one-page guarantee", () => {
     await expect(page.locator(".resume-doc")).toBeAttached({ timeout: 5_000 });
 
     // page.pdf forces print media; the print stylesheet shows only .resume-doc.
+    // preferCSSPageSize honors the @page rule (Letter + 0.45in margins) so this
+    // renders the SAME geometry a browser prints - no hardcoded margins that
+    // could disagree with reality (that caused a false one-page pass before).
     const buf = await page.pdf({
-      format: "Letter",
       printBackground: true,
-      margin: { top: "0.5in", bottom: "0.5in", left: "0.5in", right: "0.5in" },
+      preferCSSPageSize: true,
     });
 
     const pageCount = (await PDFDocument.load(buf)).getPageCount();
+    console.log(`ONEPAGE pageCount=${pageCount} pdfBytes=${buf.length}`);
+    // guard against a false pass on an EMPTY page: a real resume PDF is sizable
+    expect(buf.length, "PDF looks empty - the resume doc was not captured").toBeGreaterThan(15000);
     expect(
       pageCount,
       `the resume rendered to ${pageCount} page(s); it must be exactly 1 (tighten bullets or cut lower-weighted content)`,
