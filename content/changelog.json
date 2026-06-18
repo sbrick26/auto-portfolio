@@ -1,9 +1,16 @@
 [
   {
-    "version": "1.22.0",
+    "version": "1.23.0",
     "date": "2026-06-17",
     "changes": [
       "Recruiter-grade resume: copy-to-clipboard and print/save-to-PDF from `resume`"
+    ]
+  },
+  {
+    "version": "1.22.0",
+    "date": "2026-06-17",
+    "changes": [
+      "automated dependency updates (CI-verified)"
     ]
   },
   {
