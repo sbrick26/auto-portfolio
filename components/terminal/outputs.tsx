@@ -656,10 +656,20 @@ function ResumeActions() {
   // flag so a second click re-triggers cleanly).
   useEffect(() => {
     if (!printing) return;
-    const done = () => setPrinting(false);
+    // The browser uses document.title as the default "Save as PDF" filename, so
+    // swap it to a clean resume name for the print, then restore it after.
+    const prevTitle = document.title;
+    document.title = "Swayam_Barik_Resume";
+    const done = () => {
+      document.title = prevTitle;
+      setPrinting(false);
+    };
     window.addEventListener("afterprint", done, { once: true });
     window.print();
-    return () => window.removeEventListener("afterprint", done);
+    return () => {
+      document.title = prevTitle;
+      window.removeEventListener("afterprint", done);
+    };
   }, [printing]);
 
   const copy = useCallback(async () => {

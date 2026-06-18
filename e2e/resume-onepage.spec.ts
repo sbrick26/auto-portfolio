@@ -12,14 +12,14 @@ import { PDFDocument } from "pdf-lib";
 //      differences still fit), AND
 //   4. require page.pdf (preferCSSPageSize -> honors @page Letter/0.45in) to be
 //      exactly one page with real content.
-// Letter @ 0.45in margins => content box 7.6in x 10.1in => ~730 x ~970 CSS px.
-const PRINT_W = 720; // 7.5in usable width at 96 CSS px/in (@page 0.5in margins)
-const PAGE_USABLE_H = 960; // 10in usable height at @page 0.5in margins
-// Real browsers add print-dialog overhead the @page rule can't control: default
-// "Headers and footers" (~0.66in) and possibly wider default margins (up to 1in).
-// Worst realistic case = 1in margins + headers/footers => ~800px usable. Target
-// that so the resume lands on ONE page regardless of the owner's print settings.
-const SAFE_H = 755; // reference: the proven-fitting height at 9.5pt (measured 749px)
+// WORST-CASE geometry = Chrome's interactive "Default" margins (~1in), which is
+// what made the owner's real export two pages: a narrower content box wraps more
+// text, so the resume is TALLER than a 0.5in-margin layout. Measuring at the
+// narrow 1in width is the faithful test - if it fits here it fits at any tighter
+// margin. (Measuring at 720px earlier assumed 0.5in and under-read the height.)
+const PRINT_W = 624; // Letter 8.5in - 2x1in margins = 6.5in
+const PAGE_USABLE_H = 864; // Letter 11in - 2x1in margins = 9in
+const SAFE_H = 800; // 864 usable minus headroom for headers/footers + rounding
 
 test.describe("resume one-page guarantee", () => {
   test("the resume fits one Letter page (fonts loaded, with margin)", async ({ page, browserName }, testInfo) => {
