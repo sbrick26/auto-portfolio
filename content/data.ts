@@ -41,6 +41,7 @@ export const skills: SkillGroup[] = [
       { name: "watsonx Orchestrate", level: 90 },
       { name: "Agentic systems", level: 88 },
       { name: "MCP servers", level: 86 },
+      { name: "watsonx Code Assistant", level: 82 },
       { name: "RAG / LangChain", level: 80 },
     ],
   },
@@ -81,6 +82,7 @@ export const skills: SkillGroup[] = [
     items: [
       { name: "POC design + technical sales", level: 92 },
       { name: "Agile / sprint leadership", level: 86 },
+      { name: "Tech lead / team leadership", level: 84 },
       { name: "Product (PRDs, JIRA, Confluence)", level: 82 },
       { name: "A/B experimentation", level: 78 },
     ],
@@ -180,19 +182,19 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Engineer at IBM with a full-stack engineering background across iOS at LinkedIn, energy-tech startups, and enterprise AI. Designs proof-of-concept systems and multi-agent pipelines that turn business problems into shipped software.",
+    "AI Solutions Engineer at IBM who builds enterprise agent POCs end to end, from secure MCP servers to live Workday and IBM i integrations. Full-stack background spanning iOS at LinkedIn and energy-tech startups; exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "Own end-to-end technical strategy across 116 enterprise accounts in the western US, spanning tech, finance, government, healthcare, gaming, and manufacturing.",
-        "Design and ship enterprise agent POCs end to end: email triage on watsonx Orchestrate that won a bakeoff vs Copilot Studio, and an HR agent running live against Workday and ServiceNow tenants that moved straight to pricing.",
-        "Engineered secure MCP servers that let AI agents modernize legacy RPG on live IBM i systems (write allowlists, SSH tunneling, blocked destructive ops); two major logistics companies adopted the product after demos.",
-        "Partnered with sales and product to drive competitive displacement against GitHub Copilot, Cursor, and Claude Code, building tailored technical narratives and ROI frameworks that supported deal closure.",
-        "Created and lead a cross-org initiative directing interns to build a reusable library of agent modes, skills, rules, and MCP servers that wire an enterprise coding agent into major enterprise products, with guardrails and best-practice context built in, for fast POC and pilot delivery across sales engineering, clients, and internal teams.",
-        "Conceived and ran a full-day enterprise hackathon series as tech lead, productized into a reusable template now used across multiple markets; 10 events run to date with 15 to 20 engineers each.",
+        "Own technical strategy across 116 enterprise accounts in the western US, spanning tech, finance, government, healthcare, gaming, and manufacturing.",
+        "Built secure MCP servers that let AI agents modernize legacy RPG on live IBM i systems over SSH (write allowlists, blocked destructive ops); two major transport and logistics companies adopted the product after demos.",
+        "Shipped a watsonx Orchestrate email-triage agent over a 2,000-3,000-emails-a-day client mailbox that won a platform bakeoff vs Copilot Studio.",
+        "Built a watsonx Orchestrate HR agent running live against real Workday and ServiceNow tenants, which moved the deal straight to pricing and deployment.",
+        "Conceived and ran a full-day enterprise hackathon series as tech lead, productized into a reusable template now used across multiple markets; 10 events run to date, two clients purchased after theirs.",
+        "Founded and lead a cross-org initiative directing 5 interns to build a reusable agent skills and MCP library spanning 10+ IBM products, with guardrails built in for fast POC delivery.",
       ],
     },
     {
@@ -200,9 +202,9 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "Exceeded first-year quota by 125% owning technical evaluations end-to-end across 20+ medium and large enterprise accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
-        "Developed repeatable, client-specific demo frameworks that mapped business pain points to quantifiable watsonx outcomes, cutting time-to-close and improving technical win rates.",
-        "Designed and presented a live watsonx demo at AWS re:Invent, generating hundreds of inbound conversations and new pipeline opportunities.",
+        "Exceeded first-year quota by 125% owning technical evaluations end to end across 20+ enterprise accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI.",
+        "Designed and presented a live watsonx demo at AWS re:Invent, generating hundreds of inbound conversations and new pipeline opportunities across industries.",
+        "Built repeatable, client-specific demo frameworks mapping business pain points to quantifiable watsonx outcomes, cutting time-to-close.",
       ],
     },
     {
@@ -210,9 +212,9 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "Delivered full-stack web, mobile, and IoT platforms for energy startups (TypeScript, React, Next.js, Node, AWS, MongoDB) managing consumption across large commercial buildings.",
-        "Built an ERCOT API integration hitting an 80% success rate during grid overload events; deployed an RBAC system to AWS Marketplace serving hundreds of accounts.",
-        "Ran daily standups and sprint planning for a 5-person offshore team; PWA migration lifted mobile usage roughly 50%.",
+        "Delivered full-stack web, mobile, and IoT energy platforms (TypeScript, React, Next.js, Node, AWS, MongoDB) managing consumption across large commercial buildings.",
+        "Built an ERCOT integration hitting an 80% success rate during grid overload events; deployed an RBAC system to AWS Marketplace serving hundreds of accounts.",
+        "Led daily standups and sprint planning for a 5-person offshore team; a PWA migration lifted mobile usage roughly 50%.",
       ],
     },
     {
@@ -220,8 +222,8 @@ export const resume = {
       org: "LinkedIn",
       when: "Jun 2022 - Jan 2024",
       points: [
-        "Shipped user-facing iOS features for the core profile: Top Skills (600K+ members engaged, ~10% WAU lift), Career Break Associations (~11% lift), Next Best Action prompts (~14% more profile updates).",
-        "Built reusable API-driven UI components adopted across multiple profile sections; led A/B experiment design with LIX and T-REX.",
+        "Shipped iOS profile features in Swift and Objective-C: Top Skills (600K+ members engaged, ~10% WAU lift), Career Break (~11% more additions), Next Best Action (~14% more profile updates).",
+        "Engineered reusable API-driven UI components adopted across profile sections; ran A/B experiments with LIX and T-REX.",
       ],
     },
     {
@@ -229,7 +231,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Wrote a Python + Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI; cut outsourcing costs 80% by automating manual review.",
+        "Built a Python and Firebase BI tool analyzing thousands of MLS listings daily with image-processing AI; cut outsourcing costs 80% by automating manual review.",
       ],
     },
   ] as ResumeItem[],
