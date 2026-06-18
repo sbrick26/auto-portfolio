@@ -74,6 +74,14 @@ body {
    it exists solely for print. */
 .resume-doc { display: none; }
 
+/* Deterministic print geometry so the saved PDF is the same everywhere (and so
+   the one-page e2e gate renders exactly what a browser prints): fixed Letter
+   size and margins, not the browser dialog's variable defaults. */
+@page {
+  size: Letter;
+  margin: 0.5in;
+}
+
 @media print {
   :root { color-scheme: light; }
 
@@ -91,19 +99,19 @@ body {
     background: #fff;
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     font-size: 9pt;
-    line-height: 1.3;
-    max-width: 720px;
+    line-height: 1.15;
+    max-width: 100%;
     margin: 0 auto;
     padding: 0;
   }
 
   .resume-doc h1 {
-    font-size: 15pt;
+    font-size: 13.5pt;
     font-weight: 700;
     margin: 0;
   }
   .resume-doc .resume-doc-role {
-    font-size: 9.5pt;
+    font-size: 10pt;
     font-weight: 600;
     margin-top: 1px;
   }
@@ -115,12 +123,12 @@ body {
   .resume-doc-head {
     border-bottom: 1px solid #999;
     padding-bottom: 5px;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
-  .resume-doc section { margin-top: 8px; }
+  .resume-doc section { margin-top: 5px; }
   .resume-doc h2 {
-    font-size: 8.5pt;
+    font-size: 9pt;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -131,7 +139,7 @@ body {
   }
 
   .resume-doc p { margin: 0; }
-  .resume-doc .resume-doc-entry { margin-bottom: 6px; page-break-inside: avoid; }
+  .resume-doc .resume-doc-entry { margin-bottom: 4px; page-break-inside: avoid; }
   .resume-doc .resume-doc-entry-head {
     display: flex;
     justify-content: space-between;
