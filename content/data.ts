@@ -193,6 +193,7 @@ export const resume = {
         "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
         "Engineered the AIDLC guardrails framework (NIST/FedRAMP policy, audit trails, CI diff gate) and a 3-agent bake-off platform making IBM-vs-competitor claims reproducible.",
         "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a hackathon, 10 times at 15-20 engineers each.",
+        "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible cost, security, and test evidence per tool.",
       ],
     },
     {
@@ -201,6 +202,7 @@ export const resume = {
       when: "Mar 2025 - Jan 2026",
       points: [
         "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI, and demoing live at AWS re:Invent to ~400 booth attendees.",
+        "Tech-led 2 IBM i RPG-modernization Bobathons for major US trucking firms; both clients purchased Bob, and the reusable 6-phase template spread across Horizon markets.",
       ],
     },
     {
@@ -217,6 +219,7 @@ export const resume = {
       when: "Jun 2022 - Jan 2024",
       points: [
         "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
+        "Shipped Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
       ],
     },
     {
