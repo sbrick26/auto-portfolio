@@ -32,12 +32,13 @@ describe("resume formatting policy", () => {
     }
   });
 
-  it("at least half of bullets carry a number", () => {
+  it("nearly every bullet carries a number (stat-packed)", () => {
     const quantified = bullets.filter((b) => /\d/.test(b)).length;
+    const unquantified = bullets.length - quantified;
     expect(
-      quantified * 2,
-      `only ${quantified}/${bullets.length} bullets are quantified; need >= 50%`,
-    ).toBeGreaterThanOrEqual(bullets.length);
+      unquantified,
+      `${unquantified} bullets have no number; at most 1 may be unquantified (stat-pack the rest)`,
+    ).toBeLessThanOrEqual(1);
   });
 
   it("no role exceeds 6 bullets", () => {

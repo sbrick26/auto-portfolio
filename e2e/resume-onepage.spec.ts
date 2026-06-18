@@ -19,7 +19,7 @@ const PAGE_USABLE_H = 960; // 10in usable height at @page 0.5in margins
 // "Headers and footers" (~0.66in) and possibly wider default margins (up to 1in).
 // Worst realistic case = 1in margins + headers/footers => ~800px usable. Target
 // that so the resume lands on ONE page regardless of the owner's print settings.
-const SAFE_H = 790; // desktop-proven one page; Safari/iOS A4 is best-effort (cannot PDF-test here)
+const SAFE_H = 755; // reference: the proven-fitting height at 9.5pt (measured 749px)
 
 test.describe("resume one-page guarantee", () => {
   test("the resume fits one Letter page (fonts loaded, with margin)", async ({ page, browserName }, testInfo) => {

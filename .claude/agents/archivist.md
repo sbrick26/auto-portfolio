@@ -45,14 +45,16 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    this score is how the resume-writer decides what makes the one-page cut, so
    be honest and discriminating (most facts land 30-70; reserve 85+ for genuine
    standouts). Sum the parts:
-   - Impact magnitude (0-40): size of the real-world effect - revenue, users
-     reached, time/cost saved, scale of the systems or teams involved. Large
-     and verifiable scores high; routine work scores low.
-   - Metric strength (0-25): a concrete, impressive, verifiable number present
-     (direct beats estimated); no number scores near 0 here.
-   - Distinctiveness (0-20): technically hard, novel, or recruiter-catching -
-     built a demo, shipped a first-of-its-kind thing, solved a hard problem,
-     owned an initiative end to end.
+   - Metric strength (0-30): a concrete, impressive, verifiable number present
+     (direct beats estimated). This is weighted HEAVILY - stat-packed facts are
+     what makes a resume land, so a fact with a hard number consistently
+     outranks one without. No number scores near 0 here.
+   - Distinctiveness (0-30): technically hard, novel, or recruiter-catching - a
+     named system/tool/framework built, a first-of-its-kind thing, a hard problem
+     solved, an initiative owned end to end. Also weighted heavily: "interesting"
+     and "cool" beats "competent but routine".
+   - Impact magnitude (0-25): size of the real-world effect - revenue, users
+     reached, time/cost saved, scale of the systems or teams involved.
    - Leadership / scope (0-15): led people, drove a cross-team effort, owned a
      product area.
    Recency is NOT part of weight (the resume-writer applies recency separately).

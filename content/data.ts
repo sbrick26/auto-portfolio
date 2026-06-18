@@ -190,7 +190,7 @@ export const resume = {
       when: "Jan 2026 - Present",
       points: [
         "Built 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
-        "Designed an agentic HR framework with policy guardrails, live on Workday and ServiceNow for a sports entertainment client.",
+        "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
         "Engineered the AIDLC guardrails framework (NIST/FedRAMP policy, audit trails, CI diff gate) and a 3-agent bake-off platform making IBM-vs-competitor claims reproducible.",
         "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a hackathon, 10 times at 15-20 engineers each.",
       ],

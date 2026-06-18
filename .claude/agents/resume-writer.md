@@ -50,6 +50,15 @@ fact weights, so they stay in sync and tell one coherent, current story.
   recruiters reward: technical depth and stack, measurable impact, scope and
   ownership, leadership, and distinctive work (building demos, first-of-its-kind
   systems, hard problems solved). Capability + impact in every line.
+- STAT-PACK nearly every bullet. Each bullet should carry a concrete number
+  (%, $, count, scale, latency, time, or a named-thing count like "3 MCP
+  servers", "1,060 APIs"). At most ONE bullet on the whole resume may be
+  unquantified, and only if it is a genuinely number-free leadership point. If a
+  strong fact has no number, pull a real one from the hub or honestly estimate
+  per the contract rather than leaving it bare. The lint test enforces this.
+- Every bullet should also be INTERESTING - lead with the named, distinctive
+  artifact (the system/tool/framework built), not a generic duty. Boring-but-true
+  loses to specific-and-impressive.
 - Concrete nouns and varied, plain verbs. Built, cut, shipped, automated, led,
   migrated, debugged. Each verb at most twice across the whole resume.
 - Banned: buzzword chains ("results-driven", "synergy", "passionate"),

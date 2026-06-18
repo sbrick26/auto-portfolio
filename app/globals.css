@@ -98,7 +98,7 @@ body {
     color: #111;
     background: #fff;
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-size: 10pt;
+    font-size: 9.5pt;
     line-height: 1.2;
     max-width: 100%;
     margin: 0 auto;
@@ -106,17 +106,17 @@ body {
   }
 
   .resume-doc h1 {
-    font-size: 16pt;
+    font-size: 15pt;
     font-weight: 700;
     margin: 0;
   }
   .resume-doc .resume-doc-role {
-    font-size: 11pt;
+    font-size: 10.5pt;
     font-weight: 600;
     margin-top: 1px;
   }
   .resume-doc .resume-doc-contact {
-    font-size: 9pt;
+    font-size: 8.5pt;
     color: #444;
     margin-top: 2px;
   }
@@ -128,7 +128,7 @@ body {
 
   .resume-doc section { margin-top: 6px; }
   .resume-doc h2 {
-    font-size: 10.5pt;
+    font-size: 10pt;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
