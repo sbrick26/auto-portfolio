@@ -21,7 +21,7 @@ export const profile = {
 };
 
 export const about: string[] = [
-  "I'm an AI Solutions Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production-grade agents on watsonx Orchestrate, secure MCP servers for legacy modernization, and full-day enterprise hackathons that turn evaluations into adoptions.",
+  "I'm an AI Solutions Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
   "Before that I shipped full-stack web, mobile, and IoT products at Qureez for energy startups, and built user-facing iOS features on LinkedIn's profile team that reached hundreds of thousands of members.",
   "This portfolio is itself a live demo: a thin front agent on a Mac Mini routes work to project leads and workers, opens pull requests to GitHub, runs CI gates, and deploys to AWS through SST.",
   "Every morning the system picks one useful improvement, builds it on a branch, runs deterministic checks, reviews it, and opens a PR. User-visible changes wait for my one-tap approval over Telegram.",
@@ -52,6 +52,7 @@ export const skills: SkillGroup[] = [
       { name: "watsonx Orchestrate", level: 90 },
       { name: "Agent SDK", level: 88 },
       { name: "MCP servers", level: 88 },
+      { name: "Agent guardrails / governance", level: 86 },
       { name: "LLM APIs + prompts", level: 88 },
       { name: "Evals", level: 84 },
       { name: "IBM Bob", level: 90 },
@@ -99,31 +100,38 @@ export const projects: Project[] = [
     link: "https://github.com/sbrick26/auto-portfolio",
   },
   {
-    name: "IBM i modernization MCP server",
+    name: "IBM i RPG modernization MCP server",
     blurb:
-      "Built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. Designed to survive enterprise security review; two major transport and logistics companies adopted the product after the demo.",
+      "Built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. A companion Bob 2.0 demo drove an agent end to end on a single 10,000+ line legacy file - business-rule extraction, fixed-to-free RPG modernization, then compile-run-test on the box. Cleared enterprise security review; two major transport and logistics companies adopted the product.",
     stack: ["TypeScript", "MCP", "IBM i / RPG", "Db2", "SSH"],
     status: "shipped",
   },
   {
-    name: "end-to-end RPG modernization demo (Bob 2.0)",
+    name: "Sterling order-management MCP platform",
     blurb:
-      "Built a demo driving an agent fully autonomously over a live IBM i: business-rule extraction on a single 10,000+ line legacy file, parallel tool calls, fixed-to-free RPG modernization, then compile-run-test on the box. Demoed to a state public pension fund now in purchase conversations; rolling into the hackathon circuit.",
-    stack: ["IBM Bob 2.0", "MCP", "IBM i / RPG", "Db2"],
+      "Built an MCP platform over a live Sterling Order Management Suite for natural-language diagnosis and remediation of production order issues. A Python MCP server exposes ~20 tools across four namespaces plus a catch-all over all 1,060 Sterling APIs, reusing a persistent SSH tunnel for ~50ms calls. Demonstrated an agent fixing a real production bug (a Java NPE in a user-exit JAR) end to end, from log stack trace to deploy, cutting MTTR from hours to minutes with full audit trails.",
+    stack: ["MCP", "Python", "SSH ControlMaster", "Sterling OMS", "Java / Liberty"],
     status: "shipped",
   },
   {
-    name: "enterprise HR agent",
+    name: "agentic HR framework (Workday + ServiceNow)",
     blurb:
-      "Designed and built a watsonx Orchestrate HR agent for a global sports entertainment company, running live against real Workday and ServiceNow tenants inside a custom portal. A two-layer architecture (reusable app integrations + use-case orchestrators) handles job changes, promotion letters, and compensation checks against banding policy before any write. Moved the account to pricing and deployment.",
+      "Designed an agentic HR framework with policy-governance guardrails for a global sports entertainment company, live on real Workday and ServiceNow tenants inside a custom portal. A two-layer architecture (reusable app integrations + use-case orchestrators) handles job changes, promotion letters, and compensation checks against banding policy before any write. Moved the account to pricing and deployment.",
     stack: ["watsonx Orchestrate", "Workday", "ServiceNow", "OAuth 2.0", "OpenAPI"],
     status: "shipped",
   },
   {
-    name: "email triage agent",
+    name: "LucidLink MCP server + enablement kit",
     blurb:
-      "Shipped an agent for a national beverage manufacturer drowning in 2,000-3,000 EDI alert emails a day: an LLM classifies each by severity, files it into priority folders, and fires Teams alerts on the ~1% critical. Secured Graph access via OAuth 2.0 delegated scopes. Won the platform bake-off vs Copilot Studio.",
-    stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
+      "Built a production-shaped LucidLink MCP server - 20 tools tiered into auto-approvable reads, dry-run-by-default guarded writes, and feature-flagged S3 Connect - plus a full Bob enablement pack and a 3-hour hands-on customer workshop teaching partners to build on the Python SDK with an AI agent. Safety designed in: token hygiene, guarded writes, chunked streaming for large media.",
+    stack: ["MCP", "Python", "LucidLink SDK", "uv"],
+    status: "shipped",
+  },
+  {
+    name: "AIDLC guardrails framework",
+    blurb:
+      "Engineered an enterprise AIDLC governance framework: two sibling repos with byte-identical code where the only difference is the governance layer, so the same prompts show agent behavior with guardrails on vs off. Three enforcement layers - file-access blocklist, plain-English NIST/FedRAMP policies with audit trails, and execution allowlists - plus a GitHub CI gate that audits every PR diff against the committed rules. The public twin ships the open pattern.",
+    stack: ["AIDLC", "CI gate", "NIST / FedRAMP", "Flask", "policy-as-code"],
     status: "shipped",
   },
   {
@@ -134,10 +142,10 @@ export const projects: Project[] = [
     status: "shipped",
   },
   {
-    name: "order-management agent (MCP)",
+    name: "email triage agent",
     blurb:
-      "Built an MCP platform over a live enterprise order-management suite for natural-language diagnosis and remediation of production issues. A Python MCP server exposes ~20 tools across four namespaces plus a catch-all over all 1,060 platform APIs, reusing a persistent SSH tunnel for ~50ms calls. Demonstrated an agent fixing a real production bug end to end, from log stack trace to deploy, cutting MTTR from hours to minutes with full audit trails.",
-    stack: ["MCP", "Python", "SSH ControlMaster", "Java / Liberty"],
+      "Shipped a watsonx Orchestrate agent for a national beverage manufacturer drowning in 2,000-3,000 EDI alert emails a day: an LLM classifies each by severity, files it into priority folders, and fires Teams alerts on the ~1% critical. Secured Graph access via OAuth 2.0 delegated scopes. Won the platform bake-off vs Copilot Studio.",
+    stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
     status: "shipped",
   },
   {
@@ -174,17 +182,17 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Architect and forward-deployed engineer owning enterprise agent deployments end to end across 116 accounts, from stakeholder discovery to security-hardened MCP servers in production. Turns stalled POCs into adoptions; exceeded first-year quota by 125%.",
+    "AI Solutions Architect and forward-deployed engineer owning enterprise agent deployments across 116 accounts: security-hardened MCP servers and agentic frameworks running live in production. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "Build and harden the MCP server letting an AI agent modernize legacy RPG on a live IBM i over SSH; cleared enterprise security review and won 2 transport-and-logistics clients.",
-        "Ship production watsonx Orchestrate agents on live tenants: a Workday/ServiceNow HR agent for a global sports entertainment company, and an EDI triage agent classifying 2,000-3,000 alerts a day.",
-        "Founded a 5-intern initiative shipping a guardrailed library of reusable agent skills and MCP servers across 10+ IBM products, plus Bobathon, a hackathon series run 10 times at 15-20 engineers each.",
-        "Scope and lead 4-to-6-week agent POCs across 116 accounts spanning tech, finance, government, healthcare, and manufacturing.",
+        "Built 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
+        "Designed an agentic HR framework with policy guardrails, live on Workday and ServiceNow for a sports entertainment client.",
+        "Engineered the AIDLC guardrails framework (NIST/FedRAMP policy, audit trails, CI diff gate) and a 3-agent bake-off platform making IBM-vs-competitor claims reproducible.",
+        "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a hackathon, 10 times at 15-20 engineers each.",
       ],
     },
     {
@@ -200,7 +208,7 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "Engineered a real-time grid-dispatch integration hitting 80% success during overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts, leading a 5-person team.",
+        "Built a real-time grid-dispatch integration (80% success under overload) and shipped an RBAC system to AWS Marketplace serving hundreds of accounts; led a 5-person team.",
       ],
     },
     {
@@ -208,7 +216,7 @@ export const resume = {
       org: "LinkedIn",
       when: "Jun 2022 - Jan 2024",
       points: [
-        "Shipped Swift/Objective-C profile features via LIX A/B tests: Top Skills (600K+ members, ~10% weekly-active lift), Career Break (~11% more additions), Next Best Action (~14% more updates).",
+        "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
       ],
     },
     {
@@ -216,7 +224,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Built a Python/Firebase BI tool over thousands of MLS listings with image-processing AI, cutting outsourcing costs 80%.",
+        "Shipped a Python/Firebase BI tool over thousands of MLS listings with image-processing AI, cutting outsourcing costs 80%.",
       ],
     },
   ] as ResumeItem[],

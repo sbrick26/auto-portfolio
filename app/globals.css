@@ -123,10 +123,10 @@ body {
   .resume-doc-head {
     border-bottom: 1px solid #999;
     padding-bottom: 5px;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
-  .resume-doc section { margin-top: 8px; }
+  .resume-doc section { margin-top: 6px; }
   .resume-doc h2 {
     font-size: 10.5pt;
     font-weight: 700;
@@ -139,7 +139,7 @@ body {
   }
 
   .resume-doc p { margin: 0; }
-  .resume-doc .resume-doc-entry { margin-bottom: 6px; page-break-inside: avoid; }
+  .resume-doc .resume-doc-entry { margin-bottom: 4px; page-break-inside: avoid; }
   .resume-doc .resume-doc-entry-head {
     display: flex;
     justify-content: space-between;
