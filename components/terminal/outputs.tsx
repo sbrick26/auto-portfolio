@@ -642,35 +642,11 @@ function PrintableResume() {
 // content itself; it only lets a visitor get the resume out of the site.
 function ResumeActions() {
   const [copied, setCopied] = useState(false);
-  const [printing, setPrinting] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);
-
-  // Mounting the printable doc and calling window.print() in the same click would
-  // race the portal commit; flip a flag instead and fire print from the effect,
-  // which runs after the portal is in the DOM. window.print() blocks until the
-  // dialog closes; the afterprint event then unmounts the doc (and clears the
-  // flag so a second click re-triggers cleanly).
-  useEffect(() => {
-    if (!printing) return;
-    // The browser uses document.title as the default "Save as PDF" filename, so
-    // swap it to a clean resume name for the print, then restore it after.
-    const prevTitle = document.title;
-    document.title = "Swayam_Barik_Resume";
-    const done = () => {
-      document.title = prevTitle;
-      setPrinting(false);
-    };
-    window.addEventListener("afterprint", done, { once: true });
-    window.print();
-    return () => {
-      document.title = prevTitle;
-      window.removeEventListener("afterprint", done);
-    };
-  }, [printing]);
 
   const copy = useCallback(async () => {
     const text = resumeToPlainText();
@@ -695,19 +671,22 @@ function ResumeActions() {
       <button type="button" onClick={copy} className={btn} aria-label="copy resume as plain text">
         {copied ? <span className="text-term-green">copied ✓</span> : "copy as text"}
       </button>
-      <button
-        type="button"
-        onClick={() => setPrinting(true)}
+      <a
+        href="/Swayam_Barik_Resume.pdf"
+        download="Swayam_Barik_Resume.pdf"
         className={btn}
-        aria-label="print or save the resume as a PDF"
+        aria-label="download the resume as a PDF"
       >
         save as PDF
-      </button>
+      </a>
       <span role="status" aria-live="polite" className="sr-only">
         {copied ? "Resume copied to clipboard" : ""}
       </span>
-      {printing &&
-        typeof document !== "undefined" &&
+      {/* Always mount the print doc (display:none on screen) so the build-time
+          PDF generator can render it without clicking anything. The button above
+          downloads that pre-generated, fixed-geometry one-page PDF directly -
+          no browser print dialog, so the output is identical everywhere. */}
+      {typeof document !== "undefined" &&
         createPortal(<PrintableResume />, document.body)}
     </div>
   );

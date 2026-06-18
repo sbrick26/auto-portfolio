@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { ResumeOutput } from "@/components/terminal/outputs";
 import { profile, resume } from "@/content/data";
@@ -13,7 +13,7 @@ describe("ResumeOutput actions", () => {
   it("renders the resume body alongside the take-away actions", () => {
     render(<ResumeOutput />);
     expect(screen.getByLabelText("copy resume as plain text")).toBeDefined();
-    expect(screen.getByLabelText("print or save the resume as a PDF")).toBeDefined();
+    expect(screen.getByLabelText("download the resume as a PDF")).toBeDefined();
     expect(screen.getAllByText(resume.summary).length).toBeGreaterThan(0);
   });
 
@@ -68,29 +68,21 @@ describe("ResumeOutput actions", () => {
   });
 
   describe("save as PDF", () => {
-    beforeEach(() => {
-      Object.defineProperty(window, "print", {
-        configurable: true,
-        value: vi.fn(),
-      });
+    it("downloads the pre-generated fixed-geometry PDF (no print dialog)", () => {
+      render(<ResumeOutput />);
+      const link = screen.getByLabelText("download the resume as a PDF") as HTMLAnchorElement;
+      // it is a direct download link to the controlled static PDF, not a print
+      // button - so the file is identical in every browser, always one page.
+      expect(link.tagName).toBe("A");
+      expect(link.getAttribute("href")).toBe("/Swayam_Barik_Resume.pdf");
+      expect(link.getAttribute("download")).toBe("Swayam_Barik_Resume.pdf");
     });
 
-    it("mounts a printable document, fires print, and tears down afterprint", () => {
+    it("always mounts the printable document the PDF is generated from", () => {
       render(<ResumeOutput />);
-      act(() => {
-        fireEvent.click(screen.getByLabelText("print or save the resume as a PDF"));
-      });
-
-      expect(window.print).toHaveBeenCalled();
-      // the print-only doc renders a clean header with the candidate's name
       const printable = document.querySelector(".resume-doc");
       expect(printable).not.toBeNull();
       expect(printable?.textContent).toContain(profile.name);
-
-      act(() => {
-        window.dispatchEvent(new Event("afterprint"));
-      });
-      expect(document.querySelector(".resume-doc")).toBeNull();
     });
   });
 });

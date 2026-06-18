@@ -39,10 +39,7 @@ test.describe("resume one-page guarantee", () => {
     const input = page.locator('input[aria-label="terminal input"]:visible');
     await input.fill("resume");
     await input.press("Enter");
-    await page
-      .getByRole("button", { name: "print or save the resume as a PDF" })
-      .first()
-      .click();
+    // .resume-doc is always mounted (display:none on screen) - no click needed.
     await expect(page.locator(".resume-doc")).toBeAttached({ timeout: 5_000 });
 
     // Render with the REAL fonts and the print stylesheet, exactly as it prints.

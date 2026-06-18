@@ -146,5 +146,10 @@ stays current with your best work.
    one page. If it is two, COMBINE related bullets, cut the lowest effective_score
    lines, and tighten - then re-run the gate. Loop until it passes; never stop at
    two pages.
-7. Report: sections touched, the top-scored facts you included (with their
+7. REGENERATE the downloadable PDF so the "save as PDF" button stays in sync with
+   the resume: `GEN_PDF=1 CI=1 npx playwright test gen-resume-pdf --project=desktop`
+   (writes public/Swayam_Barik_Resume.pdf with fixed one-page geometry and asserts
+   one page). Commit the regenerated PDF with your data.ts change - the button
+   downloads this static file, not a browser print, so it must match.
+8. Report: sections touched, the top-scored facts you included (with their
    effective_score), what you cut and why, and any estimates used with basis.
