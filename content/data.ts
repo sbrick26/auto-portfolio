@@ -225,6 +225,7 @@ export const resume = {
         "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
         "Shipped Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
         "Engineered 2 reusable API-driven iOS components - a stateful Connect/Follow action button and a re-orderable skills module - adopted across multiple profile sections.",
+        "Designed profile A/B experiments on LinkedIn's LIX and T-REX frameworks and facilitated monthly technical meetups for a 35-person early-career engineering cohort.",
       ],
     },
     {
