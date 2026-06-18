@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Radar,
@@ -11,6 +12,7 @@ import {
 } from "recharts";
 import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
+import { resumeToPlainText } from "@/lib/resume-export";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor, Spinner } from "./typing";
@@ -544,14 +546,174 @@ export function ProjectsOutput() {
 
 /* -------------------------------- resume --------------------------------- */
 
+// Last-resort clipboard write for browsers without the async Clipboard API (or
+// where it is blocked by permissions). Returns whether the copy succeeded.
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+// A print-only, document-style render of the resume. It is mounted into <body>
+// via a portal only while printing, so the browser's print/save-as-PDF renders a
+// clean black-on-white page (see the @media print rules in globals.css) instead
+// of a screenshot of the dark terminal. Lives outside the terminal's clipped,
+// dark-themed scroll container precisely so print styling is unencumbered.
+function PrintableResume() {
+  return (
+    <div className="resume-doc">
+      <header className="resume-doc-head">
+        <h1>{profile.name}</h1>
+        <div className="resume-doc-role">{profile.role}</div>
+        <div className="resume-doc-contact">
+          {[
+            profile.location,
+            profile.links.email,
+            profile.links.github.replace("https://", ""),
+            profile.links.linkedin.replace("https://www.", ""),
+          ].join(" | ")}
+        </div>
+      </header>
+
+      <section>
+        <h2>Summary</h2>
+        <p>{resume.summary}</p>
+      </section>
+
+      <section>
+        <h2>Experience</h2>
+        {resume.experience.map((e, i) => (
+          <div className="resume-doc-entry" key={i}>
+            <div className="resume-doc-entry-head">
+              <span className="resume-doc-title">{e.title}</span>
+              {e.when && <span className="resume-doc-when">{e.when}</span>}
+            </div>
+            {e.org && <div className="resume-doc-org">{e.org}</div>}
+            <ul>
+              {e.points.map((pt, j) => (
+                <li key={j}>{pt}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Skills</h2>
+        {skills.map((g) => (
+          <div className="resume-doc-skill" key={g.category}>
+            <strong>{g.category}:</strong> {g.items.map((s) => s.name).join(", ")}
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Education</h2>
+        {resume.education.map((e, i) => (
+          <div className="resume-doc-entry" key={i}>
+            <div className="resume-doc-entry-head">
+              <span className="resume-doc-title">{e.title}</span>
+              {e.when && <span className="resume-doc-when">{e.when}</span>}
+            </div>
+            {e.org && <div className="resume-doc-org">{e.org}</div>}
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+// Take-away affordances for the resume: copy the whole thing as clean plain text
+// (one paste into an ATS or email), or print / save it as a PDF through the
+// dedicated print stylesheet. Adds zero dependencies - just the Clipboard API
+// (with a legacy fallback) and window.print(). This row never alters the resume
+// content itself; it only lets a visitor get the resume out of the site.
+function ResumeActions() {
+  const [copied, setCopied] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  // Mounting the printable doc and calling window.print() in the same click would
+  // race the portal commit; flip a flag instead and fire print from the effect,
+  // which runs after the portal is in the DOM. window.print() blocks until the
+  // dialog closes; the afterprint event then unmounts the doc (and clears the
+  // flag so a second click re-triggers cleanly).
+  useEffect(() => {
+    if (!printing) return;
+    const done = () => setPrinting(false);
+    window.addEventListener("afterprint", done, { once: true });
+    window.print();
+    return () => window.removeEventListener("afterprint", done);
+  }, [printing]);
+
+  const copy = useCallback(async () => {
+    const text = resumeToPlainText();
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch {
+      ok = legacyCopy(text);
+    }
+    if (!ok) return;
+    setCopied(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 2000);
+  }, []);
+
+  const btn =
+    "rounded-md border border-term-border bg-term-panel px-2.5 py-1 text-[13px] text-term-text/90 transition hover:border-term-green/50 hover:text-term-green active:scale-[0.97]";
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 print:hidden">
+      <button type="button" onClick={copy} className={btn} aria-label="copy resume as plain text">
+        {copied ? <span className="text-term-green">copied ✓</span> : "copy as text"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setPrinting(true)}
+        className={btn}
+        aria-label="print or save the resume as a PDF"
+      >
+        save as PDF
+      </button>
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "Resume copied to clipboard" : ""}
+      </span>
+      {printing &&
+        typeof document !== "undefined" &&
+        createPortal(<PrintableResume />, document.body)}
+    </div>
+  );
+}
+
 export function ResumeOutput() {
   return (
     <div className="max-w-2xl space-y-4">
       <Reveal>
+        <ResumeActions />
+      </Reveal>
+      <Reveal i={1}>
         <SectionLabel>summary</SectionLabel>
         <p className="leading-relaxed text-term-text/90">{resume.summary}</p>
       </Reveal>
-      <Reveal i={1}>
+      <Reveal i={2}>
         <SectionLabel>experience</SectionLabel>
         <div className="space-y-3">
           {resume.experience.map((e, i) => (
@@ -573,7 +735,7 @@ export function ResumeOutput() {
           ))}
         </div>
       </Reveal>
-      <Reveal i={2}>
+      <Reveal i={3}>
         <SectionLabel>skills</SectionLabel>
         <div className="space-y-1">
           {skills.map((g) => (
@@ -584,7 +746,7 @@ export function ResumeOutput() {
           ))}
         </div>
       </Reveal>
-      <Reveal i={3}>
+      <Reveal i={4}>
         <SectionLabel>education</SectionLabel>
         {resume.education.map((e, i) => (
           <div key={i}>
