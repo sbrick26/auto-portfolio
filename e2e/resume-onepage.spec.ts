@@ -11,7 +11,12 @@ import { PDFDocument } from "pdf-lib";
 // stays under one page with a small margin.
 const PRINT_W = 720; // Letter 8.5in - 2x0.5in margins = 7.5in
 const PAGE_USABLE_H = 960; // Letter 11in - 2x0.5in margins = 10in
-const SAFE_H = 905; // fill toward here; ~55px under usable so it stays one page
+// The AUTHORITATIVE 1-page guard is pagesClean/pagesRealistic === 1 below (the
+// real PDF page count). heightPx is only a fill/overflow sanity, and it varies
+// by OS font rendering (~27px taller on the Linux CI runner than on macOS), so
+// the ceiling must absorb that variance while still catching a true overflow
+// (usable height is 960). Fill target ~900; ceiling 950.
+const SAFE_H = 950;
 
 test.describe("resume one-page guarantee", () => {
   test("the resume fits one Letter page (fonts loaded, with margin)", async ({ page, browserName }, testInfo) => {
