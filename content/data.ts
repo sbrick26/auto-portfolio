@@ -81,77 +81,138 @@ export const skills: SkillGroup[] = [
   },
 ];
 
+export type ProjectMetric = { value: string; label: string };
+
 export type Project = {
   name: string;
   blurb: string;
   stack: string[];
   status: "live" | "building" | "shipped" | "archived";
   link?: string;
+  // The industry the engagement ran in (never the client name). Renders as the
+  // card's context label.
+  domain?: string;
+  // Two or three scannable highlights pulled straight from the blurb so the
+  // numbers that matter are not buried in prose. No new claims live here.
+  metrics?: ProjectMetric[];
 };
 
 // Client engagements are generalized on purpose: industry, never the client name.
 export const projects: Project[] = [
   {
     name: "autonomous portfolio + agent pipeline",
+    domain: "this site, live",
     blurb:
       "Built this site as a multi-agent system that ships its own daily improvements: front agent on Telegram, per-project leads and workers, PRs to GitHub, CI gates, deploy to AWS via SST.",
+    metrics: [
+      { value: "daily", label: "self-shipped improvements" },
+      { value: "1-tap", label: "Telegram approval to ship" },
+      { value: "CI-gated", label: "every pull request" },
+    ],
     stack: ["Next.js", "TypeScript", "Claude Code", "SST", "AWS"],
     status: "building",
     link: "https://github.com/sbrick26/auto-portfolio",
   },
   {
     name: "IBM i RPG modernization MCP server",
+    domain: "transport & logistics",
     blurb:
       "Built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. A companion Bob 2.0 demo drove an agent end to end on a single 10,000+ line legacy file - business-rule extraction, fixed-to-free RPG modernization, then compile-run-test on the box. Cleared enterprise security review; two major transport and logistics companies adopted the product.",
+    metrics: [
+      { value: "10K+ lines", label: "RPG modernized end to end" },
+      { value: "2", label: "logistics firms adopted" },
+      { value: "cleared", label: "enterprise security review" },
+    ],
     stack: ["TypeScript", "MCP", "IBM i / RPG", "Db2", "SSH"],
     status: "shipped",
   },
   {
     name: "Sterling order-management MCP platform",
+    domain: "enterprise order management",
     blurb:
       "Built an MCP platform over a live Sterling Order Management Suite for natural-language diagnosis and remediation of production order issues. A Python MCP server exposes ~20 tools across four namespaces plus a catch-all over all 1,060 Sterling APIs, reusing a persistent SSH tunnel for ~50ms calls. Demonstrated an agent fixing a real production bug (a Java NPE in a user-exit JAR) end to end, from log stack trace to deploy, cutting MTTR from hours to minutes with full audit trails.",
+    metrics: [
+      { value: "1,060", label: "Sterling APIs exposed" },
+      { value: "~50ms", label: "tunneled tool calls" },
+      { value: "hrs to mins", label: "MTTR cut" },
+    ],
     stack: ["MCP", "Python", "SSH ControlMaster", "Sterling OMS", "Java / Liberty"],
     status: "shipped",
   },
   {
     name: "agentic HR framework (Workday + ServiceNow)",
+    domain: "sports & entertainment",
     blurb:
       "Designed an agentic HR framework with policy-governance guardrails for a global sports entertainment company, live on real Workday and ServiceNow tenants inside a custom portal. A two-layer architecture (reusable app integrations + use-case orchestrators) handles job changes, promotion letters, and compensation checks against banding policy before any write. Moved the account to pricing and deployment.",
+    metrics: [
+      { value: "3", label: "live HR workflows" },
+      { value: "2 tenants", label: "real Workday + ServiceNow" },
+      { value: "policy-gated", label: "every write" },
+    ],
     stack: ["watsonx Orchestrate", "Workday", "ServiceNow", "OAuth 2.0", "OpenAPI"],
     status: "shipped",
   },
   {
     name: "LucidLink MCP server + enablement kit",
+    domain: "media infrastructure",
     blurb:
       "Built a production-shaped LucidLink MCP server - 20 tools tiered into auto-approvable reads, dry-run-by-default guarded writes, and feature-flagged S3 Connect - plus a full Bob enablement pack and a 3-hour hands-on customer workshop teaching partners to build on the Python SDK with an AI agent. Safety designed in: token hygiene, guarded writes, chunked streaming for large media.",
+    metrics: [
+      { value: "20", label: "tiered MCP tools" },
+      { value: "3-hour", label: "hands-on partner workshop" },
+    ],
     stack: ["MCP", "Python", "LucidLink SDK", "uv"],
     status: "shipped",
   },
   {
     name: "AIDLC guardrails framework",
+    domain: "utility & energy",
     blurb:
       "Engineered an enterprise AIDLC governance framework: two sibling repos with byte-identical code where the only difference is the governance layer, so the same prompts show agent behavior with guardrails on vs off. Three enforcement layers - file-access blocklist, plain-English NIST/FedRAMP policies with audit trails, and execution allowlists - plus a GitHub CI gate that audits every PR diff against the committed rules. The public twin ships the open pattern.",
+    metrics: [
+      { value: "3-layer", label: "enforced agent governance" },
+      { value: "every PR", label: "audited against policy" },
+      { value: "public twin", label: "open-sourced pattern" },
+    ],
     stack: ["AIDLC", "CI gate", "NIST / FedRAMP", "Flask", "policy-as-code"],
     status: "shipped",
   },
   {
     name: "coding-agent bake-off platform",
+    domain: "competitive evidence engine",
     blurb:
       "Built a local web app benchmarking three coding agents side by side on identical scenarios. Each gets a fresh isolated repo, streams into a three-column live UI, and produces an objectively verified report: cost, time, tokens, tests added, git diff, and a security verdict from pytest, semgrep, and a per-scenario verify.sh. The evidence engine behind IBM competitive displacement: marketing claims become reproducible numbers.",
+    metrics: [
+      { value: "3", label: "coding agents benchmarked" },
+      { value: "pytest + semgrep", label: "verified verdicts" },
+      { value: "reproducible", label: "cost, time, security" },
+    ],
     stack: ["FastAPI", "SSE", "semgrep", "pytest", "SQLite"],
     status: "shipped",
   },
   {
     name: "email triage agent",
+    domain: "beverage manufacturing",
     blurb:
       "Shipped a watsonx Orchestrate agent for a national beverage manufacturer drowning in 2,000-3,000 EDI alert emails a day: an LLM classifies each by severity, files it into priority folders, and fires Teams alerts on the ~1% critical. Secured Graph access via OAuth 2.0 delegated scopes. Won the platform bake-off vs Copilot Studio.",
+    metrics: [
+      { value: "2-3K/day", label: "EDI alerts triaged" },
+      { value: "~1%", label: "critical, auto-escalated" },
+      { value: "won", label: "bake-off vs Copilot Studio" },
+    ],
     stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
     status: "shipped",
   },
   {
     name: "data cleansing agent",
+    domain: "state government",
     blurb:
       "Built an AI-readiness demo for a state government agency: an agent finds and fixes quality issues across ~1,000 citizen records through a least-privilege Informix MCP server (4 tools), fully container-isolated for security review. Reaches 95%+ standardized formats and zero duplicates, turning days of manual work into minutes.",
+    metrics: [
+      { value: "95%+", label: "standardized formats" },
+      { value: "zero", label: "duplicate records" },
+      { value: "days to mins", label: "manual work cut" },
+    ],
     stack: ["Node.js", "MCP", "Informix", "Docker"],
     status: "shipped",
   },
