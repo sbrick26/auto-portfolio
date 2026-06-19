@@ -19,6 +19,7 @@ import {
   resume,
   changelog,
   type Project,
+  type ProjectMetric,
 } from "@/content/data";
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
 import { resumeToPlainText } from "@/lib/resume-export";
@@ -547,6 +548,37 @@ const statusStyle: Record<
   },
 };
 
+// One scannable headline number. `featured` scales it up so the flagship card's
+// stats carry visual weight. The colored value is the thing the eye should land
+// on first; the label underneath stays quiet.
+function MetricTile({
+  m,
+  glow,
+  featured = false,
+}: {
+  m: ProjectMetric;
+  glow: string;
+  featured?: boolean;
+}) {
+  return (
+    <div
+      className={`flex-1 rounded-md border border-term-border/60 bg-term-bg/40 ${
+        featured ? "min-w-[116px] px-3 py-2" : "min-w-[92px] px-2.5 py-1.5"
+      }`}
+    >
+      <div
+        className={`font-semibold leading-tight tabular-nums ${
+          featured ? "text-[16px]" : "text-[13px]"
+        }`}
+        style={{ color: glow }}
+      >
+        {m.value}
+      </div>
+      <div className="mt-0.5 text-[10px] leading-tight text-term-faint">{m.label}</div>
+    </div>
+  );
+}
+
 function ProjectCard({
   p,
   index,
@@ -558,7 +590,11 @@ function ProjectCard({
 }) {
   const s = statusStyle[p.status];
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-term-border bg-term-panel2/50 p-4 transition hover:border-term-green/40 hover:bg-term-panel2/80">
+    <div
+      className={`group relative flex h-full flex-col overflow-hidden rounded-lg border border-term-border bg-term-panel2/50 transition hover:border-term-green/40 hover:bg-term-panel2/80 ${
+        featured ? "p-5" : "p-4"
+      }`}
+    >
       {/* accent rail, tinted to the project's status */}
       <span
         aria-hidden
@@ -566,13 +602,19 @@ function ProjectCard({
         style={{ background: `linear-gradient(90deg, transparent, ${s.glow}, transparent)` }}
       />
 
+      {featured && (
+        <div className="mb-2.5 text-[10px] uppercase tracking-[0.2em] text-term-green/80">
+          featured build
+        </div>
+      )}
+
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-baseline gap-2.5">
           <span className="shrink-0 text-[11px] tabular-nums text-term-faint">
             {String(index + 1).padStart(2, "0")}
           </span>
           <div className="min-w-0">
-            <h3 className={`text-term-text ${featured ? "text-[15px]" : "text-[14px]"}`}>
+            <h3 className={`text-term-text ${featured ? "text-[16px]" : "text-[14px]"}`}>
               {p.name}
             </h3>
             {p.domain && (
@@ -590,62 +632,68 @@ function ProjectCard({
         </span>
       </div>
 
-      <p className="mb-3 text-[13px] leading-relaxed text-term-dim">{p.blurb}</p>
+      <p
+        className={`leading-relaxed text-term-dim ${featured ? "text-[13.5px]" : "text-[13px]"}`}
+      >
+        {p.blurb}
+      </p>
 
       {p.metrics && p.metrics.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {p.metrics.map((m) => (
-            <div
-              key={m.label}
-              className="min-w-[92px] flex-1 rounded-md border border-term-border/60 bg-term-bg/40 px-2.5 py-1.5"
-            >
-              <div
-                className="text-[13px] font-semibold leading-tight tabular-nums"
-                style={{ color: s.glow }}
-              >
-                {m.value}
-              </div>
-              <div className="mt-0.5 text-[10px] leading-tight text-term-faint">{m.label}</div>
-            </div>
+            <MetricTile key={m.label} m={m} glow={s.glow} featured={featured} />
           ))}
         </div>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-1.5">
-        {p.stack.map((st) => (
-          <Pill key={st}>{st}</Pill>
-        ))}
-      </div>
-
-      {p.link && (
-        <div className="mt-2.5">
+      {/* footer: stack + link, separated by a hairline so the card reads as
+          body-then-details rather than one flat run of text */}
+      <div className="mt-auto flex flex-col gap-2.5 border-t border-term-border/40 pt-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {p.stack.map((st) => (
+            <Pill key={st}>{st}</Pill>
+          ))}
+        </div>
+        {p.link && (
           <Ext href={p.link}>
             open <span className="text-term-faint">-&gt;</span>
           </Ext>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
 export function ProjectsOutput() {
   const [featured, ...rest] = projects;
+  const inProd = projects.filter((p) => p.status === "shipped" || p.status === "live").length;
+  const building = projects.filter((p) => p.status === "building").length;
   return (
     <div className="max-w-3xl space-y-3">
+      <Reveal
+        i={0}
+        className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-term-border/40 pb-2"
+      >
+        <span className="text-[14px] text-term-text">selected work</span>
+        <span className="text-[12px] text-term-faint">
+          {projects.length} projects · {inProd} shipped to production
+          {building ? ` · ${building} in build` : ""}
+        </span>
+      </Reveal>
       {featured && (
-        <Reveal i={0}>
+        <Reveal i={1}>
           <ProjectCard p={featured} index={0} featured />
         </Reveal>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         {rest.map((p, i) => (
-          <Reveal key={p.name} i={i + 1}>
+          <Reveal key={p.name} i={i + 2}>
             <ProjectCard p={p} index={i + 1} />
           </Reveal>
         ))}
       </div>
       <Reveal
-        i={rest.length + 1}
+        i={rest.length + 2}
         className="flex flex-wrap items-center gap-2 pt-1 text-[12px] text-term-faint"
       >
         <span>the same work, on one page</span>
