@@ -10,7 +10,16 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
 } from "recharts";
-import { profile, about, skills, projects, updates, resume, changelog } from "@/content/data";
+import {
+  profile,
+  about,
+  skills,
+  projects,
+  updates,
+  resume,
+  changelog,
+  type Project,
+} from "@/content/data";
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
 import { resumeToPlainText } from "@/lib/resume-export";
 import { COMMANDS, QUICK } from "@/lib/commands";
@@ -509,37 +518,139 @@ export function SkillsOutput({ args = "" }: { args?: string } = {}) {
 
 /* ------------------------------- projects -------------------------------- */
 
-const statusColor: Record<string, string> = {
-  live: "text-term-green",
-  building: "text-term-yellow",
-  shipped: "text-term-cyan",
-  archived: "text-term-faint",
+// Per-status styling. `glow` is the raw color (for inline dots, the metric
+// numbers, and the top accent rail); `badge` is the pill's tinted border + fill;
+// `text` colors the status word. Full class strings so Tailwind keeps them.
+const statusStyle: Record<
+  Project["status"],
+  { text: string; badge: string; glow: string }
+> = {
+  live: {
+    text: "text-term-green",
+    badge: "border-term-green/30 bg-term-green/10",
+    glow: "var(--color-term-green)",
+  },
+  building: {
+    text: "text-term-yellow",
+    badge: "border-term-yellow/30 bg-term-yellow/10",
+    glow: "var(--color-term-yellow)",
+  },
+  shipped: {
+    text: "text-term-cyan",
+    badge: "border-term-cyan/30 bg-term-cyan/10",
+    glow: "var(--color-term-cyan)",
+  },
+  archived: {
+    text: "text-term-faint",
+    badge: "border-term-border bg-term-panel2",
+    glow: "var(--color-term-faint)",
+  },
 };
 
-export function ProjectsOutput() {
+function ProjectCard({
+  p,
+  index,
+  featured = false,
+}: {
+  p: Project;
+  index: number;
+  featured?: boolean;
+}) {
+  const s = statusStyle[p.status];
   return (
-    <div className="grid max-w-3xl gap-3 sm:grid-cols-2">
-      {projects.map((p, i) => (
-        <Reveal key={p.name} i={i}>
-          <div className="h-full rounded-lg border border-term-border bg-term-panel2/50 p-3.5 transition hover:border-term-green/40">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-term-text">{p.name}</span>
-              <span className={`text-[11px] ${statusColor[p.status]}`}>● {p.status}</span>
-            </div>
-            <p className="mb-2.5 text-[13px] leading-relaxed text-term-dim">{p.blurb}</p>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {p.stack.map((s) => (
-                <Pill key={s}>{s}</Pill>
-              ))}
-            </div>
-            {p.link && (
-              <Ext href={p.link}>
-                open <span className="text-term-faint">-&gt;</span>
-              </Ext>
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-term-border bg-term-panel2/50 p-4 transition hover:border-term-green/40 hover:bg-term-panel2/80">
+      {/* accent rail, tinted to the project's status */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+        style={{ background: `linear-gradient(90deg, transparent, ${s.glow}, transparent)` }}
+      />
+
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-baseline gap-2.5">
+          <span className="shrink-0 text-[11px] tabular-nums text-term-faint">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <div className="min-w-0">
+            <h3 className={`text-term-text ${featured ? "text-[15px]" : "text-[14px]"}`}>
+              {p.name}
+            </h3>
+            {p.domain && (
+              <div className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-term-faint">
+                {p.domain}
+              </div>
             )}
           </div>
+        </div>
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] ${s.badge} ${s.text}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.glow }} />
+          {p.status}
+        </span>
+      </div>
+
+      <p className="mb-3 text-[13px] leading-relaxed text-term-dim">{p.blurb}</p>
+
+      {p.metrics && p.metrics.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {p.metrics.map((m) => (
+            <div
+              key={m.label}
+              className="min-w-[92px] flex-1 rounded-md border border-term-border/60 bg-term-bg/40 px-2.5 py-1.5"
+            >
+              <div
+                className="text-[13px] font-semibold leading-tight tabular-nums"
+                style={{ color: s.glow }}
+              >
+                {m.value}
+              </div>
+              <div className="mt-0.5 text-[10px] leading-tight text-term-faint">{m.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-auto flex flex-wrap items-center gap-1.5">
+        {p.stack.map((st) => (
+          <Pill key={st}>{st}</Pill>
+        ))}
+      </div>
+
+      {p.link && (
+        <div className="mt-2.5">
+          <Ext href={p.link}>
+            open <span className="text-term-faint">-&gt;</span>
+          </Ext>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ProjectsOutput() {
+  const [featured, ...rest] = projects;
+  return (
+    <div className="max-w-3xl space-y-3">
+      {featured && (
+        <Reveal i={0}>
+          <ProjectCard p={featured} index={0} featured />
         </Reveal>
-      ))}
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {rest.map((p, i) => (
+          <Reveal key={p.name} i={i + 1}>
+            <ProjectCard p={p} index={i + 1} />
+          </Reveal>
+        ))}
+      </div>
+      <Reveal
+        i={rest.length + 1}
+        className="flex flex-wrap items-center gap-2 pt-1 text-[12px] text-term-faint"
+      >
+        <span>the same work, on one page</span>
+        <CmdChip cmd="resume" label="see resume" />
+      </Reveal>
     </div>
   );
 }
