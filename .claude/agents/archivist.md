@@ -81,12 +81,20 @@ Everything under career-corpus/ is PRIVATE and never committed to any repo.
    the scattered pieces. PROJECTS: file substantial builds as `project`-type
    facts with `resume_section` = projects and a weight, so the public projects
    section can be regenerated from the strongest ones.
-8. CLIENT REGISTRY: when material names a client not yet listed in
+8. CLIENT REGISTRY: when material names a real, confidential CLIENT not yet in
    career-corpus/clients.txt, append the real name there - one per line, plus
    common variants (hyphenated, abbreviated). This private registry drives the
    public leak-scan blocklist, so a name you register today is blocked from
-   ever shipping publicly tomorrow. Real names live ONLY in the hub and this
-   registry, never in public content.
+   ever shipping publicly tomorrow. Real client names live ONLY in the hub and
+   this registry, never in public content.
+   DO NOT register (these are public and may be named freely on the site/resume,
+   and blocking them would break legitimate content): vendor/product/technology
+   names (LucidLink, IBM Sterling / Sterling OMS, Workday, ServiceNow, Informix,
+   watsonx, AWS), and DEMO/placeholder names that are not real clients (e.g.
+   MidWest Parts / MWPARTS). When unsure whether a name is a confidential client
+   vs a product or a demo, queue a question to the owner instead of registering
+   it - a wrong registration blocks real resume content and triggers false leak
+   alarms.
 9. For `updates`-priority items, append an entry to portfolio
    content/updates.json (newest last: {date, time, text, tag}) - short,
    concrete, present-tense, PUBLIC rules: a real client name never appears -
