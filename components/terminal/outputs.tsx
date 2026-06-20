@@ -28,6 +28,7 @@ import { APP_VERSION } from "@/lib/version";
 import { TypedLine, Cursor, Spinner } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
 import { PipelineDiagram } from "./PipelineDiagram";
+import { ArchDiagram } from "./ArchDiagram";
 
 /* ----------------------------- welcome / boot ---------------------------- */
 
@@ -631,6 +632,18 @@ function ProjectCard({
           {p.status}
         </span>
       </div>
+
+      {/* The system shape first, as a scannable strip - the strongest honest
+          visual when the work itself is confidential - with the prose right
+          below for anyone who wants the detail. */}
+      {p.arch && p.arch.length > 0 && (
+        <div className="mb-2.5">
+          <div className="mb-1.5 text-[9px] uppercase tracking-[0.18em] text-term-faint/80">
+            architecture
+          </div>
+          <ArchDiagram nodes={p.arch} featured={featured} />
+        </div>
+      )}
 
       <p
         className={`leading-relaxed text-term-dim ${featured ? "text-[13.5px]" : "text-[13px]"}`}
