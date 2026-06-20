@@ -83,6 +83,15 @@ export const skills: SkillGroup[] = [
 
 export type ProjectMetric = { value: string; label: string };
 
+// A node in a project's architecture micro-diagram. `kind` only tints the chip
+// (color-codes the role); the meaning lives in `label`. Labels are ALWAYS a
+// generic tech or role name - agent, MCP server, SSH tunnel, live system - and
+// NEVER a client or a client's named system. The privacy guard in
+// test/content.test.ts serializes every project, so a client name leaking into
+// an arch label would fail the build, by design.
+export type ArchKind = "actor" | "gateway" | "guard" | "system" | "store" | "io";
+export type ArchNode = { label: string; kind: ArchKind };
+
 export type Project = {
   name: string;
   blurb: string;
@@ -95,6 +104,11 @@ export type Project = {
   // Two or three scannable highlights pulled straight from the blurb so the
   // numbers that matter are not buried in prose. No new claims live here.
   metrics?: ProjectMetric[];
+  // A compact, schematic left-to-right flow that shows the system shape at a
+  // glance (the strongest honest visual when engagements are confidential and
+  // no screenshots are allowed). Rendered by ArchDiagram as tinted chips joined
+  // by `->`. Keep it to ~4-5 short nodes so the card stays scannable on mobile.
+  arch?: ArchNode[];
 };
 
 // Client engagements are generalized on purpose: industry, never the client name.
@@ -108,6 +122,13 @@ export const projects: Project[] = [
       { value: "daily", label: "self-shipped improvements" },
       { value: "1-tap", label: "Telegram approval to ship" },
       { value: "CI-gated", label: "every pull request" },
+    ],
+    arch: [
+      { label: "front agent", kind: "actor" },
+      { label: "project lead", kind: "gateway" },
+      { label: "build + review", kind: "actor" },
+      { label: "CI gates", kind: "guard" },
+      { label: "AWS / SST", kind: "system" },
     ],
     stack: ["Next.js", "TypeScript", "Claude Code", "SST", "AWS"],
     status: "building",
@@ -123,6 +144,13 @@ export const projects: Project[] = [
       { value: "2", label: "logistics firms adopted" },
       { value: "cleared", label: "enterprise security review" },
     ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "MCP server", kind: "gateway" },
+      { label: "write allowlist", kind: "guard" },
+      { label: "SSH tunnel", kind: "gateway" },
+      { label: "IBM i / Db2", kind: "system" },
+    ],
     stack: ["TypeScript", "MCP", "IBM i / RPG", "Db2", "SSH"],
     status: "shipped",
   },
@@ -135,6 +163,12 @@ export const projects: Project[] = [
       { value: "1,060", label: "Sterling APIs exposed" },
       { value: "~50ms", label: "tunneled tool calls" },
       { value: "hrs to mins", label: "MTTR cut" },
+    ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "Python MCP", kind: "gateway" },
+      { label: "SSH tunnel", kind: "gateway" },
+      { label: "live OMS", kind: "system" },
     ],
     stack: ["MCP", "Python", "SSH ControlMaster", "Sterling OMS", "Java / Liberty"],
     status: "shipped",
@@ -149,6 +183,12 @@ export const projects: Project[] = [
       { value: "2 tenants", label: "real Workday + ServiceNow" },
       { value: "policy-gated", label: "every write" },
     ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "orchestrators", kind: "gateway" },
+      { label: "policy guard", kind: "guard" },
+      { label: "Workday + ServiceNow", kind: "system" },
+    ],
     stack: ["watsonx Orchestrate", "Workday", "ServiceNow", "OAuth 2.0", "OpenAPI"],
     status: "shipped",
   },
@@ -160,6 +200,12 @@ export const projects: Project[] = [
     metrics: [
       { value: "20", label: "tiered MCP tools" },
       { value: "3-hour", label: "hands-on partner workshop" },
+    ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "MCP server", kind: "gateway" },
+      { label: "tiered guards", kind: "guard" },
+      { label: "LucidLink SDK", kind: "system" },
     ],
     stack: ["MCP", "Python", "LucidLink SDK", "uv"],
     status: "shipped",
@@ -174,6 +220,12 @@ export const projects: Project[] = [
       { value: "every PR", label: "audited against policy" },
       { value: "public twin", label: "open-sourced pattern" },
     ],
+    arch: [
+      { label: "agent", kind: "actor" },
+      { label: "governance layer", kind: "guard" },
+      { label: "audit trail", kind: "store" },
+      { label: "CI diff gate", kind: "guard" },
+    ],
     stack: ["AIDLC", "CI gate", "NIST / FedRAMP", "Flask", "policy-as-code"],
     status: "shipped",
   },
@@ -186,6 +238,13 @@ export const projects: Project[] = [
       { value: "3", label: "coding agents benchmarked" },
       { value: "pytest + semgrep", label: "verified verdicts" },
       { value: "reproducible", label: "cost, time, security" },
+    ],
+    arch: [
+      { label: "scenario", kind: "io" },
+      { label: "isolated repos", kind: "store" },
+      { label: "3 coding agents", kind: "actor" },
+      { label: "pytest + semgrep", kind: "guard" },
+      { label: "scored report", kind: "io" },
     ],
     stack: ["FastAPI", "SSE", "semgrep", "pytest", "SQLite"],
     status: "shipped",
@@ -200,6 +259,12 @@ export const projects: Project[] = [
       { value: "~1%", label: "critical, auto-escalated" },
       { value: "won", label: "bake-off vs Copilot Studio" },
     ],
+    arch: [
+      { label: "EDI inbox", kind: "io" },
+      { label: "LLM classifier", kind: "actor" },
+      { label: "severity routing", kind: "guard" },
+      { label: "folders + Teams", kind: "system" },
+    ],
     stack: ["watsonx Orchestrate", "Python", "Microsoft Graph", "OAuth 2.0"],
     status: "shipped",
   },
@@ -212,6 +277,12 @@ export const projects: Project[] = [
       { value: "95%+", label: "standardized formats" },
       { value: "zero", label: "duplicate records" },
       { value: "days to mins", label: "manual work cut" },
+    ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "Informix MCP", kind: "gateway" },
+      { label: "container guard", kind: "guard" },
+      { label: "clean records", kind: "store" },
     ],
     stack: ["Node.js", "MCP", "Informix", "Docker"],
     status: "shipped",
