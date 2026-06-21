@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.28.0",
+    "date": "2026-06-21",
+    "changes": [
+      "Simpler boot: a loading screen with an icon that opens into the terminal, then the boot sequence types in"
+    ]
+  },
+  {
     "version": "1.27.0",
     "date": "2026-06-20",
     "changes": [

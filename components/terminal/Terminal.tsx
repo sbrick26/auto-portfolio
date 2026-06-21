@@ -1,12 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MotionConfig } from "framer-motion";
+import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { findCommand } from "@/lib/commands";
-import { TerminalCtx } from "./TerminalContext";
+import { TerminalCtx, BootReadyCtx } from "./TerminalContext";
 import { Session, Block } from "./Session";
 import { CommandPalette } from "./CommandPalette";
+import { BootLoader } from "./BootLoader";
 import { Welcome, RENDERERS, ErrorOutput } from "./outputs";
+
+// How long the loading screen holds before the terminal window starts to appear.
+const SPLASH_MS = 1000;
+
+// The boot runs in three beats: the loading screen shows, then it cross-fades
+// out while the terminal window animates in, then - once the window is fully
+// there - the Welcome boot sequence types in. Under reduced motion the whole
+// intro is skipped and the terminal simply appears, booted.
+type BootPhase = "splash" | "enter" | "ready";
 
 // Counter lives on globalThis so dev hot reloads can't reset it and hand out
 // duplicate ids to tabs/blocks that are still mounted.
@@ -43,6 +53,37 @@ export function Terminal() {
   useEffect(() => {
     activeRef.current = activeId;
   }, [activeId]);
+
+  // Boot intro orchestration (loading screen -> terminal appears -> boot text).
+  // Under reduced motion there is no intro: start booted, the terminal simply
+  // appears.
+  const reduceMotion = useReducedMotion();
+  const [phase, setPhase] = useState<BootPhase>(reduceMotion ? "ready" : "splash");
+
+  // Hold the loading screen briefly, then hand off to the window's entrance.
+  useEffect(() => {
+    if (reduceMotion) return;
+    const t = setTimeout(() => setPhase("enter"), SPLASH_MS);
+    return () => clearTimeout(t);
+  }, [reduceMotion]);
+
+  // Skippable intro: while the loading screen or window entrance plays, any key,
+  // click, or tap completes it at once and boots the terminal - the same fast
+  // handoff the Welcome boot sequence already offers repeat visitors.
+  useEffect(() => {
+    if (reduceMotion || phase === "ready") return;
+    const skip = () => setPhase("ready");
+    window.addEventListener("keydown", skip);
+    window.addEventListener("pointerdown", skip);
+    return () => {
+      window.removeEventListener("keydown", skip);
+      window.removeEventListener("pointerdown", skip);
+    };
+  }, [reduceMotion, phase]);
+
+  const windowIn = reduceMotion || phase === "enter" || phase === "ready";
+  const bootReady = reduceMotion || phase === "ready";
+  const showLoader = !reduceMotion && phase !== "ready";
 
   const run = useCallback((rawInput: string) => {
     const input = rawInput.trim();
@@ -100,7 +141,25 @@ export function Terminal() {
   return (
     <MotionConfig reducedMotion="user">
     <TerminalCtx.Provider value={{ run, openTab, history, openPalette: () => setPaletteOpen(true) }}>
-      <div className="flex h-dvh w-full flex-col overflow-hidden border-term-border bg-term-panel/80 shadow-2xl shadow-black/40 backdrop-blur-xl sm:h-[80vh] sm:max-w-3xl sm:rounded-xl sm:border md:max-w-4xl">
+      <BootReadyCtx.Provider value={bootReady}>
+      {showLoader && <BootLoader leaving={phase !== "splash"} />}
+      <motion.div
+        // The terminal window appears after the loading screen: it fades and
+        // eases up into place, and once that entrance completes the boot
+        // sequence is cleared to type (bootReady). Under reduced motion it is
+        // rendered in place from the first frame with no animation.
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.985, y: 8 }}
+        animate={
+          windowIn
+            ? { opacity: 1, scale: 1, y: 0 }
+            : { opacity: 0, scale: 0.985, y: 8 }
+        }
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        onAnimationComplete={() => {
+          if (phase === "enter") setPhase("ready");
+        }}
+        className="flex h-dvh w-full flex-col overflow-hidden border-term-border bg-term-panel/80 shadow-2xl shadow-black/40 backdrop-blur-xl sm:h-[80vh] sm:max-w-3xl sm:rounded-xl sm:border md:max-w-4xl"
+      >
         {/* window chrome */}
         <div className="flex items-center gap-3 border-b border-term-border bg-term-panel2/60 px-3 py-2">
           <div className="hidden items-center gap-1.5 sm:flex">
@@ -163,7 +222,8 @@ export function Terminal() {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
+      </BootReadyCtx.Provider>
 
       <CommandPalette
         open={paletteOpen}
