@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.28.0",
+    "date": "2026-06-21",
+    "changes": [
+      "CRT phosphor power-on: a signature energize-flash behind the boot text"
+    ]
+  },
+  {
     "version": "1.27.0",
     "date": "2026-06-20",
     "changes": [
