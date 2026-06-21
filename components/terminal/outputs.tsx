@@ -29,6 +29,7 @@ import { TypedLine, Cursor, Spinner } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
 import { PipelineDiagram } from "./PipelineDiagram";
 import { ArchDiagram } from "./ArchDiagram";
+import { useBootReady } from "./TerminalContext";
 
 /* ----------------------------- welcome / boot ---------------------------- */
 
@@ -133,14 +134,19 @@ function Wordmark({ animate }: { animate: boolean }) {
 
 export function Welcome() {
   const reduceMotion = useReducedMotion();
+  // The boot text waits until the loading screen has finished and the terminal
+  // window has fully appeared (Terminal drives this); only then does it type in.
+  // Under reduced motion this is true from the first frame.
+  const bootReady = useBootReady();
   const [skipped, setSkipped] = useState(false);
   const [step, setStep] = useState(0);
 
-  // The sequence only animates when motion is allowed and the visitor has not
-  // skipped. Once either is false, every line renders settled and the welcome
-  // block shows immediately - the same instant-final-state contract the
-  // typewriter already honours under reduced motion.
-  const playing = !reduceMotion && !skipped;
+  // The sequence only animates when motion is allowed, the terminal is ready,
+  // and the visitor has not skipped. Once any of those is false, every line
+  // renders settled and the welcome block shows immediately - the same
+  // instant-final-state contract the typewriter already honours under reduced
+  // motion.
+  const playing = !reduceMotion && bootReady && !skipped;
   const bootDone = !playing || step >= BOOT_STEPS.length;
 
   // Skippable handoff: while the sequence plays, any keypress, click, or tap
@@ -159,6 +165,10 @@ export function Welcome() {
   }, [playing]);
 
   const shown = bootDone ? BOOT_STEPS.length : step + 1;
+
+  // Until the terminal has appeared, render nothing - the window shows as an
+  // empty terminal, then the boot text types in once it is fully there.
+  if (!bootReady) return null;
 
   return (
     <div className="space-y-3">
