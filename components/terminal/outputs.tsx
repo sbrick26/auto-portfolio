@@ -163,10 +163,10 @@ export function Welcome() {
 
   return (
     <div className="relative space-y-3">
-      {/* The one-shot phosphor power-on flash. Pinned to the top of the welcome
-          block, it energizes the panel the instant it mounts, then self-removes
-          before the boot text has finished typing in. Fully suppressed under
-          reduced motion (the component renders nothing). */}
+      {/* The one-shot, full-viewport CRT power-on sequence. It mounts on a dark
+          off-screen covering the whole viewport, ignites, then slides apart to
+          reveal the terminal, and self-removes once it ends. Fully suppressed
+          under reduced motion (the component renders nothing). */}
       <PowerOn />
       <div className="space-y-0.5 text-[13px] text-term-dim">
         {BOOT_STEPS.slice(0, shown).map((s, idx) => (
