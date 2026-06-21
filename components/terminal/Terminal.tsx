@@ -148,13 +148,13 @@ export function Terminal() {
         // eases up into place, and once that entrance completes the boot
         // sequence is cleared to type (bootReady). Under reduced motion it is
         // rendered in place from the first frame with no animation.
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.985, y: 8 }}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 12 }}
         animate={
           windowIn
             ? { opacity: 1, scale: 1, y: 0 }
-            : { opacity: 0, scale: 0.985, y: 8 }
+            : { opacity: 0, scale: 0.97, y: 12 }
         }
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
         onAnimationComplete={() => {
           if (phase === "enter") setPhase("ready");
         }}
