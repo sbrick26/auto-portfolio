@@ -48,42 +48,40 @@ body {
 @keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 .cursor-blink { animation: blink 1.05s steps(1) infinite; }
 
-/* CRT phosphor power-on: a one-shot, full-viewport boot-up sequence that plays
-   once when the terminal first mounts (see components/terminal/PowerOn.tsx). It
-   opens on a solid dark "off" screen covering the whole viewport, ignites a bright
-   raster beam at the center seam, then retracts that dark screen from the middle -
-   like a CRT drawing its image - to reveal the terminal underneath. Layers:
-   `power-on-shutter-top` / `power-on-shutter-bottom` are the two halves of the
-   dark off-screen that hold, then slide apart from center; `power-on-beam` is the
-   bright scanline that ignites at the seam and expands to full height as it fades;
-   `power-on-bloom` is the phosphor-green energize flash; `power-on-scanlines` is a
-   faint CRT line texture that settles out. Everything runs once (forwards) and the
-   overlay unmounts on the bloom's animationend (the longest layer), so it never
-   repeats and never lingers over the page. The reduced-motion block below
-   neutralizes any stray loop, and PowerOn renders nothing under reduced motion. */
-@keyframes power-on-shutter-top {
-  0%, 20% { transform: translateY(0); }
-  100%    { transform: translateY(-101%); }
+/* Boot loader: a one-shot, full-viewport loading sequence that plays once when
+   the terminal first mounts (see components/terminal/PowerOn.tsx) - like an app
+   showing a splash before its UI is ready. It opens on a solid black "off" screen
+   covering the whole viewport, turns a loading spinner while the screen boots,
+   then draws a bright line across the middle and opens it up: the black screen
+   splits along that seam and slides apart from center to reveal the terminal.
+   Layers: `power-on-open-top` / `power-on-open-bottom` are the two halves of the
+   black off-screen that hold, then slide apart from center; `power-on-spin` turns
+   the spinner and `power-on-spinner-out` fades it once the load completes;
+   `power-on-line` draws the seam line in, holds it, then expands and fades it as
+   the panels part. Everything runs once (forwards) and the overlay unmounts on the
+   bottom panel's animationend (the longest layer), so it never repeats and never
+   lingers over the page. The reduced-motion block below neutralizes the spinner's
+   infinite loop, and PowerOn renders nothing under reduced motion. */
+@keyframes power-on-open-top {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-101%); }
 }
-@keyframes power-on-shutter-bottom {
-  0%, 20% { transform: translateY(0); }
-  100%    { transform: translateY(101%); }
+@keyframes power-on-open-bottom {
+  from { transform: translateY(0); }
+  to   { transform: translateY(101%); }
 }
-@keyframes power-on-beam {
-  0%   { transform: scaleY(0.02); opacity: 0; }
-  12%  { transform: scaleY(0.02); opacity: 1; }
-  40%  { opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
+@keyframes power-on-spin {
+  to { transform: rotate(360deg); }
 }
-@keyframes power-on-bloom {
-  0%   { opacity: 0; }
-  12%  { opacity: 0.6; }
-  100% { opacity: 0; }
+@keyframes power-on-spinner-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
-@keyframes power-on-scanlines {
-  0%   { opacity: 0; }
-  20%  { opacity: 0.35; }
-  100% { opacity: 0; }
+@keyframes power-on-line {
+  0%   { transform: scaleX(0) scaleY(1); opacity: 0; }
+  30%  { transform: scaleX(1) scaleY(1); opacity: 1; }
+  55%  { transform: scaleX(1) scaleY(1); opacity: 1; }
+  100% { transform: scaleX(1) scaleY(2.6); opacity: 0; }
 }
 
 @layer utilities {

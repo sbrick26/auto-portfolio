@@ -163,10 +163,10 @@ export function Welcome() {
 
   return (
     <div className="relative space-y-3">
-      {/* The one-shot, full-viewport CRT power-on sequence. It mounts on a dark
-          off-screen covering the whole viewport, ignites, then slides apart to
-          reveal the terminal, and self-removes once it ends. Fully suppressed
-          under reduced motion (the component renders nothing). */}
+      {/* The one-shot, full-viewport boot loader. It mounts on a black
+          off-screen covering the whole viewport, turns a loading spinner, then
+          draws a line that opens up to reveal the terminal, and self-removes
+          once it ends. Fully suppressed under reduced motion (renders nothing). */}
       <PowerOn />
       <div className="space-y-0.5 text-[13px] text-term-dim">
         {BOOT_STEPS.slice(0, shown).map((s, idx) => (

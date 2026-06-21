@@ -3,7 +3,7 @@
     "version": "1.28.0",
     "date": "2026-06-21",
     "changes": [
-      "CRT phosphor power-on: a signature energize-flash behind the boot text"
+      "boot loader: a black loading screen with a spinner that opens up to reveal the terminal"
     ]
   },
   {
