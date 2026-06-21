@@ -122,11 +122,11 @@ body {
   }
   .resume-doc-head {
     border-bottom: 1px solid #999;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
   }
 
-  .resume-doc section { margin-top: 5px; }
+  .resume-doc section { margin-top: 4px; }
   .resume-doc h2 {
     font-size: 9pt;
     font-weight: 700;
@@ -139,7 +139,7 @@ body {
   }
 
   .resume-doc p { margin: 0; }
-  .resume-doc .resume-doc-entry { margin-bottom: 4px; page-break-inside: avoid; }
+  .resume-doc .resume-doc-entry { margin-bottom: 3px; page-break-inside: avoid; }
   .resume-doc .resume-doc-entry-head {
     display: flex;
     justify-content: space-between;
@@ -149,7 +149,7 @@ body {
   .resume-doc .resume-doc-title { font-weight: 700; }
   .resume-doc .resume-doc-when { font-size: 8pt; color: #555; white-space: nowrap; }
   .resume-doc .resume-doc-org { font-style: italic; color: #333; font-size: 8.5pt; }
-  .resume-doc ul { margin: 2px 0 0; padding-left: 14px; }
+  .resume-doc ul { margin: 1px 0 0; padding-left: 14px; }
   .resume-doc li { margin-bottom: 1px; }
   .resume-doc .resume-doc-skill { margin-bottom: 1px; }
 
