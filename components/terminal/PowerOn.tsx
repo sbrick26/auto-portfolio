@@ -31,7 +31,11 @@ export function PowerOn() {
   return (
     <div
       aria-hidden
-      onAnimationEnd={() => setDone(true)}
+      onAnimationEnd={(e) => {
+        // Both child layers run a 340ms animation, so animationend bubbles
+        // twice. Gate on the raster layer so the overlay unmounts exactly once.
+        if (e.animationName === "power-on-raster") setDone(true);
+      }}
       className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[240px] max-h-[55vh] overflow-hidden"
     >
       {/* phosphor bloom: a soft green radial glow that flashes then settles */}
