@@ -334,7 +334,8 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI, and demoing live at AWS re:Invent to ~400 booth attendees.",
+        "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI through end-to-end technical evaluations.",
+        "Designed and ran a live watsonx demo at AWS re:Invent for ~400 booth attendees, generating 314 new pipeline opportunities across multiple industries.",
         "Tech-led 2 IBM i RPG-modernization Bobathons for major US trucking firms; both clients purchased Bob, and the reusable 6-phase template spread across Horizon markets.",
         "Diagnosed 2 watsonx Orchestrate product gaps on a beverage-manufacturer PoX and built a custom Python connector wrapper; WXO shipped nested-folder support as a feature ~1 month later.",
         "Created repeatable client-specific watsonx demo frameworks mapping business pain to quantifiable watsonx.ai and Orchestrate outcomes, cutting time-to-close across 20+ accounts.",

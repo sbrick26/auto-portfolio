@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.30.0",
+    "date": "2026-06-21",
+    "changes": [
+      "updates feed: new entries from the daily check-in"
+    ]
+  },
+  {
     "version": "1.29.0",
     "date": "2026-06-21",
     "changes": [
