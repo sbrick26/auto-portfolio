@@ -29,6 +29,7 @@ import { TypedLine, Cursor, Spinner } from "./typing";
 import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
 import { PipelineDiagram } from "./PipelineDiagram";
 import { ArchDiagram } from "./ArchDiagram";
+import { PowerOn } from "./PowerOn";
 
 /* ----------------------------- welcome / boot ---------------------------- */
 
@@ -161,7 +162,12 @@ export function Welcome() {
   const shown = bootDone ? BOOT_STEPS.length : step + 1;
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3">
+      {/* The one-shot phosphor power-on flash. Pinned to the top of the welcome
+          block, it energizes the panel the instant it mounts, then self-removes
+          before the boot text has finished typing in. Fully suppressed under
+          reduced motion (the component renders nothing). */}
+      <PowerOn />
       <div className="space-y-0.5 text-[13px] text-term-dim">
         {BOOT_STEPS.slice(0, shown).map((s, idx) => (
           <BootStep

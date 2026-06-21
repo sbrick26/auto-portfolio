@@ -48,6 +48,27 @@ body {
 @keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 .cursor-blink { animation: blink 1.05s steps(1) infinite; }
 
+/* CRT phosphor power-on: a one-shot energize flash that plays once when the
+   terminal first mounts, immediately before the boot sequence types in (see
+   components/terminal/PowerOn.tsx). Two layers compose it: `power-on-raster` is
+   the vertical scanline-collapse - a bright beam line that expands from center
+   to full height as the panel "switches on" - and `power-on-bloom` is the
+   phosphor-green glow that flashes and settles. Both run once (forwards) and the
+   overlay unmounts on animationend, so the effect never repeats and never lingers
+   over the text. Kept under 400ms so it reads as a single switch-on moment, not a
+   persistent CRT filter. The reduced-motion block below neutralizes any stray
+   loop, and PowerOn renders nothing at all under reduced motion. */
+@keyframes power-on-raster {
+  0%   { transform: scaleY(0.014); opacity: 1; }
+  55%  { opacity: 0.85; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+@keyframes power-on-bloom {
+  0%   { opacity: 0; }
+  16%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
