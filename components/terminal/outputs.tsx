@@ -457,238 +457,117 @@ type SkillFocus =
   | { kind: "skill"; key: string }
   | { kind: "project"; key: number };
 
-/* --- force-directed graph (Obsidian-style) ---------------------------------
+/* --- radial skill graph (Obsidian-style) -----------------------------------
 
-The skill map is a live force-directed web rather than a fixed ring layout. A
-quiet "skills" root sits at the centre, the skill GROUPS orbit it, the REAL
-projects branch off those, and projects that share skills are tied together so
-the whole thing reads as one interconnected web. Every relation is an always-on
-link with an always-on label.
+The skill map is a fixed, evenly-spaced radial graph in the spirit of an Obsidian
+note graph: a quiet "skills" root sits dead centre, the skill GROUPS fan out
+around it at equal angles, and the REAL projects branch off the skill they best
+belong to. A project that touches more than one skill keeps its single home spot
+and draws faint cross-links back to its other skills, so the whole thing reads as
+one interconnected web while staying a legible tree.
 
-It has real physics - repulsion between every node, springs along every link,
-a gentle pull to centre, and a slow perpetual drift so the web breathes - but it
-NEVER measures the DOM. Positions live in normalized [0,1] coordinates inside a
-fixed box; the SVG link layer (viewBox 0 0 100 100, preserveAspectRatio="none")
-and the HTML node buttons (left/top %) read the exact same numbers every frame,
-so a link always lands on a node's centre at any size. No ResizeObserver, no
-getBoundingClientRect - the web cannot drift while a mobile address bar slides on
-scroll (the re-measuring that made the old constellation jitter is simply gone).
+The layout is computed ONCE from buildSkillGraph and never moves - no physics
+loop, no drift, no DOM measuring. Positions live in normalized [0,1] coordinates
+inside a SQUARE box; the SVG link layer (viewBox 0 0 100 100) and the HTML node
+buttons (left/top %) read the exact same numbers, so a link always lands on a
+node's centre at any size and nothing can drift while a mobile address bar slides
+on scroll. Holding still and fitting the box is the whole point - it reads
+cleanly on a phone where the old live web spilled out of the frame and jittered.
 
 Everything is data-driven from buildSkillGraph (lib/skill-graph.ts): to add a
 skill, project, or relation, edit content/data.ts and (for a new stack token) map
-it in STACK_CATEGORY - the web picks it up with zero render changes. */
+it in STACK_CATEGORY - the graph picks it up with zero render changes. */
 
-type SimKind = "root" | "skill" | "project";
+// A node's fixed normalized position inside the square box (0.5, 0.5 is centre).
+type GraphPos = { x: number; y: number };
 
-// A node in the simulation. id is "root", "s:<category>", or "p:<index>"; x/y are
-// the live normalized position the renderer reads; vx/vy carry momentum between
-// frames; phase seeds the drift so no two nodes sway in lockstep.
-type SimNode = {
-  id: string;
-  kind: SimKind;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  phase: number;
-};
+// One drawn link. `rel` selects how it renders: "root" (centre to a skill),
+// "branch" (a skill to a project that calls it home - the solid tree limbs), or
+// "web" (a skill to a project that merely touches it - the faint cross-links).
+type GraphLink = { a: string; b: string; rel: "root" | "branch" | "web" };
 
-// A spring between two nodes. `rel` selects its stiffness and how it renders:
-// "root" (centre to skill), "skill" (skill to project), "proj" (project to a
-// related project that shares skills - the cross-links that make it a web).
-type SimLink = { a: string; b: string; len: number; rel: "root" | "skill" | "proj" };
+// Layout geometry, in normalized units where 0.5 is the box edge. Radii stay well
+// inside the box so node glow and labels never reach the border; FAN is the
+// half-angle a skill spreads its projects across, centred on its own direction.
+const SKILL_R = 0.19; // distance from centre to each skill node
+const PROJ_R = 0.35; // distance from centre to each project node
+const FAN = (40 * Math.PI) / 180; // half-spread of a skill's project fan
 
-// Tuning. Gentle on purpose: the layout is seeded near a settled state and the
-// forces only relax it, while hard clamps on speed and position keep the web from
-// ever exploding regardless of the constants.
-const REP = 0.0011; // pairwise repulsion strength (force = REP / distance^2)
-const SPRING_MAIN = 0.05; // stiffness of root/skill links
-const SPRING_PROJ = 0.018; // stiffness of the weaker project-to-project links
-const GRAVITY = 0.0045; // pull toward the centre, keeps the web framed
-const DAMP = 0.8; // velocity retained per frame (friction)
-const DRIFT = 0.00006; // amplitude of the perpetual breathing motion
-const MAX_SPEED = 0.02; // per-frame position change cap (stability guard)
-const MIN_D2 = 0.0036; // distance^2 floor so repulsion never blows up (d >= 0.06)
-const PAD_X = 0.09; // keep nodes (and their labels) inside the box
-const PAD_Y = 0.12;
-
-// Deterministic pseudo-random in [0,1) from an integer seed. Used only to break
-// layout symmetry and to spread drift phases - no Math.random, so the seeded
-// layout is identical on server and client and renders are reproducible.
-function hashRand(n: number): number {
-  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return s - Math.floor(s);
-}
-
-// Build the simulation from the bipartite skill graph: one root, one node per
-// skill, one per project, springs root->skill and skill->project, plus a
-// project->project spring for every pair that shares two or more skills (the
-// cross-links that turn the branches into a web). Nodes are seeded on concentric
-// rings - skills inner, projects outer ordered by the mean angle of the skills
-// they touch - so related work starts near related work and the sim only relaxes.
-function buildSim(graph: SkillGraph): { nodes: SimNode[]; links: SimLink[] } {
+// Build the fixed radial layout from the bipartite skill graph: the root at the
+// centre, the skills fanned evenly around it, and every project parked on the one
+// skill it calls home. Home is the project's LEAST-loaded skill (greedy, in graph
+// order) so the branches carry roughly equal weight instead of one giant cluster;
+// each skill then fans its children outward across FAN. Pure and deterministic -
+// same graph in, same positions out - so the render never drifts and is testable.
+function radialLayout(graph: SkillGraph): {
+  pos: Map<string, GraphPos>;
+  links: GraphLink[];
+  homeOf: Map<number, string>;
+} {
   const TAU = Math.PI * 2;
-  const nodes: SimNode[] = [
-    { id: "root", kind: "root", x: 0.5, y: 0.5, vx: 0, vy: 0, phase: 0 },
-  ];
-  const links: SimLink[] = [];
+  const pos = new Map<string, GraphPos>([["root", { x: 0.5, y: 0.5 }]]);
+  const links: GraphLink[] = [];
 
-  const skillAngle = new Map<string, number>();
+  // even-spaced skills around the root, the first one pinned straight up
   const ns = Math.max(graph.skills.length, 1);
+  const skillAngle = new Map<string, number>();
   graph.skills.forEach((s, i) => {
     const a = -Math.PI / 2 + (i * TAU) / ns;
     skillAngle.set(s.category, a);
-    nodes.push({
-      id: `s:${s.category}`,
-      kind: "skill",
-      x: 0.5 + 0.24 * Math.cos(a) + (hashRand(i + 1) - 0.5) * 0.04,
-      y: 0.5 + 0.28 * Math.sin(a) + (hashRand(i + 7) - 0.5) * 0.04,
-      vx: 0,
-      vy: 0,
-      phase: hashRand(i + 3) * TAU,
+    pos.set(`s:${s.category}`, {
+      x: 0.5 + SKILL_R * Math.cos(a),
+      y: 0.5 + SKILL_R * Math.sin(a),
     });
-    links.push({ a: "root", b: `s:${s.category}`, len: 0.26, rel: "root" });
+    links.push({ a: "root", b: `s:${s.category}`, rel: "root" });
   });
 
-  const ordered = graph.projects
-    .map((p) => {
-      let sx = 0;
-      let sy = 0;
-      for (const c of p.categories) {
-        const a = skillAngle.get(c) ?? 0;
-        sx += Math.cos(a);
-        sy += Math.sin(a);
-      }
-      return { p, mean: Math.atan2(sy, sx) };
-    })
-    .sort((a, b) => a.mean - b.mean);
-
-  const np = Math.max(ordered.length, 1);
-  ordered.forEach(({ p }, i) => {
-    const a = -Math.PI / 2 + (i * TAU) / np;
-    nodes.push({
-      id: `p:${p.index}`,
-      kind: "project",
-      x: 0.5 + 0.42 * Math.cos(a) + (hashRand(i + 11) - 0.5) * 0.04,
-      y: 0.5 + 0.4 * Math.sin(a) + (hashRand(i + 17) - 0.5) * 0.04,
-      vx: 0,
-      vy: 0,
-      phase: hashRand(i + 5) * TAU,
-    });
+  // give each project a home skill - the one it touches that currently carries the
+  // fewest children (ties break toward graph order) - so the tree stays balanced
+  const load = new Map(graph.skills.map((s) => [s.category, 0]));
+  const orderOf = new Map(graph.skills.map((s, i) => [s.category, i]));
+  const kids = new Map<string, number[]>(graph.skills.map((s) => [s.category, []]));
+  const homeOf = new Map<number, string>();
+  for (const p of graph.projects) {
+    let home = p.categories[0];
     for (const c of p.categories) {
-      links.push({ a: `s:${c}`, b: `p:${p.index}`, len: 0.24, rel: "skill" });
-    }
-  });
-
-  // Cross-links: tie projects that share two or more skill categories so the
-  // related work clusters and the graph reads as an interconnected web, not spokes.
-  const projs = graph.projects;
-  for (let i = 0; i < projs.length; i++) {
-    for (let j = i + 1; j < projs.length; j++) {
-      const shared = projs[i].categories.filter((c) =>
-        projs[j].categories.includes(c),
-      ).length;
-      if (shared >= 2) {
-        links.push({
-          a: `p:${projs[i].index}`,
-          b: `p:${projs[j].index}`,
-          len: 0.3,
-          rel: "proj",
-        });
+      const lc = load.get(c) ?? 0;
+      const lh = load.get(home) ?? 0;
+      if (lc < lh || (lc === lh && (orderOf.get(c) ?? 0) < (orderOf.get(home) ?? 0))) {
+        home = c;
       }
     }
+    homeOf.set(p.index, home);
+    load.set(home, (load.get(home) ?? 0) + 1);
+    kids.get(home)?.push(p.index);
   }
 
-  return { nodes, links };
-}
-
-// Advance the simulation one frame, mutating node positions in place. `t` drives
-// the perpetual drift (pass undefined - e.g. reduced motion - to settle without
-// it). The root is pinned dead centre so the whole web stays framed and balanced.
-function stepSim(nodes: SimNode[], links: SimLink[], byId: Map<string, SimNode>, t?: number) {
-  // pairwise repulsion - every node pushes every other apart
-  for (let i = 0; i < nodes.length; i++) {
-    const a = nodes[i];
-    for (let j = i + 1; j < nodes.length; j++) {
-      const b = nodes[j];
-      const dx = a.x - b.x;
-      const dy = a.y - b.y;
-      let d2 = dx * dx + dy * dy;
-      if (d2 < MIN_D2) d2 = MIN_D2;
-      const d = Math.sqrt(d2);
-      const f = REP / d2;
-      const ux = dx / d;
-      const uy = dy / d;
-      a.vx += ux * f;
-      a.vy += uy * f;
-      b.vx -= ux * f;
-      b.vy -= uy * f;
-    }
+  // fan each skill's children outward across FAN (clamped so neighbouring fans
+  // never collide), centred on the skill's own direction; a lone child sits straight out
+  const half = Math.min(FAN, (TAU / ns) * 0.42);
+  for (const s of graph.skills) {
+    const base = skillAngle.get(s.category) ?? 0;
+    const ids = kids.get(s.category) ?? [];
+    ids.forEach((idx, i) => {
+      const a =
+        ids.length < 2 ? base : base - half + (2 * half * i) / (ids.length - 1);
+      pos.set(`p:${idx}`, {
+        x: 0.5 + PROJ_R * Math.cos(a),
+        y: 0.5 + PROJ_R * Math.sin(a),
+      });
+    });
   }
 
-  // springs - pull linked nodes toward the link's rest length
-  for (const link of links) {
-    const a = byId.get(link.a);
-    const b = byId.get(link.b);
-    if (!a || !b) continue;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const d = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-    const k = link.rel === "proj" ? SPRING_PROJ : SPRING_MAIN;
-    const f = (d - link.len) * k;
-    const ux = dx / d;
-    const uy = dy / d;
-    a.vx += ux * f;
-    a.vy += uy * f;
-    b.vx -= ux * f;
-    b.vy -= uy * f;
+  // one link per skill<->project edge: the home edge is a solid branch, every
+  // other is a faint web cross-link tying the project back to its remaining skills
+  for (const e of graph.edges) {
+    links.push({
+      a: `s:${e.category}`,
+      b: `p:${e.project}`,
+      rel: homeOf.get(e.project) === e.category ? "branch" : "web",
+    });
   }
 
-  // gravity + drift + integrate
-  for (const n of nodes) {
-    n.vx += (0.5 - n.x) * GRAVITY;
-    n.vy += (0.5 - n.y) * GRAVITY;
-    if (t !== undefined) {
-      n.vx += Math.cos(t + n.phase) * DRIFT;
-      n.vy += Math.sin(t * 0.9 + n.phase) * DRIFT;
-    }
-    n.vx *= DAMP;
-    n.vy *= DAMP;
-    // clamp speed so a frame can never lurch the web
-    const sp = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
-    if (sp > MAX_SPEED) {
-      n.vx = (n.vx / sp) * MAX_SPEED;
-      n.vy = (n.vy / sp) * MAX_SPEED;
-    }
-    n.x += n.vx;
-    n.y += n.vy;
-    // keep inside the box (and room for labels)
-    if (n.x < PAD_X) {
-      n.x = PAD_X;
-      n.vx = 0;
-    }
-    if (n.x > 1 - PAD_X) {
-      n.x = 1 - PAD_X;
-      n.vx = 0;
-    }
-    if (n.y < PAD_Y) {
-      n.y = PAD_Y;
-      n.vy = 0;
-    }
-    if (n.y > 1 - PAD_Y) {
-      n.y = 1 - PAD_Y;
-      n.vy = 0;
-    }
-  }
-
-  // pin the root so the layout never wanders off-centre
-  const root = byId.get("root");
-  if (root) {
-    root.x = 0.5;
-    root.y = 0.5;
-    root.vx = 0;
-    root.vy = 0;
-  }
+  return { pos, links, homeOf };
 }
 
 // Which side a node's label hangs on, derived from its live position so labels
@@ -793,58 +672,20 @@ function NodeLabel({
   );
 }
 
-// The interactive skill MAP. A quiet "skills" root sits at the centre of a live
-// force-directed web; the skill GROUPS orbit it and the REAL projects branch off,
-// with related projects cross-linked so the whole thing reads as one
-// interconnected graph. Tap a group and the projects that prove it light up; tap a
-// project and the groups it used light up instead - so the map reads both ways
-// (skill -> proof, project -> skills) and the honest derived count recruiters trust
-// ("used in N projects") replaces self-asserted proficiency bars.
+// The interactive skill MAP. A quiet "skills" root sits dead centre; the skill
+// GROUPS fan out evenly around it and the REAL projects branch off the skill each
+// calls home, with cross-links back to any other skills they touch so the whole
+// thing reads as one interconnected graph. The layout is fixed (radialLayout) -
+// it never moves, so it holds its frame and reads cleanly on a phone. Tap a group
+// and the projects that prove it light up; tap a project and the groups it used
+// light up instead - so the map reads both ways (skill -> proof, project ->
+// skills) and the honest derived count recruiters trust ("used in N projects")
+// replaces self-asserted proficiency bars.
 function SkillTree() {
   const { run } = useTerminal();
-  const reduce = useReducedMotion();
   const graph = useMemo(() => buildSkillGraph(), []);
-  const { nodes, links } = useMemo(() => buildSim(graph), [graph]);
-  const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
-
-  // The sim mutates `nodes` in place; a tick counter forces the re-render each
-  // frame so the DOM follows. Positions are read straight off `nodes` at render.
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    // Reduced motion: settle to a stable layout, then hold still. The tick is
-    // deferred to a frame so it never fires synchronously inside the effect body.
-    if (reduce) {
-      for (let i = 0; i < 600; i++) stepSim(nodes, links, byId);
-      const raf = requestAnimationFrame(() => setTick((v) => v + 1));
-      return () => cancelAnimationFrame(raf);
-    }
-    let raf = 0;
-    let t = 0;
-    const frame = () => {
-      stepSim(nodes, links, byId, t);
-      t += 0.02;
-      setTick((v) => v + 1);
-      raf = requestAnimationFrame(frame);
-    };
-    const start = () => {
-      if (!raf) raf = requestAnimationFrame(frame);
-    };
-    const stop = () => {
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = 0;
-      }
-    };
-    // Don't burn frames while the tab is backgrounded.
-    const onVis = () => (document.hidden ? stop() : start());
-    document.addEventListener("visibilitychange", onVis);
-    start();
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [reduce, nodes, links, byId]);
+  const { pos, links } = useMemo(() => radialLayout(graph), [graph]);
+  const at = (id: string) => pos.get(id)!;
 
   // A transient hover/keyboard preview falling back to the pinned (tapped) node, so
   // touch users tap to pin and desktop users just hover - both land on the same
@@ -892,8 +733,6 @@ function SkillTree() {
         : { kind: "project", key: index },
     );
 
-  const pos = (id: string) => byId.get(id)!;
-
   return (
     <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
@@ -903,36 +742,35 @@ function SkillTree() {
         </span>
       </div>
 
-      {/* the web: SVG links underneath, HTML node buttons on top, both reading the
-          same live normalized coordinates so nothing measures the DOM and nothing
-          can drift on scroll. */}
-      <div className="relative mx-auto aspect-[6/5] w-full max-w-sm select-none">
+      {/* the graph: SVG links underneath, HTML node buttons on top, both reading
+          the same fixed normalized coordinates in a SQUARE box - the SVG keeps its
+          aspect (xMidYMid) so a link always lands on a node's centre, and
+          overflow-hidden guarantees nothing ever spills past the frame on mobile. */}
+      <div className="relative mx-auto aspect-square w-full max-w-sm select-none overflow-hidden">
         <svg
           aria-hidden
-          className="absolute inset-0 h-full w-full overflow-visible"
+          className="absolute inset-0 h-full w-full"
           viewBox="0 0 100 100"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         >
           {links.map((link) => {
-            const a = pos(link.a);
-            const b = pos(link.b);
+            const a = at(link.a);
+            const b = at(link.b);
             let lit = false;
             let accent = "var(--color-term-border)";
             if (link.rel === "root") {
+              // centre -> skill: lit whenever that skill is in the lit set
               const cat = link.b.slice(2);
               lit = litSkills.has(cat);
               accent = accentFor.get(cat) ?? accent;
-            } else if (link.rel === "skill") {
+            } else {
+              // skill -> project (branch or web): lit when the focus is either end
               const cat = link.a.slice(2);
               const pj = Number(link.b.slice(2));
               lit =
                 (focus?.kind === "skill" && focus.key === cat) ||
                 (focus?.kind === "project" && focus.key === pj);
               accent = accentFor.get(cat) ?? accent;
-            } else {
-              const pa = Number(link.a.slice(2));
-              const pb = Number(link.b.slice(2));
-              lit = litProjects.has(pa) && litProjects.has(pb);
             }
             return (
               <Leg
@@ -944,7 +782,7 @@ function SkillTree() {
                 accent={accent}
                 lit={lit}
                 dim={hasFocus && !lit}
-                weak={link.rel === "proj"}
+                weak={link.rel === "web"}
               />
             );
           })}
@@ -952,7 +790,7 @@ function SkillTree() {
 
         {/* root */}
         {(() => {
-          const r = pos("root");
+          const r = at("root");
           return (
             <MapNode x={r.x} y={r.y}>
               <button
@@ -975,7 +813,7 @@ function SkillTree() {
 
         {/* skill group nodes */}
         {graph.skills.map((s) => {
-          const n = pos(`s:${s.category}`);
+          const n = at(`s:${s.category}`);
           const lit = litSkills.has(s.category);
           const dim = hasFocus && !lit;
           const pinnedHere = pinned?.kind === "skill" && pinned.key === s.category;
@@ -1023,7 +861,7 @@ function SkillTree() {
 
         {/* project nodes */}
         {graph.projects.map((p) => {
-          const n = pos(`p:${p.index}`);
+          const n = at(`p:${p.index}`);
           const lit = litProjects.has(p.index);
           const isFocus = focus?.kind === "project" && focus.key === p.index;
           const dim = hasFocus && !lit;
@@ -1058,13 +896,14 @@ function SkillTree() {
                   }}
                 />
               </button>
-              <NodeLabel
-                side={labelSide(n.x, n.y)}
-                color={lit || isFocus ? dot : "var(--color-term-dim)"}
-                faded={dim}
-              >
-                {p.name}
-              </NodeLabel>
+              {/* project names only surface for the focused subgraph - idle, the
+                  outer ring stays a clean cloud of dots so the small box never
+                  drowns in labels on a phone */}
+              {lit && (
+                <NodeLabel side={labelSide(n.x, n.y)} color={dot}>
+                  {p.name}
+                </NodeLabel>
+              )}
             </MapNode>
           );
         })}
