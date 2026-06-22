@@ -224,13 +224,17 @@ describe("skills --activity", () => {
     expect(screen.getAllByText("#portfolio").length).toBeGreaterThan(0);
   });
 
-  it("bare skills keeps the static view and offers the activity chip", () => {
+  it("bare skills shows the constellation and offers the activity chip", () => {
     render(<Terminal />);
     run("skills");
-    // static view marker present, activity view's hint absent
-    expect(screen.getAllByText("category overview").length).toBeGreaterThan(0);
+    // constellation view marker present, activity view's hint absent
+    expect(screen.getAllByText("skill constellation").length).toBeGreaterThan(0);
     expect(screen.queryByText(/tap a skill for the work behind it/)).toBeNull();
-    // but the activity view is one tap away
+    // a skill node lights up its projects when tapped, surfacing the honest count
+    const coreBtn = screen.getAllByRole("button", { name: /languages \+ core/ });
+    fireEvent.click(coreBtn[coreBtn.length - 1]);
+    expect(screen.getAllByText(/used in \d+ projects?/).length).toBeGreaterThan(0);
+    // and the work-log activity view is one tap away
     expect(
       screen.getAllByRole("button", { name: "skill activity" }).length,
     ).toBeGreaterThan(0);

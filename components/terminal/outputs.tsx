@@ -1,15 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
 import {
   profile,
   about,
@@ -22,11 +15,13 @@ import {
   type ProjectMetric,
 } from "@/content/data";
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
+import { buildSkillGraph } from "@/lib/skill-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
+import { useTerminal } from "./TerminalContext";
 import { TypedLine, Cursor, Spinner } from "./typing";
-import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
+import { Reveal, SectionLabel, CmdChip, Ext, Pill } from "./ui";
 import { PipelineDiagram } from "./PipelineDiagram";
 import { ArchDiagram } from "./ArchDiagram";
 import { useBootReady } from "./TerminalContext";
@@ -457,72 +452,373 @@ export function SkillActivity() {
   );
 }
 
+// A measured anchor point inside the constellation container, in container-local
+// pixels. Skills anchor at their right edge, projects at their left edge, so the
+// edges fan across the gap between the two columns.
+type Anchor = { x: number; y: number };
+
+// The interactive bipartite "constellation": skill categories on the left, the
+// real projects that used them on the right, joined by edges built deterministically
+// from each project's stack[] (lib/skill-graph.ts). Idle, the whole web sits quiet;
+// hover or tap a skill and its projects + edges light up with a derived, honest
+// count ("used in N projects") - the years/projects evidence recruiters trust,
+// replacing the old self-asserted proficiency bars and radar. Hover a project and
+// the skills that powered it light up instead. Everything is keyboard reachable.
+function SkillConstellation() {
+  const reduce = useReducedMotion();
+  const { run } = useTerminal();
+  const graph = useMemo(() => buildSkillGraph(), []);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const skillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const projectRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [skillPos, setSkillPos] = useState<Record<string, Anchor>>({});
+  const [projectPos, setProjectPos] = useState<Record<number, Anchor>>({});
+
+  // Sticky selection (from a click/tap) plus a transient hover/focus preview.
+  // The effective focus is whichever pointer/keyboard interaction is live, falling
+  // back to the sticky selection - so touch users tap to pin, desktop users just
+  // hover, and both land on the same highlight logic.
+  const [selected, setSelected] = useState<
+    { kind: "skill"; key: string } | { kind: "project"; key: number } | null
+  >(null);
+  const [hovered, setHovered] = useState<
+    { kind: "skill"; key: string } | { kind: "project"; key: number } | null
+  >(null);
+  const focus = hovered ?? selected;
+
+  // Measure every node's anchor relative to the container, so the SVG edges land
+  // exactly on the chips no matter how the two columns wrap on a narrow screen.
+  const measure = useCallback(() => {
+    const c = containerRef.current;
+    if (!c) return;
+    const cb = c.getBoundingClientRect();
+    const sk: Record<string, Anchor> = {};
+    for (const s of graph.skills) {
+      const el = skillRefs.current[s.category];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      sk[s.category] = { x: r.right - cb.left, y: r.top - cb.top + r.height / 2 };
+    }
+    const pr: Record<number, Anchor> = {};
+    for (const p of graph.projects) {
+      const el = projectRefs.current[p.index];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      pr[p.index] = { x: r.left - cb.left, y: r.top - cb.top + r.height / 2 };
+    }
+    setSize({ w: cb.width, h: cb.height });
+    setSkillPos(sk);
+    setProjectPos(pr);
+  }, [graph]);
+
+  useLayoutEffect(() => {
+    measure();
+    const c = containerRef.current;
+    if (!c || typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const ro = new ResizeObserver(measure);
+    ro.observe(c);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [measure]);
+
+  // From the current focus, derive which edges/nodes are lit. The focused node is
+  // included via its own edges, so a focused skill lights itself and its projects
+  // (and vice versa). With no focus the whole graph rests at its quiet baseline.
+  const { litEdges, litSkills, litProjects } = useMemo(() => {
+    const e = new Set<string>();
+    const s = new Set<string>();
+    const p = new Set<number>();
+    if (focus) {
+      for (const edge of graph.edges) {
+        const match =
+          focus.kind === "skill"
+            ? edge.category === focus.key
+            : edge.project === focus.key;
+        if (!match) continue;
+        e.add(`${edge.category}|${edge.project}`);
+        s.add(edge.category);
+        p.add(edge.project);
+      }
+    }
+    return { litEdges: e, litSkills: s, litProjects: p };
+  }, [focus, graph]);
+
+  const accentFor = useMemo(
+    () => new Map(graph.skills.map((s) => [s.category, s.accent])),
+    [graph],
+  );
+  const nameFor = useMemo(
+    () => new Map(graph.projects.map((p) => [p.index, p.name])),
+    [graph],
+  );
+
+  // Click toggles a sticky selection; clicking the live node clears it. Hover and
+  // keyboard focus drive the transient preview.
+  const toggle = (node: NonNullable<typeof selected>) =>
+    setSelected((cur) =>
+      cur && cur.kind === node.kind && cur.key === node.key ? null : node,
+    );
+
+  return (
+    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <SectionLabel>skill constellation</SectionLabel>
+        <span className="text-[11px] text-term-faint">
+          tap a skill, watch the projects that prove it
+        </span>
+      </div>
+
+      <div ref={containerRef} className="relative">
+        {/* edges: an absolute overlay that never eats clicks, so the chips beneath
+            stay interactive. Drawn only once both endpoints are measured. */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          width={size.w}
+          height={size.h}
+        >
+          {graph.edges.map((edge) => {
+            const a = skillPos[edge.category];
+            const b = projectPos[edge.project];
+            if (!a || !b) return null;
+            const lit = litEdges.has(`${edge.category}|${edge.project}`);
+            const dimmed = !!focus && !lit;
+            const midX = (a.x + b.x) / 2;
+            const d = `M ${a.x} ${a.y} C ${midX} ${a.y}, ${midX} ${b.y}, ${b.x} ${b.y}`;
+            return (
+              <motion.path
+                key={`${edge.category}|${edge.project}`}
+                d={d}
+                fill="none"
+                strokeLinecap="round"
+                initial={false}
+                animate={{
+                  stroke: lit ? accentFor.get(edge.category)! : "var(--color-term-border)",
+                  strokeWidth: lit ? 1.7 : 1,
+                  opacity: dimmed ? 0.05 : lit ? 0.95 : 0.28,
+                }}
+                transition={reduce ? { duration: 0 } : { duration: 0.3, ease: "easeOut" }}
+              />
+            );
+          })}
+        </svg>
+
+        <div className="relative grid grid-cols-2 gap-x-6 sm:gap-x-14">
+          {/* skills column */}
+          <div className="flex flex-col gap-2">
+            {graph.skills.map((s) => {
+              const on = litSkills.has(s.category);
+              const dimmed = !!focus && !on;
+              const isFocus =
+                focus?.kind === "skill" && focus.key === s.category;
+              return (
+                <button
+                  key={s.category}
+                  ref={(el) => {
+                    skillRefs.current[s.category] = el;
+                  }}
+                  onClick={() => toggle({ kind: "skill", key: s.category })}
+                  onPointerEnter={() => setHovered({ kind: "skill", key: s.category })}
+                  onPointerLeave={() => setHovered(null)}
+                  onFocus={() => setHovered({ kind: "skill", key: s.category })}
+                  onBlur={() => setHovered(null)}
+                  aria-pressed={isFocus}
+                  className="rounded-md border px-2.5 py-1.5 text-left transition active:scale-[0.98]"
+                  style={{
+                    borderColor: on ? s.accent : "var(--color-term-border)",
+                    background: on ? "var(--color-term-panel)" : "transparent",
+                    opacity: dimmed ? 0.4 : 1,
+                  }}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span
+                      className="text-[12px]"
+                      style={{ color: on ? s.accent : "var(--color-term-dim)" }}
+                    >
+                      {s.category}
+                    </span>
+                    <span className="shrink-0 text-[11px] tabular-nums text-term-faint">
+                      {s.projects.length}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 text-[10px] leading-snug text-term-faint">
+                    {s.items.join(" · ")}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* projects column */}
+          <div className="flex flex-col gap-2">
+            {graph.projects.map((p) => {
+              const on = litProjects.has(p.index);
+              const dimmed = !!focus && !on;
+              const isFocus =
+                focus?.kind === "project" && focus.key === p.index;
+              const dot = statusStyle[p.status].glow;
+              return (
+                <button
+                  key={p.index}
+                  ref={(el) => {
+                    projectRefs.current[p.index] = el;
+                  }}
+                  onClick={() => toggle({ kind: "project", key: p.index })}
+                  onPointerEnter={() => setHovered({ kind: "project", key: p.index })}
+                  onPointerLeave={() => setHovered(null)}
+                  onFocus={() => setHovered({ kind: "project", key: p.index })}
+                  onBlur={() => setHovered(null)}
+                  aria-pressed={isFocus}
+                  className="flex items-start gap-1.5 rounded-md border px-2.5 py-1.5 text-left text-[11px] leading-snug transition active:scale-[0.98]"
+                  style={{
+                    borderColor: on ? dot : "var(--color-term-border)",
+                    background: on ? "var(--color-term-panel)" : "transparent",
+                    color: on ? "var(--color-term-text)" : "var(--color-term-dim)",
+                    opacity: dimmed ? 0.4 : 1,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: dot }}
+                  />
+                  <span>{p.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* detail line for the focused node: the honest derived stat plus clickable
+          jumps. A focused skill lists the projects that prove it; a focused project
+          lists the skills that powered it. */}
+      <SkillConstellationDetail
+        focus={focus}
+        graph={graph}
+        accentFor={accentFor}
+        nameFor={nameFor}
+        onSkill={(c) => toggle({ kind: "skill", key: c })}
+        onProjects={() => run("projects")}
+      />
+    </Reveal>
+  );
+}
+
+// The contextual readout under the constellation. Kept separate so the graph body
+// stays focused on layout/measurement. Renders nothing surprising when idle - just
+// a quiet prompt to explore.
+function SkillConstellationDetail({
+  focus,
+  graph,
+  accentFor,
+  nameFor,
+  onSkill,
+  onProjects,
+}: {
+  focus:
+    | { kind: "skill"; key: string }
+    | { kind: "project"; key: number }
+    | null;
+  graph: ReturnType<typeof buildSkillGraph>;
+  accentFor: Map<string, string>;
+  nameFor: Map<number, string>;
+  onSkill: (category: string) => void;
+  onProjects: () => void;
+}) {
+  if (!focus) {
+    return (
+      <div className="text-[12px] text-term-faint">
+        every line is a real project that used that skill - no self-rated
+        percentages, just the work.
+      </div>
+    );
+  }
+
+  if (focus.kind === "skill") {
+    const node = graph.skills.find((s) => s.category === focus.key);
+    if (!node) return null;
+    const n = node.projects.length;
+    return (
+      <div className="space-y-1.5 text-[12px]">
+        <div>
+          <span style={{ color: node.accent }}>{node.category}</span>
+          <span className="text-term-faint">
+            {" "}
+            - used in {n} {n === 1 ? "project" : "projects"}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {node.projects.map((idx) => (
+            <button
+              key={idx}
+              onClick={onProjects}
+              className="rounded border border-term-border bg-term-panel px-1.5 py-0.5 text-[11px] text-term-dim transition hover:border-term-green/50 hover:text-term-green active:scale-[0.97]"
+            >
+              {nameFor.get(idx)}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const node = graph.projects.find((p) => p.index === focus.key);
+  if (!node) return null;
+  return (
+    <div className="space-y-1.5 text-[12px]">
+      <div>
+        <span className="text-term-text/90">{node.name}</span>
+        <span className="text-term-faint"> - powered by</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {node.categories.map((c) => (
+          <button
+            key={c}
+            onClick={() => onSkill(c)}
+            className="rounded border px-1.5 py-0.5 text-[11px] transition active:scale-[0.97]"
+            style={{ borderColor: accentFor.get(c), color: accentFor.get(c) }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SkillsOutput({ args = "" }: { args?: string } = {}) {
-  // `skills --activity` (alias `-a`) swaps the static bars/radar for the
-  // tap-a-skill evidence view; bare `skills` keeps the established view clean.
+  // `skills --activity` (alias `-a`) swaps the constellation for the tap-a-skill
+  // evidence view pulled from the live updates feed; bare `skills` shows the
+  // skill-to-project constellation.
   if (/(?:^|\s)(?:--activity|-a)(?:\s|$)/.test(args)) {
     return (
       <div className="space-y-4">
         <SkillActivity />
         <div className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
           <span>each skill, backed by the actual work from the live updates feed</span>
-          <CmdChip cmd="skills" label="full skills" />
+          <CmdChip cmd="skills" label="skill map" />
         </div>
       </div>
     );
   }
 
-  const radarData = skills.map((g) => ({
-    category: g.category.split(" ")[0],
-    value: Math.round(g.items.reduce((s, x) => s + x.level, 0) / g.items.length),
-  }));
-
   return (
-    <div className="space-y-5">
-      <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-        {skills.map((g, gi) => (
-          <Reveal key={g.category} i={gi} className="space-y-2">
-            <SectionLabel>{g.category}</SectionLabel>
-            <div className="space-y-2">
-              {g.items.map((s, si) => (
-                <div key={s.name} className="space-y-1">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-term-text/90">{s.name}</span>
-                    <span className="text-term-faint tabular-nums">{s.level}</span>
-                  </div>
-                  <Bar value={s.level} accent={g.accent} delay={gi * 0.08 + si * 0.05} />
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        ))}
-      </div>
-
-      <Reveal i={4} className="rounded-lg border border-term-border bg-term-panel2/50 p-3">
-        <SectionLabel>category overview</SectionLabel>
-        <div className="h-[210px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#323848" />
-              <PolarAngleAxis
-                dataKey="category"
-                tick={{ fill: "#a3acbc", fontSize: 11 }}
-              />
-              <Radar
-                dataKey="value"
-                stroke="var(--color-term-green)"
-                fill="var(--color-term-green)"
-                fillOpacity={0.18}
-                isAnimationActive
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </Reveal>
-
-      <Reveal i={5} className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
-        <span>see the work behind each skill</span>
+    <div className="space-y-4">
+      <SkillConstellation />
+      <Reveal className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+        <span>or read the work log behind each skill</span>
         <CmdChip cmd="skills --activity" label="skill activity" />
+        <CmdChip cmd="projects" label="see projects" />
       </Reveal>
     </div>
   );
