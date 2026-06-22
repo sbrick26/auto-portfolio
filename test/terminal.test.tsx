@@ -213,6 +213,20 @@ describe("secret version command", () => {
   });
 });
 
+describe("changelog command", () => {
+  it("renders recent versions with a current badge and expands to show all", () => {
+    render(<Terminal />);
+    run("changelog");
+    // the newest entry is flagged current
+    expect(screen.getAllByText("current").length).toBeGreaterThan(0);
+    // only the recent slice shows until expanded; the toggle reveals the rest
+    const showAll = screen.getByRole("button", { name: /show all \d+ versions/ });
+    fireEvent.click(showAll);
+    // once expanded the toggle is gone (every version is now on screen)
+    expect(screen.queryByRole("button", { name: /show all \d+ versions/ })).toBeNull();
+  });
+});
+
 describe("skills --activity", () => {
   it("renders the skill-activity view and reveals evidence when a skill is tapped", () => {
     render(<Terminal />);
