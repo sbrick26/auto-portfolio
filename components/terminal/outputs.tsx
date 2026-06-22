@@ -457,41 +457,97 @@ type SkillFocus =
   | { kind: "skill"; key: string }
   | { kind: "project"; key: number };
 
-// Where a node sits, in normalized [0,1] coordinates inside a fixed box. These are
-// computed ONCE from the graph and NEVER from DOM geometry. The SVG leg layer
-// (viewBox 0 0 100 100, preserveAspectRatio="none") and the HTML node buttons
-// (positioned in left/top %) read the exact same numbers, so a leg always lands on
-// a node's centre at any container size. Because nothing measures the live layout,
-// the map cannot drift while a mobile browser's address bar slides in and out on
-// scroll - that re-measuring (getBoundingClientRect on every tick) was exactly what
-// made the old constellation jitter.
-type NodePos = { x: number; y: number };
+/* --- force-directed graph (Obsidian-style) ---------------------------------
 
-type SkillMapLayout = {
-  center: NodePos;
-  skillPos: Map<string, NodePos>;
-  projPos: Map<number, NodePos>;
+The skill map is a live force-directed web rather than a fixed ring layout. A
+quiet "skills" root sits at the centre, the skill GROUPS orbit it, the REAL
+projects branch off those, and projects that share skills are tied together so
+the whole thing reads as one interconnected web. Every relation is an always-on
+link with an always-on label.
+
+It has real physics - repulsion between every node, springs along every link,
+a gentle pull to centre, and a slow perpetual drift so the web breathes - but it
+NEVER measures the DOM. Positions live in normalized [0,1] coordinates inside a
+fixed box; the SVG link layer (viewBox 0 0 100 100, preserveAspectRatio="none")
+and the HTML node buttons (left/top %) read the exact same numbers every frame,
+so a link always lands on a node's centre at any size. No ResizeObserver, no
+getBoundingClientRect - the web cannot drift while a mobile address bar slides on
+scroll (the re-measuring that made the old constellation jitter is simply gone).
+
+Everything is data-driven from buildSkillGraph (lib/skill-graph.ts): to add a
+skill, project, or relation, edit content/data.ts and (for a new stack token) map
+it in STACK_CATEGORY - the web picks it up with zero render changes. */
+
+type SimKind = "root" | "skill" | "project";
+
+// A node in the simulation. id is "root", "s:<category>", or "p:<index>"; x/y are
+// the live normalized position the renderer reads; vx/vy carry momentum between
+// frames; phase seeds the drift so no two nodes sway in lockstep.
+type SimNode = {
+  id: string;
+  kind: SimKind;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  phase: number;
 };
 
-// Lay the graph out as a three-ring cloud, Obsidian-style: the quiet "skills" root
-// at the centre, the skill GROUPS on an inner ring, and the REAL projects on an
-// outer ring. Each project is dropped onto the outer ring in order of the mean
-// angle of the groups it touches, so projects sharing skills sit together and their
-// legs stay short while even spacing guarantees no two project dots collide.
-function layoutSkillMap(graph: SkillGraph): SkillMapLayout {
+// A spring between two nodes. `rel` selects its stiffness and how it renders:
+// "root" (centre to skill), "skill" (skill to project), "proj" (project to a
+// related project that shares skills - the cross-links that make it a web).
+type SimLink = { a: string; b: string; len: number; rel: "root" | "skill" | "proj" };
+
+// Tuning. Gentle on purpose: the layout is seeded near a settled state and the
+// forces only relax it, while hard clamps on speed and position keep the web from
+// ever exploding regardless of the constants.
+const REP = 0.0011; // pairwise repulsion strength (force = REP / distance^2)
+const SPRING_MAIN = 0.05; // stiffness of root/skill links
+const SPRING_PROJ = 0.018; // stiffness of the weaker project-to-project links
+const GRAVITY = 0.0045; // pull toward the centre, keeps the web framed
+const DAMP = 0.8; // velocity retained per frame (friction)
+const DRIFT = 0.00006; // amplitude of the perpetual breathing motion
+const MAX_SPEED = 0.02; // per-frame position change cap (stability guard)
+const MIN_D2 = 0.0036; // distance^2 floor so repulsion never blows up (d >= 0.06)
+const PAD_X = 0.09; // keep nodes (and their labels) inside the box
+const PAD_Y = 0.12;
+
+// Deterministic pseudo-random in [0,1) from an integer seed. Used only to break
+// layout symmetry and to spread drift phases - no Math.random, so the seeded
+// layout is identical on server and client and renders are reproducible.
+function hashRand(n: number): number {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+// Build the simulation from the bipartite skill graph: one root, one node per
+// skill, one per project, springs root->skill and skill->project, plus a
+// project->project spring for every pair that shares two or more skills (the
+// cross-links that turn the branches into a web). Nodes are seeded on concentric
+// rings - skills inner, projects outer ordered by the mean angle of the skills
+// they touch - so related work starts near related work and the sim only relaxes.
+function buildSim(graph: SkillGraph): { nodes: SimNode[]; links: SimLink[] } {
   const TAU = Math.PI * 2;
-  const center: NodePos = { x: 0.5, y: 0.5 };
+  const nodes: SimNode[] = [
+    { id: "root", kind: "root", x: 0.5, y: 0.5, vx: 0, vy: 0, phase: 0 },
+  ];
+  const links: SimLink[] = [];
 
   const skillAngle = new Map<string, number>();
-  const skillPos = new Map<string, NodePos>();
   const ns = Math.max(graph.skills.length, 1);
   graph.skills.forEach((s, i) => {
     const a = -Math.PI / 2 + (i * TAU) / ns;
     skillAngle.set(s.category, a);
-    skillPos.set(s.category, {
-      x: center.x + 0.26 * Math.cos(a),
-      y: center.y + 0.3 * Math.sin(a),
+    nodes.push({
+      id: `s:${s.category}`,
+      kind: "skill",
+      x: 0.5 + 0.24 * Math.cos(a) + (hashRand(i + 1) - 0.5) * 0.04,
+      y: 0.5 + 0.28 * Math.sin(a) + (hashRand(i + 7) - 0.5) * 0.04,
+      vx: 0,
+      vy: 0,
+      phase: hashRand(i + 3) * TAU,
     });
+    links.push({ a: "root", b: `s:${s.category}`, len: 0.26, rel: "root" });
   });
 
   const ordered = graph.projects
@@ -503,38 +559,151 @@ function layoutSkillMap(graph: SkillGraph): SkillMapLayout {
         sx += Math.cos(a);
         sy += Math.sin(a);
       }
-      return { index: p.index, mean: Math.atan2(sy, sx) };
+      return { p, mean: Math.atan2(sy, sx) };
     })
     .sort((a, b) => a.mean - b.mean);
 
-  const projPos = new Map<number, NodePos>();
   const np = Math.max(ordered.length, 1);
-  ordered.forEach((it, i) => {
+  ordered.forEach(({ p }, i) => {
     const a = -Math.PI / 2 + (i * TAU) / np;
-    projPos.set(it.index, {
-      x: center.x + 0.46 * Math.cos(a),
-      y: center.y + 0.44 * Math.sin(a),
+    nodes.push({
+      id: `p:${p.index}`,
+      kind: "project",
+      x: 0.5 + 0.42 * Math.cos(a) + (hashRand(i + 11) - 0.5) * 0.04,
+      y: 0.5 + 0.4 * Math.sin(a) + (hashRand(i + 17) - 0.5) * 0.04,
+      vx: 0,
+      vy: 0,
+      phase: hashRand(i + 5) * TAU,
     });
+    for (const c of p.categories) {
+      links.push({ a: `s:${c}`, b: `p:${p.index}`, len: 0.24, rel: "skill" });
+    }
   });
 
-  return { center, skillPos, projPos };
+  // Cross-links: tie projects that share two or more skill categories so the
+  // related work clusters and the graph reads as an interconnected web, not spokes.
+  const projs = graph.projects;
+  for (let i = 0; i < projs.length; i++) {
+    for (let j = i + 1; j < projs.length; j++) {
+      const shared = projs[i].categories.filter((c) =>
+        projs[j].categories.includes(c),
+      ).length;
+      if (shared >= 2) {
+        links.push({
+          a: `p:${projs[i].index}`,
+          b: `p:${projs[j].index}`,
+          len: 0.3,
+          rel: "proj",
+        });
+      }
+    }
+  }
+
+  return { nodes, links };
 }
 
-// Which side a node's label hangs on, derived purely from its position so labels
-// fan outward from the cloud and never sit on top of the legs.
-function labelSide(
-  pos: NodePos,
-): "left" | "right" | "above" | "below" {
-  const dx = pos.x - 0.5;
-  const dy = pos.y - 0.5;
-  if (Math.abs(dx) < 0.14) return dy < 0 ? "above" : "below";
+// Advance the simulation one frame, mutating node positions in place. `t` drives
+// the perpetual drift (pass undefined - e.g. reduced motion - to settle without
+// it). The root is pinned dead centre so the whole web stays framed and balanced.
+function stepSim(nodes: SimNode[], links: SimLink[], byId: Map<string, SimNode>, t?: number) {
+  // pairwise repulsion - every node pushes every other apart
+  for (let i = 0; i < nodes.length; i++) {
+    const a = nodes[i];
+    for (let j = i + 1; j < nodes.length; j++) {
+      const b = nodes[j];
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      let d2 = dx * dx + dy * dy;
+      if (d2 < MIN_D2) d2 = MIN_D2;
+      const d = Math.sqrt(d2);
+      const f = REP / d2;
+      const ux = dx / d;
+      const uy = dy / d;
+      a.vx += ux * f;
+      a.vy += uy * f;
+      b.vx -= ux * f;
+      b.vy -= uy * f;
+    }
+  }
+
+  // springs - pull linked nodes toward the link's rest length
+  for (const link of links) {
+    const a = byId.get(link.a);
+    const b = byId.get(link.b);
+    if (!a || !b) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+    const k = link.rel === "proj" ? SPRING_PROJ : SPRING_MAIN;
+    const f = (d - link.len) * k;
+    const ux = dx / d;
+    const uy = dy / d;
+    a.vx += ux * f;
+    a.vy += uy * f;
+    b.vx -= ux * f;
+    b.vy -= uy * f;
+  }
+
+  // gravity + drift + integrate
+  for (const n of nodes) {
+    n.vx += (0.5 - n.x) * GRAVITY;
+    n.vy += (0.5 - n.y) * GRAVITY;
+    if (t !== undefined) {
+      n.vx += Math.cos(t + n.phase) * DRIFT;
+      n.vy += Math.sin(t * 0.9 + n.phase) * DRIFT;
+    }
+    n.vx *= DAMP;
+    n.vy *= DAMP;
+    // clamp speed so a frame can never lurch the web
+    const sp = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+    if (sp > MAX_SPEED) {
+      n.vx = (n.vx / sp) * MAX_SPEED;
+      n.vy = (n.vy / sp) * MAX_SPEED;
+    }
+    n.x += n.vx;
+    n.y += n.vy;
+    // keep inside the box (and room for labels)
+    if (n.x < PAD_X) {
+      n.x = PAD_X;
+      n.vx = 0;
+    }
+    if (n.x > 1 - PAD_X) {
+      n.x = 1 - PAD_X;
+      n.vx = 0;
+    }
+    if (n.y < PAD_Y) {
+      n.y = PAD_Y;
+      n.vy = 0;
+    }
+    if (n.y > 1 - PAD_Y) {
+      n.y = 1 - PAD_Y;
+      n.vy = 0;
+    }
+  }
+
+  // pin the root so the layout never wanders off-centre
+  const root = byId.get("root");
+  if (root) {
+    root.x = 0.5;
+    root.y = 0.5;
+    root.vx = 0;
+    root.vy = 0;
+  }
+}
+
+// Which side a node's label hangs on, derived from its live position so labels
+// fan outward from the web and stay clear of the links.
+function labelSide(x: number, y: number): "left" | "right" | "above" | "below" {
+  const dx = x - 0.5;
+  const dy = y - 0.5;
+  if (Math.abs(dx) < 0.12) return dy < 0 ? "above" : "below";
   return dx < 0 ? "left" : "right";
 }
 
-// One leg of the cloud: an SVG line that draws itself out from source to target on
-// reveal (the "branches growing legs" effect) and then just fades between lit/dim as
-// the focus changes - the draw-in only plays on mount, so tapping never replays it.
-// vectorEffect keeps the stroke a constant hairline despite the non-uniform viewBox.
+// One always-on link of the web: a plain SVG line tracking its two live endpoints
+// every frame (the physics moves them; the line just follows). It only fades
+// between lit/dim as the focus changes. vectorEffect keeps the stroke a constant
+// hairline despite the non-uniform viewBox.
 function Leg({
   x1,
   y1,
@@ -543,8 +712,7 @@ function Leg({
   accent,
   lit,
   dim,
-  delay,
-  reduce,
+  weak,
 }: {
   x1: number;
   y1: number;
@@ -553,48 +721,35 @@ function Leg({
   accent: string;
   lit: boolean;
   dim: boolean;
-  delay: number;
-  reduce: boolean;
+  weak: boolean;
 }) {
-  const opacity = lit ? 0.9 : dim ? 0.06 : 0.42;
+  const opacity = lit ? 0.95 : dim ? 0.05 : weak ? 0.16 : 0.4;
   return (
-    <motion.line
+    <line
       x1={x1}
       y1={y1}
       x2={x2}
       y2={y2}
       stroke={lit ? accent : "var(--color-term-border)"}
-      strokeWidth={lit ? 1.5 : 1}
+      strokeWidth={lit ? 1.6 : weak ? 0.8 : 1}
       strokeLinecap="round"
+      strokeDasharray={weak && !lit ? "2 2" : undefined}
       vectorEffect="non-scaling-stroke"
-      initial={reduce ? false : { pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity }}
-      transition={
-        reduce
-          ? { duration: 0 }
-          : {
-              pathLength: { duration: 0.5, delay, ease: "easeOut" },
-              opacity: { duration: 0.3, delay },
-            }
-      }
+      style={{ opacity, transition: "opacity 0.25s ease, stroke 0.25s ease" }}
     />
   );
 }
 
-// A node anchored on its point: the outer div pins the centre at left/top %, the
-// inner motion div pops the node in (scaling about that centre, so the leg endpoint
-// never moves) and holds the dot plus its outward label.
+// A node pinned on its live point: the wrapper centres on left/top %, the inner
+// span carries the dot. Position updates every frame from the simulation, so the
+// node glides smoothly with the web.
 function MapNode({
   x,
   y,
-  delay,
-  reduce,
   children,
 }: {
   x: number;
   y: number;
-  delay: number;
-  reduce: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -602,14 +757,7 @@ function MapNode({
       className="absolute -translate-x-1/2 -translate-y-1/2"
       style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
     >
-      <motion.div
-        className="relative flex items-center justify-center"
-        initial={reduce ? false : { opacity: 0, scale: 0.2 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={reduce ? { duration: 0 } : { duration: 0.3, delay, ease: "backOut" }}
-      >
-        {children}
-      </motion.div>
+      <div className="relative flex items-center justify-center">{children}</div>
     </div>
   );
 }
@@ -620,10 +768,12 @@ function MapNode({
 function NodeLabel({
   side,
   color,
+  faded,
   children,
 }: {
   side: "left" | "right" | "above" | "below";
   color: string;
+  faded?: boolean;
   children: React.ReactNode;
 }) {
   const place: Record<typeof side, string> = {
@@ -635,34 +785,66 @@ function NodeLabel({
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute max-w-[112px] truncate text-[10px] leading-none ${place[side]}`}
-      style={{ color }}
+      className={`pointer-events-none absolute max-w-[100px] truncate text-[9.5px] leading-none transition-opacity duration-200 ${place[side]}`}
+      style={{ color, opacity: faded ? 0.3 : 1 }}
     >
       {children}
     </span>
   );
 }
 
-// The interactive skill MAP. A quiet "skills" root sits at the centre of a small
-// node cloud; the skill GROUPS ring it and the REAL projects ring those, every
-// relation a leg. Tap a group and the projects that prove it light up along their
-// legs; tap a project and the groups it used light up instead - so the map reads
-// both ways (skill -> proof, project -> skills) and the honest derived count
-// recruiters trust ("used in N projects") replaces self-asserted proficiency bars.
-//
-// It is a real graph, but it never measures the DOM: positions come from
-// layoutSkillMap in fixed normalized coordinates, the SVG legs share those
-// coordinates via a 0..100 viewBox, and the HTML nodes share them via left/top %.
-// No ResizeObserver, no getBoundingClientRect, so the cloud cannot drift while a
-// mobile address bar animates on scroll. Everything is data-driven from
-// buildSkillGraph (lib/skill-graph.ts): to add a skill, project, or relation, edit
-// content/data.ts and (for a new stack token) map it in STACK_CATEGORY - the map
-// picks it up with zero render changes.
+// The interactive skill MAP. A quiet "skills" root sits at the centre of a live
+// force-directed web; the skill GROUPS orbit it and the REAL projects branch off,
+// with related projects cross-linked so the whole thing reads as one
+// interconnected graph. Tap a group and the projects that prove it light up; tap a
+// project and the groups it used light up instead - so the map reads both ways
+// (skill -> proof, project -> skills) and the honest derived count recruiters trust
+// ("used in N projects") replaces self-asserted proficiency bars.
 function SkillTree() {
   const { run } = useTerminal();
   const reduce = useReducedMotion();
   const graph = useMemo(() => buildSkillGraph(), []);
-  const layout = useMemo(() => layoutSkillMap(graph), [graph]);
+  const { nodes, links } = useMemo(() => buildSim(graph), [graph]);
+  const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+
+  // The sim mutates `nodes` in place; a tick counter forces the re-render each
+  // frame so the DOM follows. Positions are read straight off `nodes` at render.
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    // Reduced motion: settle to a stable layout, then hold still. The tick is
+    // deferred to a frame so it never fires synchronously inside the effect body.
+    if (reduce) {
+      for (let i = 0; i < 600; i++) stepSim(nodes, links, byId);
+      const raf = requestAnimationFrame(() => setTick((v) => v + 1));
+      return () => cancelAnimationFrame(raf);
+    }
+    let raf = 0;
+    let t = 0;
+    const frame = () => {
+      stepSim(nodes, links, byId, t);
+      t += 0.02;
+      setTick((v) => v + 1);
+      raf = requestAnimationFrame(frame);
+    };
+    const start = () => {
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+    // Don't burn frames while the tab is backgrounded.
+    const onVis = () => (document.hidden ? stop() : start());
+    document.addEventListener("visibilitychange", onVis);
+    start();
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [reduce, nodes, links, byId]);
 
   // A transient hover/keyboard preview falling back to the pinned (tapped) node, so
   // touch users tap to pin and desktop users just hover - both land on the same
@@ -710,6 +892,8 @@ function SkillTree() {
         : { kind: "project", key: index },
     );
 
+  const pos = (id: string) => byId.get(id)!;
+
   return (
     <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
@@ -719,8 +903,8 @@ function SkillTree() {
         </span>
       </div>
 
-      {/* the node cloud: SVG legs underneath, HTML node buttons on top, both reading
-          the same normalized coordinates so nothing measures the DOM and nothing
+      {/* the web: SVG links underneath, HTML node buttons on top, both reading the
+          same live normalized coordinates so nothing measures the DOM and nothing
           can drift on scroll. */}
       <div className="relative mx-auto aspect-[6/5] w-full max-w-sm select-none">
         <svg
@@ -729,79 +913,74 @@ function SkillTree() {
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
         >
-          {graph.skills.map((s) => {
-            const pos = layout.skillPos.get(s.category)!;
-            const lit = litSkills.has(s.category);
+          {links.map((link) => {
+            const a = pos(link.a);
+            const b = pos(link.b);
+            let lit = false;
+            let accent = "var(--color-term-border)";
+            if (link.rel === "root") {
+              const cat = link.b.slice(2);
+              lit = litSkills.has(cat);
+              accent = accentFor.get(cat) ?? accent;
+            } else if (link.rel === "skill") {
+              const cat = link.a.slice(2);
+              const pj = Number(link.b.slice(2));
+              lit =
+                (focus?.kind === "skill" && focus.key === cat) ||
+                (focus?.kind === "project" && focus.key === pj);
+              accent = accentFor.get(cat) ?? accent;
+            } else {
+              const pa = Number(link.a.slice(2));
+              const pb = Number(link.b.slice(2));
+              lit = litProjects.has(pa) && litProjects.has(pb);
+            }
             return (
               <Leg
-                key={`root-${s.category}`}
-                x1={layout.center.x * 100}
-                y1={layout.center.y * 100}
-                x2={pos.x * 100}
-                y2={pos.y * 100}
-                accent={s.accent}
+                key={`${link.a}-${link.b}`}
+                x1={a.x * 100}
+                y1={a.y * 100}
+                x2={b.x * 100}
+                y2={b.y * 100}
+                accent={accent}
                 lit={lit}
                 dim={hasFocus && !lit}
-                delay={0.1}
-                reduce={!!reduce}
-              />
-            );
-          })}
-          {graph.edges.map((e, i) => {
-            const sp = layout.skillPos.get(e.category)!;
-            const pp = layout.projPos.get(e.project)!;
-            const lit =
-              (focus?.kind === "skill" && focus.key === e.category) ||
-              (focus?.kind === "project" && focus.key === e.project);
-            return (
-              <Leg
-                key={`edge-${e.category}-${e.project}`}
-                x1={sp.x * 100}
-                y1={sp.y * 100}
-                x2={pp.x * 100}
-                y2={pp.y * 100}
-                accent={accentFor.get(e.category) ?? "var(--color-term-dim)"}
-                lit={lit}
-                dim={hasFocus && !lit}
-                delay={0.28 + i * 0.015}
-                reduce={!!reduce}
+                weak={link.rel === "proj"}
               />
             );
           })}
         </svg>
 
         {/* root */}
-        <MapNode x={layout.center.x} y={layout.center.y} delay={0} reduce={!!reduce}>
-          <button
-            type="button"
-            onClick={() => setPinned(null)}
-            aria-label="skills root"
-            className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
-          >
-            <span
-              aria-hidden
-              className="h-3.5 w-3.5 rounded-full border border-term-dim bg-term-panel"
-            />
-          </button>
-          <NodeLabel side="below" color="var(--color-term-faint)">
-            skills
-          </NodeLabel>
-        </MapNode>
+        {(() => {
+          const r = pos("root");
+          return (
+            <MapNode x={r.x} y={r.y}>
+              <button
+                type="button"
+                onClick={() => setPinned(null)}
+                aria-label="skills root"
+                className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
+              >
+                <span
+                  aria-hidden
+                  className="h-3.5 w-3.5 rounded-full border border-term-dim bg-term-panel"
+                />
+              </button>
+              <NodeLabel side="below" color="var(--color-term-faint)" faded={hasFocus}>
+                skills
+              </NodeLabel>
+            </MapNode>
+          );
+        })()}
 
         {/* skill group nodes */}
-        {graph.skills.map((s, i) => {
-          const pos = layout.skillPos.get(s.category)!;
+        {graph.skills.map((s) => {
+          const n = pos(`s:${s.category}`);
           const lit = litSkills.has(s.category);
           const dim = hasFocus && !lit;
           const pinnedHere = pinned?.kind === "skill" && pinned.key === s.category;
           return (
-            <MapNode
-              key={s.category}
-              x={pos.x}
-              y={pos.y}
-              delay={0.18 + i * 0.05}
-              reduce={!!reduce}
-            >
+            <MapNode key={s.category} x={n.x} y={n.y}>
               <button
                 type="button"
                 onClick={() => toggleSkill(s.category)}
@@ -832,8 +1011,9 @@ function SkillTree() {
                 />
               </button>
               <NodeLabel
-                side={labelSide(pos)}
+                side={labelSide(n.x, n.y)}
                 color={lit ? s.accent : "var(--color-term-dim)"}
+                faded={dim}
               >
                 {s.category}
               </NodeLabel>
@@ -843,13 +1023,13 @@ function SkillTree() {
 
         {/* project nodes */}
         {graph.projects.map((p) => {
-          const pos = layout.projPos.get(p.index)!;
+          const n = pos(`p:${p.index}`);
           const lit = litProjects.has(p.index);
           const isFocus = focus?.kind === "project" && focus.key === p.index;
           const dim = hasFocus && !lit;
           const dot = statusStyle[p.status].glow;
           return (
-            <MapNode key={p.index} x={pos.x} y={pos.y} delay={0.42} reduce={!!reduce}>
+            <MapNode key={p.index} x={n.x} y={n.y}>
               <button
                 type="button"
                 onClick={() => toggleProject(p.index)}
@@ -878,11 +1058,13 @@ function SkillTree() {
                   }}
                 />
               </button>
-              {isFocus && (
-                <NodeLabel side={labelSide(pos)} color={dot}>
-                  {p.name}
-                </NodeLabel>
-              )}
+              <NodeLabel
+                side={labelSide(n.x, n.y)}
+                color={lit || isFocus ? dot : "var(--color-term-dim)"}
+                faded={dim}
+              >
+                {p.name}
+              </NodeLabel>
             </MapNode>
           );
         })}
