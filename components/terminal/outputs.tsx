@@ -489,8 +489,17 @@ function SkillConstellation() {
   >(null);
   const focus = hovered ?? selected;
 
+  // Signature of the last committed layout, so a re-measure that lands on the same
+  // (pixel-rounded) geometry is a no-op. Without this, every ResizeObserver tick -
+  // including the sub-pixel reflows a mobile browser fires while its address bar
+  // slides in and out on scroll - would push fresh state objects, re-running all the
+  // edge transitions and making the web visibly jitter.
+  const lastSig = useRef("");
+
   // Measure every node's anchor relative to the container, so the SVG edges land
   // exactly on the chips no matter how the two columns wrap on a narrow screen.
+  // Positions are rounded to whole pixels: sub-pixel drift during scroll is noise,
+  // not a layout change, and rounding keeps the signature stable across it.
   const measure = useCallback(() => {
     const c = containerRef.current;
     if (!c) return;
@@ -500,35 +509,57 @@ function SkillConstellation() {
       const el = skillRefs.current[s.category];
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      sk[s.category] = { x: r.right - cb.left, y: r.top - cb.top + r.height / 2 };
+      sk[s.category] = {
+        x: Math.round(r.right - cb.left),
+        y: Math.round(r.top - cb.top + r.height / 2),
+      };
     }
     const pr: Record<number, Anchor> = {};
     for (const p of graph.projects) {
       const el = projectRefs.current[p.index];
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      pr[p.index] = { x: r.left - cb.left, y: r.top - cb.top + r.height / 2 };
+      pr[p.index] = {
+        x: Math.round(r.left - cb.left),
+        y: Math.round(r.top - cb.top + r.height / 2),
+      };
     }
-    setSize({ w: cb.width, h: cb.height });
+    const w = Math.round(cb.width);
+    const h = Math.round(cb.height);
+    const sig = JSON.stringify({ w, h, sk, pr });
+    if (sig === lastSig.current) return;
+    lastSig.current = sig;
+    setSize({ w, h });
     setSkillPos(sk);
     setProjectPos(pr);
   }, [graph]);
 
+  // Coalesce resize/observer bursts into a single measurement per animation frame,
+  // so a flurry of layout events never thrashes getBoundingClientRect mid-scroll.
+  const rafRef = useRef<number | null>(null);
+  const scheduleMeasure = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      measure();
+    });
+  }, [measure]);
+
   useLayoutEffect(() => {
     measure();
     const c = containerRef.current;
-    if (!c || typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", measure);
-      return () => window.removeEventListener("resize", measure);
+    window.addEventListener("resize", scheduleMeasure);
+    let ro: ResizeObserver | undefined;
+    if (c && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(scheduleMeasure);
+      ro.observe(c);
     }
-    const ro = new ResizeObserver(measure);
-    ro.observe(c);
-    window.addEventListener("resize", measure);
     return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", scheduleMeasure);
+      ro?.disconnect();
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [measure]);
+  }, [measure, scheduleMeasure]);
 
   // From the current focus, derive which edges/nodes are lit. The focused node is
   // included via its own edges, so a focused skill lights itself and its projects
@@ -570,7 +601,7 @@ function SkillConstellation() {
 
   return (
     <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
-      <div className="flex items-baseline justify-between gap-2">
+      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
         <SectionLabel>skill constellation</SectionLabel>
         <span className="text-[11px] text-term-faint">
           tap a skill, watch the projects that prove it
@@ -612,7 +643,7 @@ function SkillConstellation() {
           })}
         </svg>
 
-        <div className="relative grid grid-cols-2 gap-x-6 sm:gap-x-14">
+        <div className="relative grid grid-cols-2 gap-x-4 sm:gap-x-14">
           {/* skills column */}
           <div className="flex flex-col gap-2">
             {graph.skills.map((s) => {
@@ -627,8 +658,13 @@ function SkillConstellation() {
                     skillRefs.current[s.category] = el;
                   }}
                   onClick={() => toggle({ kind: "skill", key: s.category })}
-                  onPointerEnter={() => setHovered({ kind: "skill", key: s.category })}
-                  onPointerLeave={() => setHovered(null)}
+                  onPointerEnter={(e) => {
+                    if (e.pointerType !== "touch")
+                      setHovered({ kind: "skill", key: s.category });
+                  }}
+                  onPointerLeave={(e) => {
+                    if (e.pointerType !== "touch") setHovered(null);
+                  }}
                   onFocus={() => setHovered({ kind: "skill", key: s.category })}
                   onBlur={() => setHovered(null)}
                   aria-pressed={isFocus}
@@ -673,8 +709,13 @@ function SkillConstellation() {
                     projectRefs.current[p.index] = el;
                   }}
                   onClick={() => toggle({ kind: "project", key: p.index })}
-                  onPointerEnter={() => setHovered({ kind: "project", key: p.index })}
-                  onPointerLeave={() => setHovered(null)}
+                  onPointerEnter={(e) => {
+                    if (e.pointerType !== "touch")
+                      setHovered({ kind: "project", key: p.index });
+                  }}
+                  onPointerLeave={(e) => {
+                    if (e.pointerType !== "touch") setHovered(null);
+                  }}
                   onFocus={() => setHovered({ kind: "project", key: p.index })}
                   onBlur={() => setHovered(null)}
                   aria-pressed={isFocus}
