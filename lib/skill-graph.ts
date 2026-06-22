@@ -1,13 +1,13 @@
-// Pure helper behind the `skills` constellation: connects each skill category to
-// the REAL projects that used it. Recruiters distrust self-asserted proficiency
+// Pure helper behind the `skills` tree: connects each skill category to the REAL
+// projects that used it. Recruiters distrust self-asserted proficiency
 // percentages; what they trust is years and projects. Every project already
 // carries a `stack[]`, so the proof is already in the data - this maps those
 // stack tokens onto the skill taxonomy and emits a bipartite graph (skills on one
-// side, projects on the other) that the render layer lights up on hover/tap.
+// side, projects on the other) that the tree lights up and branches out on tap.
 //
 // Deterministic by design (same projects -> same graph) so it is unit-testable
 // like buildSkillEvidence, and the render never drifts. The render layer lives in
-// components/terminal/outputs.tsx (SkillConstellation).
+// components/terminal/outputs.tsx (SkillTree).
 
 import { skills, projects, type Project } from "@/content/data";
 

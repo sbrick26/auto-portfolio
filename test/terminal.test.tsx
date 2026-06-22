@@ -224,11 +224,11 @@ describe("skills --activity", () => {
     expect(screen.getAllByText("#portfolio").length).toBeGreaterThan(0);
   });
 
-  it("bare skills shows the constellation and offers the activity chip", () => {
+  it("bare skills shows the skill tree and offers the activity chip", () => {
     render(<Terminal />);
     run("skills");
-    // constellation view marker present, activity view's hint absent
-    expect(screen.getAllByText("skill constellation").length).toBeGreaterThan(0);
+    // tree view marker present, activity view's hint absent
+    expect(screen.getAllByText("skill tree").length).toBeGreaterThan(0);
     expect(screen.queryByText(/tap a skill for the work behind it/)).toBeNull();
     // a skill node lights up its projects when tapped, surfacing the honest count
     const coreBtn = screen.getAllByRole("button", { name: /languages \+ core/ });

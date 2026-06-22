@@ -31,7 +31,7 @@ test("quick chip taps run commands (mobile-critical path)", async ({ page }) => 
   await page.goto("/");
   await bootDone(page);
   await page.getByRole("button", { name: "skills", exact: true }).first().click();
-  await expect(page.getByText("skill constellation")).toBeVisible();
+  await expect(page.getByText("skill tree")).toBeVisible();
 });
 
 test("unknown commands error gracefully", async ({ page }) => {
