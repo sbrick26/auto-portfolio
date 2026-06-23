@@ -701,12 +701,24 @@ function useForceLayout(
 // always grow toward the box INTERIOR (a node on the right captions to its left, a
 // node up top captions below it), so a caption can never run off the near edge and
 // get clipped on a narrow phone.
-function labelSide(x: number, y: number): "left" | "right" | "above" | "below" {
+type LabelSide = "left" | "right" | "above" | "below";
+
+function labelSide(x: number, y: number): LabelSide {
   const dx = x - 0.5;
   const dy = y - 0.5;
   if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "left" : "right";
   return dy >= 0 ? "above" : "below";
 }
+
+// The opposite side, so the inner-ring skill nodes can caption OUTWARD (away from
+// the centre) - their labels then fan into the open space around the rim instead
+// of piling up on top of the root and each other in the crowded middle.
+const OPPOSITE: Record<LabelSide, LabelSide> = {
+  left: "right",
+  right: "left",
+  above: "below",
+  below: "above",
+};
 
 // One always-on link of the web: a plain SVG line tracking its two live endpoints
 // every frame (the physics moves them; the line just follows). It only fades
@@ -774,33 +786,57 @@ function MapNode({
   );
 }
 
-// A node's caption, placed just off its dot on the outward side. Decorative only
-// (the button it sits beside already carries the accessible name), capped so a long
-// project title can never blow out the small map.
+// A node's caption, placed just off its dot on the chosen side. Decorative only
+// (the button it sits beside already carries the accessible name). A long name
+// WRAPS across up to two lines and ellipsises only past that, so it stays readable
+// instead of being chopped mid-word. `hideUnlitOnMobile` keeps the small phone view
+// clean: an unlit project name is hidden on a narrow screen (where everything would
+// otherwise overlap) and only appears once its node lights up, while wider screens
+// still show the whole web at once.
 function NodeLabel({
   side,
   color,
   faded,
+  lit,
+  hideUnlitOnMobile,
   children,
 }: {
-  side: "left" | "right" | "above" | "below";
+  side: LabelSide;
   color: string;
   faded?: boolean;
+  lit?: boolean;
+  hideUnlitOnMobile?: boolean;
   children: React.ReactNode;
 }) {
-  const place: Record<typeof side, string> = {
-    right: "left-full top-1/2 ml-1.5 -translate-y-1/2",
+  const place: Record<LabelSide, string> = {
+    right: "left-full top-1/2 ml-1.5 -translate-y-1/2 text-left",
     left: "right-full top-1/2 mr-1.5 -translate-y-1/2 text-right",
     above: "bottom-full left-1/2 mb-1.5 -translate-x-1/2 text-center",
     below: "top-full left-1/2 mt-1.5 -translate-x-1/2 text-center",
   };
+  // on a phone an unlit project caption stays hidden until its node lights up, so
+  // the idle map is a clean web of dots rather than a tangle of overlapping text.
+  const visibility = hideUnlitOnMobile && !lit ? "hidden sm:block" : "block";
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute max-w-[84px] truncate text-[9px] leading-none transition-opacity duration-200 ${place[side]}`}
-      style={{ color, opacity: faded ? 0.5 : 1 }}
+      className={`pointer-events-none absolute ${place[side]} ${visibility}`}
     >
-      {children}
+      <span
+        className="text-[10px] leading-[1.15] transition-opacity duration-200"
+        style={{
+          color,
+          opacity: faded ? 0.5 : 1,
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 2,
+          overflow: "hidden",
+          overflowWrap: "anywhere",
+          maxWidth: "5.75rem",
+        }}
+      >
+        {children}
+      </span>
     </span>
   );
 }
@@ -998,9 +1034,10 @@ function SkillTree() {
                 />
               </button>
               <NodeLabel
-                side={labelSide(n.x, n.y)}
+                side={OPPOSITE[labelSide(n.x, n.y)]}
                 color={lit ? s.accent : "var(--color-term-dim)"}
                 faded={dim}
+                lit={lit}
               >
                 {s.category}
               </NodeLabel>
@@ -1048,11 +1085,18 @@ function SkillTree() {
                   }}
                 />
               </button>
-              {/* every project carries its name at all times so the whole web is
-                  readable at a glance; captions grow inward (labelSide) and the
-                  repulsion sim spreads the dots so nothing overlaps or clips. an
-                  unfocused name just dims rather than disappearing. */}
-              <NodeLabel side={labelSide(n.x, n.y)} color={dot} faded={dim}>
+              {/* captions grow inward (labelSide) and the repulsion sim spreads the
+                  dots. On wide screens every project shows its name at once; on a
+                  phone, where that many captions would overlap and clip, an unlit
+                  name stays hidden and appears the moment its node lights up - so
+                  the small map reads as a clean web of dots until you tap in. */}
+              <NodeLabel
+                side={labelSide(n.x, n.y)}
+                color={dot}
+                faded={dim}
+                lit={lit || isFocus}
+                hideUnlitOnMobile
+              >
                 {p.name}
               </NodeLabel>
             </MapNode>
