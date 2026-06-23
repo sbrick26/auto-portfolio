@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.32.0",
+    "date": "2026-06-22",
+    "changes": [
+      "continue on existing PR 48; can we use pr 48 and continue an"
+    ]
+  },
+  {
+    "version": "1.31.0",
+    "date": "2026-06-22",
+    "changes": [
+      "Skill-to-proof constellation: tap a skill, watch the real projects that used it light up"
+    ]
+  },
+  {
     "version": "1.30.0",
     "date": "2026-06-21",
     "changes": [

@@ -213,6 +213,20 @@ describe("secret version command", () => {
   });
 });
 
+describe("changelog command", () => {
+  it("renders recent versions with a current badge and expands to show all", () => {
+    render(<Terminal />);
+    run("changelog");
+    // the newest entry is flagged current
+    expect(screen.getAllByText("current").length).toBeGreaterThan(0);
+    // only the recent slice shows until expanded; the toggle reveals the rest
+    const showAll = screen.getByRole("button", { name: /show all \d+ versions/ });
+    fireEvent.click(showAll);
+    // once expanded the toggle is gone (every version is now on screen)
+    expect(screen.queryByRole("button", { name: /show all \d+ versions/ })).toBeNull();
+  });
+});
+
 describe("skills --activity", () => {
   it("renders the skill-activity view and reveals evidence when a skill is tapped", () => {
     render(<Terminal />);
@@ -224,13 +238,17 @@ describe("skills --activity", () => {
     expect(screen.getAllByText("#portfolio").length).toBeGreaterThan(0);
   });
 
-  it("bare skills keeps the static view and offers the activity chip", () => {
+  it("bare skills shows the skill tree and offers the activity chip", () => {
     render(<Terminal />);
     run("skills");
-    // static view marker present, activity view's hint absent
-    expect(screen.getAllByText("category overview").length).toBeGreaterThan(0);
+    // tree view marker present, activity view's hint absent
+    expect(screen.getAllByText("skill tree").length).toBeGreaterThan(0);
     expect(screen.queryByText(/tap a skill for the work behind it/)).toBeNull();
-    // but the activity view is one tap away
+    // a skill node lights up its projects when tapped, surfacing the honest count
+    const coreBtn = screen.getAllByRole("button", { name: /languages \+ core/ });
+    fireEvent.click(coreBtn[coreBtn.length - 1]);
+    expect(screen.getAllByText(/used in \d+ projects?/).length).toBeGreaterThan(0);
+    // and the work-log activity view is one tap away
     expect(
       screen.getAllByRole("button", { name: "skill activity" }).length,
     ).toBeGreaterThan(0);

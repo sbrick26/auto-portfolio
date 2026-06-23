@@ -14,7 +14,7 @@ export const COMMANDS: CommandMeta[] = [
   { name: "me", description: "who I am", aliases: ["whoami"] },
   { name: "about", description: "the longer story" },
   { name: "updates", description: "live feed of what I'm working on", aliases: ["work", "feed"] },
-  { name: "skills", description: "skills and proficiency", aliases: ["stack"] },
+  { name: "skills", description: "skills, mapped to the projects that prove them", aliases: ["stack"] },
   { name: "projects", description: "things I've built", aliases: ["ls"] },
   { name: "resume", description: "the one-page resume", aliases: ["cv"] },
   { name: "contact", description: "how to reach me", aliases: ["email"] },

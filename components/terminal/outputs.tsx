@@ -4,13 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
-import {
   profile,
   about,
   skills,
@@ -22,11 +15,13 @@ import {
   type ProjectMetric,
 } from "@/content/data";
 import { buildSkillEvidence, type SkillEvidence } from "@/lib/activity";
+import { buildSkillGraph, type SkillGraph } from "@/lib/skill-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
 import { COMMANDS, QUICK } from "@/lib/commands";
 import { APP_VERSION } from "@/lib/version";
+import { useTerminal } from "./TerminalContext";
 import { TypedLine, Cursor, Spinner } from "./typing";
-import { Reveal, SectionLabel, CmdChip, Ext, Pill, Bar } from "./ui";
+import { Reveal, SectionLabel, CmdChip, Ext, Pill } from "./ui";
 import { PipelineDiagram } from "./PipelineDiagram";
 import { ArchDiagram } from "./ArchDiagram";
 import { useBootReady } from "./TerminalContext";
@@ -457,72 +452,755 @@ export function SkillActivity() {
   );
 }
 
+// The node currently driving the highlight: either a skill category or a project.
+type SkillFocus =
+  | { kind: "skill"; key: string }
+  | { kind: "project"; key: number };
+
+/* --- radial skill graph (Obsidian-style) -----------------------------------
+
+The skill map is a fixed, evenly-spaced radial graph in the spirit of an Obsidian
+note graph: a quiet "skills" root sits dead centre, the skill GROUPS fan out
+around it at equal angles, and the REAL projects branch off the skill they best
+belong to. A project that touches more than one skill keeps its single home spot
+and draws faint cross-links back to its other skills, so the whole thing reads as
+one interconnected web while staying a legible tree.
+
+The radial layout SEEDS the positions; a damped, settling force loop
+(useForceLayout) then relaxes the web - nodes repel so they never pile up, links
+pull as springs, and a firm boundary plus a per-tick HARD clamp keep every node
+(and its caption) inside a padded inner box, so nothing can spill the frame on a
+phone. The loop decays to rest and stops, so the map holds still once settled and
+a tap never makes it jump. Positions live in normalized [0,1] coordinates inside a
+SQUARE box; the SVG link layer (viewBox 0 0 100 100) and the HTML node buttons
+(left/top %) read the exact same live numbers, so a link always lands on a node's
+centre at any size. Reduced-motion users skip the sim and get the still anchors.
+
+Everything is data-driven from buildSkillGraph (lib/skill-graph.ts): to add a
+skill, project, or relation, edit content/data.ts and (for a new stack token) map
+it in STACK_CATEGORY - the graph picks it up with zero render changes. */
+
+// A node's fixed normalized position inside the square box (0.5, 0.5 is centre).
+type GraphPos = { x: number; y: number };
+
+// One drawn link. `rel` selects how it renders: "root" (centre to a skill),
+// "branch" (a skill to a project that calls it home - the solid tree limbs), or
+// "web" (a skill to a project that merely touches it - the faint cross-links).
+type GraphLink = { a: string; b: string; rel: "root" | "branch" | "web" };
+
+// Layout geometry, in normalized units where 0.5 is the box edge. Radii stay well
+// inside the box so node glow and labels never reach the border; FAN is the
+// half-angle a skill spreads its projects across, centred on its own direction.
+const SKILL_R = 0.19; // distance from centre to each skill node
+const PROJ_R = 0.35; // distance from centre to each project node
+const FAN = (40 * Math.PI) / 180; // half-spread of a skill's project fan
+
+// Build the fixed radial layout from the bipartite skill graph: the root at the
+// centre, the skills fanned evenly around it, and every project parked on the one
+// skill it calls home. Home is the project's LEAST-loaded skill (greedy, in graph
+// order) so the branches carry roughly equal weight instead of one giant cluster;
+// each skill then fans its children outward across FAN. Pure and deterministic -
+// same graph in, same positions out - so the render never drifts and is testable.
+function radialLayout(graph: SkillGraph): {
+  pos: Map<string, GraphPos>;
+  links: GraphLink[];
+  homeOf: Map<number, string>;
+} {
+  const TAU = Math.PI * 2;
+  const pos = new Map<string, GraphPos>([["root", { x: 0.5, y: 0.5 }]]);
+  const links: GraphLink[] = [];
+
+  // even-spaced skills around the root, the first one pinned straight up
+  const ns = Math.max(graph.skills.length, 1);
+  const skillAngle = new Map<string, number>();
+  graph.skills.forEach((s, i) => {
+    const a = -Math.PI / 2 + (i * TAU) / ns;
+    skillAngle.set(s.category, a);
+    pos.set(`s:${s.category}`, {
+      x: 0.5 + SKILL_R * Math.cos(a),
+      y: 0.5 + SKILL_R * Math.sin(a),
+    });
+    links.push({ a: "root", b: `s:${s.category}`, rel: "root" });
+  });
+
+  // give each project a home skill - the one it touches that currently carries the
+  // fewest children (ties break toward graph order) - so the tree stays balanced
+  const load = new Map(graph.skills.map((s) => [s.category, 0]));
+  const orderOf = new Map(graph.skills.map((s, i) => [s.category, i]));
+  const kids = new Map<string, number[]>(graph.skills.map((s) => [s.category, []]));
+  const homeOf = new Map<number, string>();
+  for (const p of graph.projects) {
+    let home = p.categories[0];
+    for (const c of p.categories) {
+      const lc = load.get(c) ?? 0;
+      const lh = load.get(home) ?? 0;
+      if (lc < lh || (lc === lh && (orderOf.get(c) ?? 0) < (orderOf.get(home) ?? 0))) {
+        home = c;
+      }
+    }
+    homeOf.set(p.index, home);
+    load.set(home, (load.get(home) ?? 0) + 1);
+    kids.get(home)?.push(p.index);
+  }
+
+  // fan each skill's children outward across FAN (clamped so neighbouring fans
+  // never collide), centred on the skill's own direction; a lone child sits straight out
+  const half = Math.min(FAN, (TAU / ns) * 0.42);
+  for (const s of graph.skills) {
+    const base = skillAngle.get(s.category) ?? 0;
+    const ids = kids.get(s.category) ?? [];
+    ids.forEach((idx, i) => {
+      const a =
+        ids.length < 2 ? base : base - half + (2 * half * i) / (ids.length - 1);
+      pos.set(`p:${idx}`, {
+        x: 0.5 + PROJ_R * Math.cos(a),
+        y: 0.5 + PROJ_R * Math.sin(a),
+      });
+    });
+  }
+
+  // one link per skill<->project edge: the home edge is a solid branch, every
+  // other is a faint web cross-link tying the project back to its remaining skills
+  for (const e of graph.edges) {
+    links.push({
+      a: `s:${e.category}`,
+      b: `p:${e.project}`,
+      rel: homeOf.get(e.project) === e.category ? "branch" : "web",
+    });
+  }
+
+  return { pos, links, homeOf };
+}
+
+// A tiny deterministic hash so every node derives its own drift phase and speed
+// from its id - same id, same orbit, so the motion is stable across renders.
+function nodeHash(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+// Real (but bounded and settling) physics. The fixed radial layout seeds the
+// positions, then a damped force loop nudges everything into a clean web: every
+// pair of nodes repels so dots and their labels never pile up, each link acts as a
+// spring at a rest length, a soft gravity holds the cloud around the centre, and a
+// firm boundary force shoves anything nearing the edge back inward. Critically,
+// every node is HARD-clamped into an inner box each tick (PAD margin on all four
+// sides) so nothing - a dot, a glow, or a caption - can ever spill the frame on a
+// phone. The loop's alpha decays to rest and then the RAF stops, so the map holds
+// perfectly still once settled: a tap can never make it jump. Reduced-motion users
+// skip the sim entirely and get the still radial anchors.
+//
+// PAD is the inner margin the physics confines every node CENTRE to (all four
+// sides), leaving room for the dots, their glow, and the captions inside the box.
+const PAD = 0.12;
+
+function useForceLayout(
+  base: Map<string, GraphPos>,
+  links: GraphLink[],
+  enabled: boolean,
+): Map<string, GraphPos> {
+  const [positions, setPositions] = useState(base);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const ids = [...base.keys()];
+    const pos = new Map(ids.map((id) => [id, { ...base.get(id)! }]));
+    const vel = new Map(ids.map((id) => [id, { x: 0, y: 0 }]));
+    // a link's rest length depends on its role: root spokes longest, solid home
+    // branches medium, faint web cross-links a touch longer so they bow outward
+    const restFor = (rel: GraphLink["rel"]) =>
+      rel === "root" ? 0.2 : rel === "branch" ? 0.21 : 0.3;
+
+    let raf = 0;
+    let alpha = 1;
+    const lo = PAD;
+    const hi = 1 - PAD;
+
+    const step = () => {
+      // pairwise repulsion - an inverse-square shove that keeps nodes spread
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = pos.get(ids[i])!;
+          const b = pos.get(ids[j])!;
+          let dx = a.x - b.x;
+          let dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 < 1e-4) {
+            // identical points: nudge apart deterministically so it never stalls
+            dx = (nodeHash(ids[i]) % 7) / 700 + 1e-3;
+            dy = (nodeHash(ids[j]) % 7) / 700 + 1e-3;
+            d2 = dx * dx + dy * dy;
+          }
+          const d = Math.sqrt(d2);
+          // a firmer shove than before: with every caption now always on screen,
+          // the dots need to sit further apart so the names clear each other.
+          const f = (0.0022 * alpha) / d2;
+          const fx = (dx / d) * f;
+          const fy = (dy / d) * f;
+          const va = vel.get(ids[i])!;
+          const vb = vel.get(ids[j])!;
+          va.x += fx;
+          va.y += fy;
+          vb.x -= fx;
+          vb.y -= fy;
+        }
+      }
+      // springs along every drawn link, pulling both ends toward the rest length
+      for (const l of links) {
+        const a = pos.get(l.a)!;
+        const b = pos.get(l.b)!;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.hypot(dx, dy) || 1e-3;
+        const f = (d - restFor(l.rel)) * 0.07 * alpha;
+        const fx = (dx / d) * f;
+        const fy = (dy / d) * f;
+        const va = vel.get(l.a)!;
+        const vb = vel.get(l.b)!;
+        va.x += fx;
+        va.y += fy;
+        vb.x -= fx;
+        vb.y -= fy;
+      }
+      // gravity, boundary, integrate, clamp
+      for (const id of ids) {
+        if (id === "root") {
+          pos.set(id, { x: 0.5, y: 0.5 }); // the centre is pinned
+          vel.set(id, { x: 0, y: 0 });
+          continue;
+        }
+        const p = pos.get(id)!;
+        const v = vel.get(id)!;
+        v.x += (0.5 - p.x) * 0.012 * alpha; // soft pull to centre
+        v.y += (0.5 - p.y) * 0.012 * alpha;
+        if (p.x < lo) v.x += (lo - p.x) * 0.35; // firm inward boundary force
+        if (p.x > hi) v.x += (hi - p.x) * 0.35;
+        if (p.y < lo) v.y += (lo - p.y) * 0.35;
+        if (p.y > hi) v.y += (hi - p.y) * 0.35;
+        v.x *= 0.84; // damping keeps it from oscillating
+        v.y *= 0.84;
+        p.x = Math.min(hi, Math.max(lo, p.x + v.x)); // integrate + hard clamp
+        p.y = Math.min(hi, Math.max(lo, p.y + v.y));
+      }
+      alpha *= 0.95;
+      setPositions(new Map(ids.map((id) => [id, { ...pos.get(id)! }])));
+      if (alpha > 0.015) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // links/base are stable per graph; the sim re-seeds only when they change
+  }, [base, links, enabled]);
+
+  // reduced-motion (or pre-first-tick) falls straight back to the still anchors
+  return enabled ? positions : base;
+}
+
+// Which side a node's caption hangs on, derived from its live position: labels
+// always grow toward the box INTERIOR (a node on the right captions to its left, a
+// node up top captions below it), so a caption can never run off the near edge and
+// get clipped on a narrow phone.
+type LabelSide = "left" | "right" | "above" | "below";
+
+function labelSide(x: number, y: number): LabelSide {
+  const dx = x - 0.5;
+  const dy = y - 0.5;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "left" : "right";
+  return dy >= 0 ? "above" : "below";
+}
+
+// The opposite side, so the inner-ring skill nodes can caption OUTWARD (away from
+// the centre) - their labels then fan into the open space around the rim instead
+// of piling up on top of the root and each other in the crowded middle.
+const OPPOSITE: Record<LabelSide, LabelSide> = {
+  left: "right",
+  right: "left",
+  above: "below",
+  below: "above",
+};
+
+// One always-on link of the web: a plain SVG line tracking its two live endpoints
+// every frame (the physics moves them; the line just follows). It only fades
+// between lit/dim as the focus changes. vectorEffect keeps the stroke a constant
+// hairline despite the non-uniform viewBox.
+function Leg({
+  x1,
+  y1,
+  x2,
+  y2,
+  accent,
+  lit,
+  dim,
+  weak,
+}: {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  accent: string;
+  lit: boolean;
+  dim: boolean;
+  weak: boolean;
+}) {
+  // a lit leg reads as a quiet, low-contrast accent rather than a hard bright wire.
+  // when something is focused the rest of the web does not vanish - it stays on as
+  // a muted grey so the whole graph is always legible, just dimmed behind the
+  // highlighted path.
+  const opacity = lit ? 0.6 : dim ? 0.18 : weak ? 0.2 : 0.4;
+  return (
+    <line
+      x1={x1}
+      y1={y1}
+      x2={x2}
+      y2={y2}
+      stroke={lit ? accent : "var(--color-term-border)"}
+      strokeWidth={lit ? 1.1 : weak ? 0.8 : 1}
+      strokeLinecap="round"
+      strokeDasharray={weak && !lit ? "2 2" : undefined}
+      vectorEffect="non-scaling-stroke"
+      style={{ opacity, transition: "opacity 0.25s ease, stroke 0.25s ease" }}
+    />
+  );
+}
+
+// A node pinned on its live point: the wrapper centres on left/top %, the inner
+// span carries the dot. Position updates every frame from the simulation, so the
+// node glides smoothly with the web.
+function MapNode({
+  x,
+  y,
+  children,
+}: {
+  x: number;
+  y: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="absolute -translate-x-1/2 -translate-y-1/2"
+      style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
+    >
+      <div className="relative flex items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+// A node's caption, placed just off its dot on the chosen side. Decorative only
+// (the button it sits beside already carries the accessible name). EVERY node
+// always shows its caption - on every screen size - and the settling physics
+// spreads the dots so the captions clear each other. A long name SPLITS across up
+// to three lines at WORD boundaries (never chopped mid-word) and only ellipsises
+// past that, so even the longest project name stays readable as a small stack of
+// words rather than one clipped line.
+function NodeLabel({
+  side,
+  color,
+  faded,
+  children,
+}: {
+  side: LabelSide;
+  color: string;
+  faded?: boolean;
+  children: React.ReactNode;
+}) {
+  const place: Record<LabelSide, string> = {
+    right: "left-full top-1/2 ml-1.5 -translate-y-1/2 text-left",
+    left: "right-full top-1/2 mr-1.5 -translate-y-1/2 text-right",
+    above: "bottom-full left-1/2 mb-1.5 -translate-x-1/2 text-center",
+    below: "top-full left-1/2 mt-1.5 -translate-x-1/2 text-center",
+  };
+  return (
+    <span
+      aria-hidden
+      className={`pointer-events-none absolute block ${place[side]}`}
+    >
+      <span
+        className="text-[10px] leading-[1.15] transition-opacity duration-200"
+        style={{
+          color,
+          opacity: faded ? 0.5 : 1,
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 3,
+          overflow: "hidden",
+          // break at spaces first; only split a single over-long word as a last
+          // resort, so multi-word names stack cleanly instead of fracturing.
+          overflowWrap: "break-word",
+          wordBreak: "normal",
+          maxWidth: "5.5rem",
+        }}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
+// The interactive skill MAP. A quiet "skills" root sits dead centre; the skill
+// GROUPS fan out evenly around it and the REAL projects branch off the skill each
+// calls home, with cross-links back to any other skills they touch so the whole
+// thing reads as one interconnected graph. The layout is fixed (radialLayout) -
+// it never moves, so it holds its frame and reads cleanly on a phone. Tap a group
+// and the projects that prove it light up; tap a project and the groups it used
+// light up instead - so the map reads both ways (skill -> proof, project ->
+// skills) and the honest derived count recruiters trust ("used in N projects")
+// replaces self-asserted proficiency bars.
+function SkillTree() {
+  const { run } = useTerminal();
+  const graph = useMemo(() => buildSkillGraph(), []);
+  const { pos, links } = useMemo(() => radialLayout(graph), [graph]);
+  // the settling force sim drives the render; once it comes to rest the positions
+  // hold still, so a tap never reflows the web. The same live numbers feed the
+  // label sides - the layout is stable by the time anyone reads them.
+  const reduceMotion = useReducedMotion();
+  const livePos = useForceLayout(pos, links, !reduceMotion);
+  const at = (id: string) => livePos.get(id) ?? pos.get(id)!;
+
+  // A transient hover/keyboard preview falling back to the pinned (tapped) node, so
+  // touch users tap to pin and desktop users just hover - both land on the same
+  // highlight logic. A focused skill lights its projects; a focused project lights
+  // its skills.
+  const [pinned, setPinned] = useState<SkillFocus | null>(null);
+  const [hovered, setHovered] = useState<SkillFocus | null>(null);
+  const focus = hovered ?? pinned;
+  const hasFocus = !!focus;
+
+  // From the current focus, derive which nodes are lit by walking the edge set.
+  const { litSkills, litProjects } = useMemo(() => {
+    const s = new Set<string>();
+    const p = new Set<number>();
+    if (focus) {
+      for (const edge of graph.edges) {
+        const match =
+          focus.kind === "skill"
+            ? edge.category === focus.key
+            : edge.project === focus.key;
+        if (!match) continue;
+        s.add(edge.category);
+        p.add(edge.project);
+      }
+    }
+    return { litSkills: s, litProjects: p };
+  }, [focus, graph]);
+
+  const accentFor = useMemo(
+    () => new Map(graph.skills.map((s) => [s.category, s.accent])),
+    [graph],
+  );
+
+  // Tapping a node pins it (tap again to release); tapping the root clears focus.
+  const toggleSkill = (category: string) =>
+    setPinned((cur) =>
+      cur?.kind === "skill" && cur.key === category
+        ? null
+        : { kind: "skill", key: category },
+    );
+  const toggleProject = (index: number) =>
+    setPinned((cur) =>
+      cur?.kind === "project" && cur.key === index
+        ? null
+        : { kind: "project", key: index },
+    );
+
+  return (
+    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel p-3">
+      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
+        <SectionLabel>skill tree</SectionLabel>
+        <span className="text-[11px] text-term-faint">
+          tap a node, watch the work it connects to light up
+        </span>
+      </div>
+
+      {/* the graph: SVG links underneath, HTML node buttons on top, both reading
+          the same fixed normalized coordinates in a SQUARE box - the SVG keeps its
+          aspect (xMidYMid) so a link always lands on a node's centre, and
+          overflow-hidden guarantees nothing ever spills past the frame on mobile. */}
+      <div
+        className="relative mx-auto aspect-square w-full max-w-md select-none overflow-hidden rounded-xl ring-1 ring-inset ring-term-border/40"
+        style={{
+          touchAction: "manipulation",
+          background:
+            "radial-gradient(120% 120% at 50% 46%, var(--color-term-panel2) 0%, var(--color-term-bg) 72%)",
+        }}
+      >
+        <svg
+          aria-hidden
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {links.map((link) => {
+            const a = at(link.a);
+            const b = at(link.b);
+            let lit = false;
+            let accent = "var(--color-term-border)";
+            if (link.rel === "root") {
+              // centre -> skill: lit whenever that skill is in the lit set
+              const cat = link.b.slice(2);
+              lit = litSkills.has(cat);
+              accent = accentFor.get(cat) ?? accent;
+            } else {
+              // skill -> project (branch or web): lit when the focus is either end
+              const cat = link.a.slice(2);
+              const pj = Number(link.b.slice(2));
+              lit =
+                (focus?.kind === "skill" && focus.key === cat) ||
+                (focus?.kind === "project" && focus.key === pj);
+              accent = accentFor.get(cat) ?? accent;
+            }
+            return (
+              <Leg
+                key={`${link.a}-${link.b}`}
+                x1={a.x * 100}
+                y1={a.y * 100}
+                x2={b.x * 100}
+                y2={b.y * 100}
+                accent={accent}
+                lit={lit}
+                dim={hasFocus && !lit}
+                weak={link.rel === "web"}
+              />
+            );
+          })}
+        </svg>
+
+        {/* root */}
+        {(() => {
+          const r = at("root");
+          return (
+            <MapNode x={r.x} y={r.y}>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => setPinned(null)}
+                aria-label="skills root"
+                className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
+              >
+                <span
+                  aria-hidden
+                  className="h-3.5 w-3.5 rounded-full border border-term-dim bg-term-panel"
+                />
+              </button>
+              <NodeLabel side="below" color="var(--color-term-faint)" faded={hasFocus}>
+                skills
+              </NodeLabel>
+            </MapNode>
+          );
+        })()}
+
+        {/* skill group nodes */}
+        {graph.skills.map((s) => {
+          const n = at(`s:${s.category}`);
+          const lit = litSkills.has(s.category);
+          const dim = hasFocus && !lit;
+          const pinnedHere = pinned?.kind === "skill" && pinned.key === s.category;
+          return (
+            <MapNode key={s.category} x={n.x} y={n.y}>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => toggleSkill(s.category)}
+                onPointerEnter={(e) => {
+                  if (e.pointerType !== "touch")
+                    setHovered({ kind: "skill", key: s.category });
+                }}
+                onPointerLeave={(e) => {
+                  if (e.pointerType !== "touch") setHovered(null);
+                }}
+                onFocus={() => setHovered({ kind: "skill", key: s.category })}
+                onBlur={() => setHovered(null)}
+                aria-label={s.category}
+                aria-pressed={pinnedHere}
+                className="grid h-9 w-9 place-items-center rounded-full transition active:scale-95"
+                style={{ opacity: dim ? 0.55 : 1 }}
+              >
+                <span
+                  aria-hidden
+                  className="rounded-full border-2 transition-all duration-200"
+                  style={{
+                    borderColor: s.accent,
+                    background: lit ? s.accent : "transparent",
+                    width: lit ? 18 : 14,
+                    height: lit ? 18 : 14,
+                    boxShadow: lit
+                      ? `0 0 6px color-mix(in srgb, ${s.accent} 50%, transparent)`
+                      : "none",
+                  }}
+                />
+              </button>
+              <NodeLabel
+                side={OPPOSITE[labelSide(n.x, n.y)]}
+                color={lit ? s.accent : "var(--color-term-dim)"}
+                faded={dim}
+              >
+                {s.category}
+              </NodeLabel>
+            </MapNode>
+          );
+        })}
+
+        {/* project nodes */}
+        {graph.projects.map((p) => {
+          const n = at(`p:${p.index}`);
+          const lit = litProjects.has(p.index);
+          const isFocus = focus?.kind === "project" && focus.key === p.index;
+          const dim = hasFocus && !lit;
+          const dot = statusStyle[p.status].glow;
+          return (
+            <MapNode key={p.index} x={n.x} y={n.y}>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => toggleProject(p.index)}
+                onPointerEnter={(e) => {
+                  if (e.pointerType !== "touch")
+                    setHovered({ kind: "project", key: p.index });
+                }}
+                onPointerLeave={(e) => {
+                  if (e.pointerType !== "touch") setHovered(null);
+                }}
+                onFocus={() => setHovered({ kind: "project", key: p.index })}
+                onBlur={() => setHovered(null)}
+                aria-label={p.name}
+                aria-pressed={isFocus}
+                className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
+                style={{ opacity: dim ? 0.5 : 1 }}
+              >
+                <span
+                  aria-hidden
+                  className="rounded-full transition-all duration-200"
+                  style={{
+                    background: dot,
+                    width: lit ? 11 : 7,
+                    height: lit ? 11 : 7,
+                    boxShadow: lit
+                      ? `0 0 5px color-mix(in srgb, ${dot} 50%, transparent)`
+                      : "none",
+                  }}
+                />
+              </button>
+              {/* captions grow inward (labelSide), toward the open centre, while
+                  the repulsion sim spreads the dots apart - so every project shows
+                  its full name at once, on every screen size, and the names clear
+                  each other instead of piling up. */}
+              <NodeLabel side={labelSide(n.x, n.y)} color={dot} faded={dim}>
+                {p.name}
+              </NodeLabel>
+            </MapNode>
+          );
+        })}
+      </div>
+
+      {/* detail readout for the focused node: the honest derived stat or the
+          cross-link. A focused skill shows the count; a focused project lists the
+          skills that powered it, each a tap back into the map. The reserved height
+          keeps this row a constant size across focus changes, so tapping a node no
+          longer reflows the page and makes the view jump. */}
+      <div className="min-h-[4rem]">
+        <SkillTreeDetail
+          focus={focus}
+          graph={graph}
+          accentFor={accentFor}
+          onSkill={(c) => setPinned({ kind: "skill", key: c })}
+          onProjects={() => run("projects")}
+        />
+      </div>
+    </Reveal>
+  );
+}
+
+// The contextual readout under the tree. Kept separate so the tree body stays
+// focused on layout. Idle, it is just a quiet prompt to explore.
+function SkillTreeDetail({
+  focus,
+  graph,
+  accentFor,
+  onSkill,
+  onProjects,
+}: {
+  focus: SkillFocus | null;
+  graph: ReturnType<typeof buildSkillGraph>;
+  accentFor: Map<string, string>;
+  onSkill: (category: string) => void;
+  onProjects: () => void;
+}) {
+  if (!focus) {
+    return (
+      <div className="text-[12px] text-term-faint">
+        tap a node - every leg is a real project that used that skill, no
+        self-rated percentages, just the work.
+      </div>
+    );
+  }
+
+  if (focus.kind === "skill") {
+    const node = graph.skills.find((s) => s.category === focus.key);
+    if (!node) return null;
+    const n = node.projects.length;
+    return (
+      <button
+        onClick={onProjects}
+        className="text-left text-[12px] transition hover:text-term-green active:scale-[0.99]"
+      >
+        <span style={{ color: node.accent }}>{node.category}</span>
+        <span className="text-term-faint">
+          {" "}
+          - used in {n} {n === 1 ? "project" : "projects"}; tap a node or open
+          projects
+        </span>
+      </button>
+    );
+  }
+
+  const node = graph.projects.find((p) => p.index === focus.key);
+  if (!node) return null;
+  return (
+    <div className="space-y-1.5 text-[12px]">
+      <div>
+        <span className="text-term-text/90">{node.name}</span>
+        <span className="text-term-faint"> - powered by</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {node.categories.map((c) => (
+          <button
+            key={c}
+            onClick={() => onSkill(c)}
+            className="rounded border px-1.5 py-0.5 text-[11px] transition active:scale-[0.97]"
+            style={{ borderColor: accentFor.get(c), color: accentFor.get(c) }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SkillsOutput({ args = "" }: { args?: string } = {}) {
-  // `skills --activity` (alias `-a`) swaps the static bars/radar for the
-  // tap-a-skill evidence view; bare `skills` keeps the established view clean.
+  // `skills --activity` (alias `-a`) swaps the tree for the tap-a-skill evidence
+  // view pulled from the live updates feed; bare `skills` shows the skill tree.
   if (/(?:^|\s)(?:--activity|-a)(?:\s|$)/.test(args)) {
     return (
       <div className="space-y-4">
         <SkillActivity />
         <div className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
           <span>each skill, backed by the actual work from the live updates feed</span>
-          <CmdChip cmd="skills" label="full skills" />
+          <CmdChip cmd="skills" label="skill map" />
         </div>
       </div>
     );
   }
 
-  const radarData = skills.map((g) => ({
-    category: g.category.split(" ")[0],
-    value: Math.round(g.items.reduce((s, x) => s + x.level, 0) / g.items.length),
-  }));
-
   return (
-    <div className="space-y-5">
-      <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-        {skills.map((g, gi) => (
-          <Reveal key={g.category} i={gi} className="space-y-2">
-            <SectionLabel>{g.category}</SectionLabel>
-            <div className="space-y-2">
-              {g.items.map((s, si) => (
-                <div key={s.name} className="space-y-1">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-term-text/90">{s.name}</span>
-                    <span className="text-term-faint tabular-nums">{s.level}</span>
-                  </div>
-                  <Bar value={s.level} accent={g.accent} delay={gi * 0.08 + si * 0.05} />
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        ))}
-      </div>
-
-      <Reveal i={4} className="rounded-lg border border-term-border bg-term-panel2/50 p-3">
-        <SectionLabel>category overview</SectionLabel>
-        <div className="h-[210px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#323848" />
-              <PolarAngleAxis
-                dataKey="category"
-                tick={{ fill: "#a3acbc", fontSize: 11 }}
-              />
-              <Radar
-                dataKey="value"
-                stroke="var(--color-term-green)"
-                fill="var(--color-term-green)"
-                fillOpacity={0.18}
-                isAnimationActive
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </Reveal>
-
-      <Reveal i={5} className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
-        <span>see the work behind each skill</span>
+    <div className="space-y-4">
+      <SkillTree />
+      <Reveal className="flex flex-wrap items-center gap-2 text-[12px] text-term-faint">
+        <span>or read the work log behind each skill</span>
         <CmdChip cmd="skills --activity" label="skill activity" />
+        <CmdChip cmd="projects" label="see projects" />
       </Reveal>
     </div>
   );
