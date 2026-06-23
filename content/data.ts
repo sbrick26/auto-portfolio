@@ -53,6 +53,7 @@ export const skills: SkillGroup[] = [
       { name: "Agent SDK", level: 88 },
       { name: "MCP servers", level: 88 },
       { name: "Agent guardrails / governance", level: 86 },
+      { name: "Mainframe modernization (Z / i)", level: 84 },
       { name: "LLM APIs + prompts", level: 88 },
       { name: "Evals", level: 84 },
       { name: "IBM Bob", level: 90 },
@@ -152,6 +153,24 @@ export const projects: Project[] = [
       { label: "IBM i / Db2", kind: "system" },
     ],
     stack: ["TypeScript", "MCP", "IBM i / RPG", "Db2", "SSH"],
+    status: "shipped",
+  },
+  {
+    name: "IBM Z mainframe BMS-to-React modernization demo",
+    domain: "financial services",
+    blurb:
+      "Built a demo that takes an AI coding agent from legacy IBM Z CICS BMS green-screens to a modern React UI - the agent generates a React front end that calls the live mainframe for data and renders it, real green-screen-to-React modernization of a running Z system. Built on the public IBM CICS insurance sample app and demoed live as the centerpiece of a full-day Bobathon to 40 financial-services developers.",
+    metrics: [
+      { value: "CICS to React", label: "live mainframe modernized" },
+      { value: "40 devs", label: "live demo audience" },
+    ],
+    arch: [
+      { label: "AI agent", kind: "actor" },
+      { label: "React UI gen", kind: "system" },
+      { label: "live IBM Z", kind: "system" },
+      { label: "CICS data", kind: "store" },
+    ],
+    stack: ["IBM Z", "CICS / BMS", "React", "AI coding agent"],
     status: "shipped",
   },
   {
@@ -314,18 +333,18 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic frameworks running live in production, turning stalled POCs into adoptions. Exceeded first-year quota by 125%.",
+    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning stalled POCs into adoptions. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "Built 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
-        "Drove an AI agent end to end on a live IBM i via Bob 2.0: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
+        "Build 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
+        "Drove an AI agent end to end on a live IBM i: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
+        "Built a mainframe modernization demo taking an agent from legacy IBM Z CICS green-screens to a React UI calling the live Z machine, centerpiece of a 40-developer full-day client event.",
         "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
-        "Engineered the 3-layer AIDLC guardrails framework - NIST/FedRAMP policy, audit trails, CI diff gate - making enforced agent governance visible to a utility/energy client.",
-        "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a hackathon, 10 times at 15-20 engineers each.",
+        "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a full-day hackathon, 10+ times for up to 40 engineers.",
         "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible per-tool cost, security, and test evidence.",
       ],
     },
