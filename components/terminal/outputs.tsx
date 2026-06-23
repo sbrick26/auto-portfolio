@@ -466,14 +466,15 @@ belong to. A project that touches more than one skill keeps its single home spot
 and draws faint cross-links back to its other skills, so the whole thing reads as
 one interconnected web while staying a legible tree.
 
-The ANCHOR layout is computed ONCE from buildSkillGraph and never reshuffles - no
-force loop, no DOM measuring. A light, bounded float (useFloatingPositions) then
-sways each node a few px around its anchor so the web breathes, while the anchors
-stay fixed so it can never spill the frame or jitter the way the old live
-simulation did. Positions live in normalized [0,1] coordinates inside a SQUARE
-box; the SVG link layer (viewBox 0 0 100 100) and the HTML node buttons (left/top
-%) read the exact same live numbers, so a link always lands on a node's centre at
-any size. Reduced-motion users get the still anchors with no float at all.
+The radial layout SEEDS the positions; a damped, settling force loop
+(useForceLayout) then relaxes the web - nodes repel so they never pile up, links
+pull as springs, and a firm boundary plus a per-tick HARD clamp keep every node
+(and its caption) inside a padded inner box, so nothing can spill the frame on a
+phone. The loop decays to rest and stops, so the map holds still once settled and
+a tap never makes it jump. Positions live in normalized [0,1] coordinates inside a
+SQUARE box; the SVG link layer (viewBox 0 0 100 100) and the HTML node buttons
+(left/top %) read the exact same live numbers, so a link always lands on a node's
+centre at any size. Reduced-motion users skip the sim and get the still anchors.
 
 Everything is data-driven from buildSkillGraph (lib/skill-graph.ts): to add a
 skill, project, or relation, edit content/data.ts and (for a new stack token) map
@@ -582,60 +583,129 @@ function nodeHash(id: string): number {
   return Math.abs(h);
 }
 
-// Light physics: a gentle, bounded float laid on top of the fixed layout so the
-// web breathes without the drift and jitter the old live simulation caused. Each
-// node traces a slow, small Lissajous orbit around its fixed anchor (amplitude
-// ~0.7% of the box, a few px), the root stays put, and the links follow because
-// both layers read these same live positions. Motion only - reduced-motion users
-// fall straight back to the still layout.
-function useFloatingPositions(
+// Real (but bounded and settling) physics. The fixed radial layout seeds the
+// positions, then a damped force loop nudges everything into a clean web: every
+// pair of nodes repels so dots and their labels never pile up, each link acts as a
+// spring at a rest length, a soft gravity holds the cloud around the centre, and a
+// firm boundary force shoves anything nearing the edge back inward. Critically,
+// every node is HARD-clamped into an inner box each tick (PAD margin on all four
+// sides) so nothing - a dot, a glow, or a caption - can ever spill the frame on a
+// phone. The loop's alpha decays to rest and then the RAF stops, so the map holds
+// perfectly still once settled: a tap can never make it jump. Reduced-motion users
+// skip the sim entirely and get the still radial anchors.
+//
+// PAD is the inner margin the physics confines every node CENTRE to (all four
+// sides), leaving room for the dots, their glow, and the captions inside the box.
+const PAD = 0.14;
+
+function useForceLayout(
   base: Map<string, GraphPos>,
+  links: GraphLink[],
   enabled: boolean,
 ): Map<string, GraphPos> {
-  const [t, setT] = useState(0);
+  const [positions, setPositions] = useState(base);
+
   useEffect(() => {
     if (!enabled) return;
-    let raf = 0;
-    let start: number | null = null;
-    const loop = (now: number) => {
-      if (start === null) start = now;
-      setT((now - start) / 1000);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [enabled]);
+    const ids = [...base.keys()];
+    const pos = new Map(ids.map((id) => [id, { ...base.get(id)! }]));
+    const vel = new Map(ids.map((id) => [id, { x: 0, y: 0 }]));
+    // a link's rest length depends on its role: root spokes longest, solid home
+    // branches medium, faint web cross-links a touch longer so they bow outward
+    const restFor = (rel: GraphLink["rel"]) =>
+      rel === "root" ? 0.2 : rel === "branch" ? 0.17 : 0.26;
 
-  return useMemo(() => {
-    if (!enabled) return base;
-    const out = new Map<string, GraphPos>();
-    const AMP = 0.007; // orbit radius in normalized units (~0.7% of the box)
-    for (const [id, p] of base) {
-      if (id === "root") {
-        out.set(id, p); // the centre is the anchor; it holds still
-        continue;
+    let raf = 0;
+    let alpha = 1;
+    const lo = PAD;
+    const hi = 1 - PAD;
+
+    const step = () => {
+      // pairwise repulsion - an inverse-square shove that keeps nodes spread
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = pos.get(ids[i])!;
+          const b = pos.get(ids[j])!;
+          let dx = a.x - b.x;
+          let dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 < 1e-4) {
+            // identical points: nudge apart deterministically so it never stalls
+            dx = (nodeHash(ids[i]) % 7) / 700 + 1e-3;
+            dy = (nodeHash(ids[j]) % 7) / 700 + 1e-3;
+            d2 = dx * dx + dy * dy;
+          }
+          const d = Math.sqrt(d2);
+          const f = (0.0011 * alpha) / d2;
+          const fx = (dx / d) * f;
+          const fy = (dy / d) * f;
+          const va = vel.get(ids[i])!;
+          const vb = vel.get(ids[j])!;
+          va.x += fx;
+          va.y += fy;
+          vb.x -= fx;
+          vb.y -= fy;
+        }
       }
-      const h = nodeHash(id);
-      const wx = 0.1 + (h % 7) * 0.012; // ~0.1-0.18 Hz: a slow, calm sway
-      const wy = 0.09 + ((h >> 3) % 7) * 0.012;
-      const px = (h % 23) * 0.273; // per-node phase offsets so they drift out of sync
-      const py = ((h >> 2) % 19) * 0.331;
-      out.set(id, {
-        x: p.x + AMP * Math.sin(t * wx * 2 * Math.PI + px),
-        y: p.y + AMP * Math.cos(t * wy * 2 * Math.PI + py),
-      });
-    }
-    return out;
-  }, [base, t, enabled]);
+      // springs along every drawn link, pulling both ends toward the rest length
+      for (const l of links) {
+        const a = pos.get(l.a)!;
+        const b = pos.get(l.b)!;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.hypot(dx, dy) || 1e-3;
+        const f = (d - restFor(l.rel)) * 0.07 * alpha;
+        const fx = (dx / d) * f;
+        const fy = (dy / d) * f;
+        const va = vel.get(l.a)!;
+        const vb = vel.get(l.b)!;
+        va.x += fx;
+        va.y += fy;
+        vb.x -= fx;
+        vb.y -= fy;
+      }
+      // gravity, boundary, integrate, clamp
+      for (const id of ids) {
+        if (id === "root") {
+          pos.set(id, { x: 0.5, y: 0.5 }); // the centre is pinned
+          vel.set(id, { x: 0, y: 0 });
+          continue;
+        }
+        const p = pos.get(id)!;
+        const v = vel.get(id)!;
+        v.x += (0.5 - p.x) * 0.012 * alpha; // soft pull to centre
+        v.y += (0.5 - p.y) * 0.012 * alpha;
+        if (p.x < lo) v.x += (lo - p.x) * 0.35; // firm inward boundary force
+        if (p.x > hi) v.x += (hi - p.x) * 0.35;
+        if (p.y < lo) v.y += (lo - p.y) * 0.35;
+        if (p.y > hi) v.y += (hi - p.y) * 0.35;
+        v.x *= 0.84; // damping keeps it from oscillating
+        v.y *= 0.84;
+        p.x = Math.min(hi, Math.max(lo, p.x + v.x)); // integrate + hard clamp
+        p.y = Math.min(hi, Math.max(lo, p.y + v.y));
+      }
+      alpha *= 0.95;
+      setPositions(new Map(ids.map((id) => [id, { ...pos.get(id)! }])));
+      if (alpha > 0.015) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // links/base are stable per graph; the sim re-seeds only when they change
+  }, [base, links, enabled]);
+
+  // reduced-motion (or pre-first-tick) falls straight back to the still anchors
+  return enabled ? positions : base;
 }
 
-// Which side a node's label hangs on, derived from its live position so labels
-// fan outward from the web and stay clear of the links.
+// Which side a node's caption hangs on, derived from its live position: labels
+// always grow toward the box INTERIOR (a node on the right captions to its left, a
+// node up top captions below it), so a caption can never run off the near edge and
+// get clipped on a narrow phone.
 function labelSide(x: number, y: number): "left" | "right" | "above" | "below" {
   const dx = x - 0.5;
   const dy = y - 0.5;
-  if (Math.abs(dx) < 0.12) return dy < 0 ? "above" : "below";
-  return dx < 0 ? "left" : "right";
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "left" : "right";
+  return dy >= 0 ? "above" : "below";
 }
 
 // One always-on link of the web: a plain SVG line tracking its two live endpoints
@@ -661,9 +731,11 @@ function Leg({
   dim: boolean;
   weak: boolean;
 }) {
-  // a lit leg reads as a quiet, low-contrast accent rather than a hard bright wire:
-  // enough to trace the connection, not so much that it glares against the panel.
-  const opacity = lit ? 0.55 : dim ? 0.05 : weak ? 0.16 : 0.4;
+  // a lit leg reads as a quiet, low-contrast accent rather than a hard bright wire.
+  // when something is focused the rest of the web does not vanish - it stays on as
+  // a muted grey so the whole graph is always legible, just dimmed behind the
+  // highlighted path.
+  const opacity = lit ? 0.6 : dim ? 0.18 : weak ? 0.2 : 0.4;
   return (
     <line
       x1={x1}
@@ -725,8 +797,8 @@ function NodeLabel({
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute max-w-[100px] truncate text-[9.5px] leading-none transition-opacity duration-200 ${place[side]}`}
-      style={{ color, opacity: faded ? 0.3 : 1 }}
+      className={`pointer-events-none absolute max-w-[84px] truncate text-[9px] leading-none transition-opacity duration-200 ${place[side]}`}
+      style={{ color, opacity: faded ? 0.5 : 1 }}
     >
       {children}
     </span>
@@ -746,12 +818,12 @@ function SkillTree() {
   const { run } = useTerminal();
   const graph = useMemo(() => buildSkillGraph(), []);
   const { pos, links } = useMemo(() => radialLayout(graph), [graph]);
-  // live (gently floating) positions drive the render; the fixed anchors drive the
-  // label side so a wobbling node never flips its caption back and forth.
+  // the settling force sim drives the render; once it comes to rest the positions
+  // hold still, so a tap never reflows the web. The same live numbers feed the
+  // label sides - the layout is stable by the time anyone reads them.
   const reduceMotion = useReducedMotion();
-  const livePos = useFloatingPositions(pos, !reduceMotion);
+  const livePos = useForceLayout(pos, links, !reduceMotion);
   const at = (id: string) => livePos.get(id) ?? pos.get(id)!;
-  const atBase = (id: string) => pos.get(id)!;
 
   // A transient hover/keyboard preview falling back to the pinned (tapped) node, so
   // touch users tap to pin and desktop users just hover - both land on the same
@@ -813,8 +885,9 @@ function SkillTree() {
           aspect (xMidYMid) so a link always lands on a node's centre, and
           overflow-hidden guarantees nothing ever spills past the frame on mobile. */}
       <div
-        className="relative mx-auto aspect-square w-full max-w-sm select-none overflow-hidden rounded-xl ring-1 ring-inset ring-term-border/40"
+        className="relative mx-auto aspect-square w-full max-w-md select-none overflow-hidden rounded-xl ring-1 ring-inset ring-term-border/40"
         style={{
+          touchAction: "manipulation",
           background:
             "radial-gradient(120% 120% at 50% 46%, var(--color-term-panel2) 0%, var(--color-term-bg) 72%)",
         }}
@@ -867,6 +940,7 @@ function SkillTree() {
             <MapNode x={r.x} y={r.y}>
               <button
                 type="button"
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={() => setPinned(null)}
                 aria-label="skills root"
                 className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
@@ -893,6 +967,7 @@ function SkillTree() {
             <MapNode key={s.category} x={n.x} y={n.y}>
               <button
                 type="button"
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={() => toggleSkill(s.category)}
                 onPointerEnter={(e) => {
                   if (e.pointerType !== "touch")
@@ -906,7 +981,7 @@ function SkillTree() {
                 aria-label={s.category}
                 aria-pressed={pinnedHere}
                 className="grid h-9 w-9 place-items-center rounded-full transition active:scale-95"
-                style={{ opacity: dim ? 0.4 : 1 }}
+                style={{ opacity: dim ? 0.55 : 1 }}
               >
                 <span
                   aria-hidden
@@ -923,7 +998,7 @@ function SkillTree() {
                 />
               </button>
               <NodeLabel
-                side={labelSide(atBase(`s:${s.category}`).x, atBase(`s:${s.category}`).y)}
+                side={labelSide(n.x, n.y)}
                 color={lit ? s.accent : "var(--color-term-dim)"}
                 faded={dim}
               >
@@ -944,6 +1019,7 @@ function SkillTree() {
             <MapNode key={p.index} x={n.x} y={n.y}>
               <button
                 type="button"
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={() => toggleProject(p.index)}
                 onPointerEnter={(e) => {
                   if (e.pointerType !== "touch")
@@ -957,7 +1033,7 @@ function SkillTree() {
                 aria-label={p.name}
                 aria-pressed={isFocus}
                 className="grid h-7 w-7 place-items-center rounded-full transition active:scale-90"
-                style={{ opacity: dim ? 0.3 : 1 }}
+                style={{ opacity: dim ? 0.5 : 1 }}
               >
                 <span
                   aria-hidden
@@ -972,14 +1048,13 @@ function SkillTree() {
                   }}
                 />
               </button>
-              {/* project names only surface for the focused subgraph - idle, the
-                  outer ring stays a clean cloud of dots so the small box never
-                  drowns in labels on a phone */}
-              {lit && (
-                <NodeLabel side={labelSide(atBase(`p:${p.index}`).x, atBase(`p:${p.index}`).y)} color={dot}>
-                  {p.name}
-                </NodeLabel>
-              )}
+              {/* every project carries its name at all times so the whole web is
+                  readable at a glance; captions grow inward (labelSide) and the
+                  repulsion sim spreads the dots so nothing overlaps or clips. an
+                  unfocused name just dims rather than disappearing. */}
+              <NodeLabel side={labelSide(n.x, n.y)} color={dot} faded={dim}>
+                {p.name}
+              </NodeLabel>
             </MapNode>
           );
         })}
@@ -990,7 +1065,7 @@ function SkillTree() {
           skills that powered it, each a tap back into the map. The reserved height
           keeps this row a constant size across focus changes, so tapping a node no
           longer reflows the page and makes the view jump. */}
-      <div className="min-h-[3.5rem]">
+      <div className="min-h-[4rem]">
         <SkillTreeDetail
           focus={focus}
           graph={graph}
