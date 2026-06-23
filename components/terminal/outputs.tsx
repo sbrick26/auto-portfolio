@@ -466,13 +466,14 @@ belong to. A project that touches more than one skill keeps its single home spot
 and draws faint cross-links back to its other skills, so the whole thing reads as
 one interconnected web while staying a legible tree.
 
-The layout is computed ONCE from buildSkillGraph and never moves - no physics
-loop, no drift, no DOM measuring. Positions live in normalized [0,1] coordinates
-inside a SQUARE box; the SVG link layer (viewBox 0 0 100 100) and the HTML node
-buttons (left/top %) read the exact same numbers, so a link always lands on a
-node's centre at any size and nothing can drift while a mobile address bar slides
-on scroll. Holding still and fitting the box is the whole point - it reads
-cleanly on a phone where the old live web spilled out of the frame and jittered.
+The ANCHOR layout is computed ONCE from buildSkillGraph and never reshuffles - no
+force loop, no DOM measuring. A light, bounded float (useFloatingPositions) then
+sways each node a few px around its anchor so the web breathes, while the anchors
+stay fixed so it can never spill the frame or jitter the way the old live
+simulation did. Positions live in normalized [0,1] coordinates inside a SQUARE
+box; the SVG link layer (viewBox 0 0 100 100) and the HTML node buttons (left/top
+%) read the exact same live numbers, so a link always lands on a node's centre at
+any size. Reduced-motion users get the still anchors with no float at all.
 
 Everything is data-driven from buildSkillGraph (lib/skill-graph.ts): to add a
 skill, project, or relation, edit content/data.ts and (for a new stack token) map
@@ -570,6 +571,64 @@ function radialLayout(graph: SkillGraph): {
   return { pos, links, homeOf };
 }
 
+// A tiny deterministic hash so every node derives its own drift phase and speed
+// from its id - same id, same orbit, so the motion is stable across renders.
+function nodeHash(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+// Light physics: a gentle, bounded float laid on top of the fixed layout so the
+// web breathes without the drift and jitter the old live simulation caused. Each
+// node traces a slow, small Lissajous orbit around its fixed anchor (amplitude
+// ~0.7% of the box, a few px), the root stays put, and the links follow because
+// both layers read these same live positions. Motion only - reduced-motion users
+// fall straight back to the still layout.
+function useFloatingPositions(
+  base: Map<string, GraphPos>,
+  enabled: boolean,
+): Map<string, GraphPos> {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let raf = 0;
+    let start: number | null = null;
+    const loop = (now: number) => {
+      if (start === null) start = now;
+      setT((now - start) / 1000);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [enabled]);
+
+  return useMemo(() => {
+    if (!enabled) return base;
+    const out = new Map<string, GraphPos>();
+    const AMP = 0.007; // orbit radius in normalized units (~0.7% of the box)
+    for (const [id, p] of base) {
+      if (id === "root") {
+        out.set(id, p); // the centre is the anchor; it holds still
+        continue;
+      }
+      const h = nodeHash(id);
+      const wx = 0.1 + (h % 7) * 0.012; // ~0.1-0.18 Hz: a slow, calm sway
+      const wy = 0.09 + ((h >> 3) % 7) * 0.012;
+      const px = (h % 23) * 0.273; // per-node phase offsets so they drift out of sync
+      const py = ((h >> 2) % 19) * 0.331;
+      out.set(id, {
+        x: p.x + AMP * Math.sin(t * wx * 2 * Math.PI + px),
+        y: p.y + AMP * Math.cos(t * wy * 2 * Math.PI + py),
+      });
+    }
+    return out;
+  }, [base, t, enabled]);
+}
+
 // Which side a node's label hangs on, derived from its live position so labels
 // fan outward from the web and stay clear of the links.
 function labelSide(x: number, y: number): "left" | "right" | "above" | "below" {
@@ -602,7 +661,9 @@ function Leg({
   dim: boolean;
   weak: boolean;
 }) {
-  const opacity = lit ? 0.95 : dim ? 0.05 : weak ? 0.16 : 0.4;
+  // a lit leg reads as a quiet, low-contrast accent rather than a hard bright wire:
+  // enough to trace the connection, not so much that it glares against the panel.
+  const opacity = lit ? 0.55 : dim ? 0.05 : weak ? 0.16 : 0.4;
   return (
     <line
       x1={x1}
@@ -610,7 +671,7 @@ function Leg({
       x2={x2}
       y2={y2}
       stroke={lit ? accent : "var(--color-term-border)"}
-      strokeWidth={lit ? 1.6 : weak ? 0.8 : 1}
+      strokeWidth={lit ? 1.1 : weak ? 0.8 : 1}
       strokeLinecap="round"
       strokeDasharray={weak && !lit ? "2 2" : undefined}
       vectorEffect="non-scaling-stroke"
@@ -685,7 +746,12 @@ function SkillTree() {
   const { run } = useTerminal();
   const graph = useMemo(() => buildSkillGraph(), []);
   const { pos, links } = useMemo(() => radialLayout(graph), [graph]);
-  const at = (id: string) => pos.get(id)!;
+  // live (gently floating) positions drive the render; the fixed anchors drive the
+  // label side so a wobbling node never flips its caption back and forth.
+  const reduceMotion = useReducedMotion();
+  const livePos = useFloatingPositions(pos, !reduceMotion);
+  const at = (id: string) => livePos.get(id) ?? pos.get(id)!;
+  const atBase = (id: string) => pos.get(id)!;
 
   // A transient hover/keyboard preview falling back to the pinned (tapped) node, so
   // touch users tap to pin and desktop users just hover - both land on the same
@@ -734,7 +800,7 @@ function SkillTree() {
     );
 
   return (
-    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel2/50 p-3">
+    <Reveal className="space-y-3 rounded-lg border border-term-border bg-term-panel p-3">
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
         <SectionLabel>skill tree</SectionLabel>
         <span className="text-[11px] text-term-faint">
@@ -746,7 +812,13 @@ function SkillTree() {
           the same fixed normalized coordinates in a SQUARE box - the SVG keeps its
           aspect (xMidYMid) so a link always lands on a node's centre, and
           overflow-hidden guarantees nothing ever spills past the frame on mobile. */}
-      <div className="relative mx-auto aspect-square w-full max-w-sm select-none overflow-hidden">
+      <div
+        className="relative mx-auto aspect-square w-full max-w-sm select-none overflow-hidden rounded-xl ring-1 ring-inset ring-term-border/40"
+        style={{
+          background:
+            "radial-gradient(120% 120% at 50% 46%, var(--color-term-panel2) 0%, var(--color-term-bg) 72%)",
+        }}
+      >
         <svg
           aria-hidden
           className="absolute inset-0 h-full w-full"
@@ -844,12 +916,14 @@ function SkillTree() {
                     background: lit ? s.accent : "transparent",
                     width: lit ? 18 : 14,
                     height: lit ? 18 : 14,
-                    boxShadow: lit ? `0 0 10px ${s.accent}` : "none",
+                    boxShadow: lit
+                      ? `0 0 6px color-mix(in srgb, ${s.accent} 50%, transparent)`
+                      : "none",
                   }}
                 />
               </button>
               <NodeLabel
-                side={labelSide(n.x, n.y)}
+                side={labelSide(atBase(`s:${s.category}`).x, atBase(`s:${s.category}`).y)}
                 color={lit ? s.accent : "var(--color-term-dim)"}
                 faded={dim}
               >
@@ -892,7 +966,9 @@ function SkillTree() {
                     background: dot,
                     width: lit ? 11 : 7,
                     height: lit ? 11 : 7,
-                    boxShadow: lit ? `0 0 8px ${dot}` : "none",
+                    boxShadow: lit
+                      ? `0 0 5px color-mix(in srgb, ${dot} 50%, transparent)`
+                      : "none",
                   }}
                 />
               </button>
@@ -900,7 +976,7 @@ function SkillTree() {
                   outer ring stays a clean cloud of dots so the small box never
                   drowns in labels on a phone */}
               {lit && (
-                <NodeLabel side={labelSide(n.x, n.y)} color={dot}>
+                <NodeLabel side={labelSide(atBase(`p:${p.index}`).x, atBase(`p:${p.index}`).y)} color={dot}>
                   {p.name}
                 </NodeLabel>
               )}
@@ -911,14 +987,18 @@ function SkillTree() {
 
       {/* detail readout for the focused node: the honest derived stat or the
           cross-link. A focused skill shows the count; a focused project lists the
-          skills that powered it, each a tap back into the map. */}
-      <SkillTreeDetail
-        focus={focus}
-        graph={graph}
-        accentFor={accentFor}
-        onSkill={(c) => setPinned({ kind: "skill", key: c })}
-        onProjects={() => run("projects")}
-      />
+          skills that powered it, each a tap back into the map. The reserved height
+          keeps this row a constant size across focus changes, so tapping a node no
+          longer reflows the page and makes the view jump. */}
+      <div className="min-h-[3.5rem]">
+        <SkillTreeDetail
+          focus={focus}
+          graph={graph}
+          accentFor={accentFor}
+          onSkill={(c) => setPinned({ kind: "skill", key: c })}
+          onProjects={() => run("projects")}
+        />
+      </div>
     </Reveal>
   );
 }
