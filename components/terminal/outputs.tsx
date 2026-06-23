@@ -596,7 +596,7 @@ function nodeHash(id: string): number {
 //
 // PAD is the inner margin the physics confines every node CENTRE to (all four
 // sides), leaving room for the dots, their glow, and the captions inside the box.
-const PAD = 0.14;
+const PAD = 0.12;
 
 function useForceLayout(
   base: Map<string, GraphPos>,
@@ -613,7 +613,7 @@ function useForceLayout(
     // a link's rest length depends on its role: root spokes longest, solid home
     // branches medium, faint web cross-links a touch longer so they bow outward
     const restFor = (rel: GraphLink["rel"]) =>
-      rel === "root" ? 0.2 : rel === "branch" ? 0.17 : 0.26;
+      rel === "root" ? 0.2 : rel === "branch" ? 0.21 : 0.3;
 
     let raf = 0;
     let alpha = 1;
@@ -636,7 +636,9 @@ function useForceLayout(
             d2 = dx * dx + dy * dy;
           }
           const d = Math.sqrt(d2);
-          const f = (0.0011 * alpha) / d2;
+          // a firmer shove than before: with every caption now always on screen,
+          // the dots need to sit further apart so the names clear each other.
+          const f = (0.0022 * alpha) / d2;
           const fx = (dx / d) * f;
           const fy = (dy / d) * f;
           const va = vel.get(ids[i])!;
@@ -787,25 +789,21 @@ function MapNode({
 }
 
 // A node's caption, placed just off its dot on the chosen side. Decorative only
-// (the button it sits beside already carries the accessible name). A long name
-// WRAPS across up to two lines and ellipsises only past that, so it stays readable
-// instead of being chopped mid-word. `hideUnlitOnMobile` keeps the small phone view
-// clean: an unlit project name is hidden on a narrow screen (where everything would
-// otherwise overlap) and only appears once its node lights up, while wider screens
-// still show the whole web at once.
+// (the button it sits beside already carries the accessible name). EVERY node
+// always shows its caption - on every screen size - and the settling physics
+// spreads the dots so the captions clear each other. A long name SPLITS across up
+// to three lines at WORD boundaries (never chopped mid-word) and only ellipsises
+// past that, so even the longest project name stays readable as a small stack of
+// words rather than one clipped line.
 function NodeLabel({
   side,
   color,
   faded,
-  lit,
-  hideUnlitOnMobile,
   children,
 }: {
   side: LabelSide;
   color: string;
   faded?: boolean;
-  lit?: boolean;
-  hideUnlitOnMobile?: boolean;
   children: React.ReactNode;
 }) {
   const place: Record<LabelSide, string> = {
@@ -814,13 +812,10 @@ function NodeLabel({
     above: "bottom-full left-1/2 mb-1.5 -translate-x-1/2 text-center",
     below: "top-full left-1/2 mt-1.5 -translate-x-1/2 text-center",
   };
-  // on a phone an unlit project caption stays hidden until its node lights up, so
-  // the idle map is a clean web of dots rather than a tangle of overlapping text.
-  const visibility = hideUnlitOnMobile && !lit ? "hidden sm:block" : "block";
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute ${place[side]} ${visibility}`}
+      className={`pointer-events-none absolute block ${place[side]}`}
     >
       <span
         className="text-[10px] leading-[1.15] transition-opacity duration-200"
@@ -829,10 +824,13 @@ function NodeLabel({
           opacity: faded ? 0.5 : 1,
           display: "-webkit-box",
           WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 2,
+          WebkitLineClamp: 3,
           overflow: "hidden",
-          overflowWrap: "anywhere",
-          maxWidth: "5.75rem",
+          // break at spaces first; only split a single over-long word as a last
+          // resort, so multi-word names stack cleanly instead of fracturing.
+          overflowWrap: "break-word",
+          wordBreak: "normal",
+          maxWidth: "5.5rem",
         }}
       >
         {children}
@@ -1037,7 +1035,6 @@ function SkillTree() {
                 side={OPPOSITE[labelSide(n.x, n.y)]}
                 color={lit ? s.accent : "var(--color-term-dim)"}
                 faded={dim}
-                lit={lit}
               >
                 {s.category}
               </NodeLabel>
@@ -1085,18 +1082,11 @@ function SkillTree() {
                   }}
                 />
               </button>
-              {/* captions grow inward (labelSide) and the repulsion sim spreads the
-                  dots. On wide screens every project shows its name at once; on a
-                  phone, where that many captions would overlap and clip, an unlit
-                  name stays hidden and appears the moment its node lights up - so
-                  the small map reads as a clean web of dots until you tap in. */}
-              <NodeLabel
-                side={labelSide(n.x, n.y)}
-                color={dot}
-                faded={dim}
-                lit={lit || isFocus}
-                hideUnlitOnMobile
-              >
+              {/* captions grow inward (labelSide), toward the open centre, while
+                  the repulsion sim spreads the dots apart - so every project shows
+                  its full name at once, on every screen size, and the names clear
+                  each other instead of piling up. */}
+              <NodeLabel side={labelSide(n.x, n.y)} color={dot} faded={dim}>
                 {p.name}
               </NodeLabel>
             </MapNode>
