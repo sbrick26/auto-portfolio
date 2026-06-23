@@ -21,6 +21,7 @@ import { skills, projects, type Project } from "@/content/data";
 export const STACK_CATEGORY: Record<string, string> = {
   // languages + core: the languages, runtimes, web frameworks, and databases
   "Next.js": "languages + core",
+  React: "languages + core",
   TypeScript: "languages + core",
   "Node.js": "languages + core",
   Python: "languages + core",
@@ -43,6 +44,7 @@ export const STACK_CATEGORY: Record<string, string> = {
   "NIST / FedRAMP": "ai / agents",
   semgrep: "ai / agents",
   pytest: "ai / agents",
+  "AI coding agent": "ai / agents",
 
   // cloud + data: cloud + deploy, containers, auth, and the enterprise systems
   AWS: "cloud + data",
@@ -56,6 +58,8 @@ export const STACK_CATEGORY: Record<string, string> = {
   Workday: "cloud + data",
   ServiceNow: "cloud + data",
   "Sterling OMS": "cloud + data",
+  "IBM Z": "cloud + data",
+  "CICS / BMS": "cloud + data",
   "LucidLink SDK": "cloud + data",
   "CI gate": "cloud + data",
 };
