@@ -95,19 +95,24 @@ forgettable. Fix it two ways:
 ## Selection: ONE page, weighted (the core judgment)
 
 The resume targets ONE page. You are not transcribing the hub - you are
-choosing the strongest evidence and cutting the rest. Selection is by score:
+choosing the strongest evidence and cutting the rest. Selection is driven by the
+RANKING ENGINE, not a hand formula:
 
-  effective_score = weight + recency_bonus
+  python3 <workspace>/scripts/rank.py select  --role <target_role> --lines <fill_target>
+  python3 <workspace>/scripts/rank.py json     --role <target_role>    (full scores)
+  python3 <workspace>/scripts/rank.py explain <fact_id> --role <target_role>  (why a fact scored)
 
-- `weight` (0-100) is the archivist's resume-relevance score on each fact
-  (magnitude + metric strength + distinctiveness + leadership). If a
-  resume-priority fact has weight 0 (un-scored, e.g. backfilled facts), assign
-  one yourself with the same rubric and write it back: `career.sh weigh <id> <n>`.
-- recency_bonus: +20 if the fact is on the current role / from the last ~12
-  months, +10 within ~3 years, +0 older. So recent work takes precedence by
-  default - BUT a high-weight older achievement (a big, well-measured result)
-  outranks a weak recent one. That is the point: a strong statistic earns its
-  place regardless of age.
+rank.py scores every fact on five normalized sub-scores (evidence / metric
+strength, log-scaled impact, distinctiveness via rarity, scope / leadership,
+recency decay), weights them for the TARGET ROLE, adds the owner's boosts, and
+applies pairwise Elo from the ranking-judge on the contested middle. Its `select`
+output IS your one-page shortlist and its order is your default order. Treat
+rank.py as the source of ranking truth - it supersedes the old weight+recency
+hand-formula. You still own WORDING and COMBINING (below); if you reorder or cut
+against rank.py, say so in your report with a reason (the owner can boost a fact
+via front, and rank.py respects that next run). The archivist's `weight` still
+feeds rank.py as a distinctiveness prior, so keep backfilling weights for new
+facts so the engine has a real signal.
 
 FILL the page - do not leave it half-empty. The downloadable PDF is a fixed
 one-page Letter at 0.5in margins, so there is real room; use it. The one-page
@@ -148,8 +153,11 @@ stays current with your best work.
    `updated`, and metrics).
 2. Backfill: any resume-priority fact still at weight 0 gets a weight now
    (`career.sh weigh <id> <n>`), so selection has real scores to sort on.
-3. Score and select per the section above. Compute effective_score, rank, and
-   choose what fits one page.
+3. Rank + select with the engine: `python3 <workspace>/scripts/rank.py select
+   --role <target_role> --lines <fill_target>` is your one-page shortlist (its
+   order is your default order); `rank.py json --role <target_role>` gives full
+   scores, `rank.py explain <id> --role <target_role>` says why a fact scored.
+   That ranked set is the page; apply the wording and combining rules on top.
 4. Rewrite the affected `resume`, `skills`, and `projects` exports in data.ts,
    preserving structure and types. Tight bullets per the writing rules.
 5. Mark used facts: `career.sh sql "UPDATE facts SET in_resume=1 WHERE id IN (...)"`
