@@ -90,9 +90,9 @@ function BootStep({
   }, [phase, active, onDone]);
 
   return (
-    <div className="flex items-baseline gap-2">
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
       <span className="text-term-green">$</span>
-      <span className="flex-1">
+      <span className="flex-1 min-w-0">
         {active && phase === "type" ? (
           <TypedLine text={label} speed={8} onDone={onTyped} />
         ) : (
@@ -182,11 +182,11 @@ export function Welcome() {
       {bootDone && (
         <Reveal className="space-y-3 pt-1">
           <Wordmark animate={playing} />
-          <div className="text-term-text">
+          <div className="text-term-text break-words">
             Hey, I&apos;m <span className="text-term-green">{profile.name}</span>. This
             portfolio runs like a terminal.
           </div>
-          <div className="text-term-dim text-[13px]">
+          <div className="text-term-dim text-[13px] break-words">
             Type a command or tap one. Try{" "}
             <span className="text-term-cyan">updates</span>{" "}
             to see what I&apos;m working on, or{" "}
