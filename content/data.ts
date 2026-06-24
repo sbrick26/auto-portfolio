@@ -344,7 +344,7 @@ export const resume = {
         "Drove an AI agent end to end on a live IBM i: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
         "Built a mainframe modernization demo taking an agent from legacy IBM Z CICS green-screens to a React UI calling the live Z machine, centerpiece of a 40-developer full-day client event.",
         "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
-        "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; ran Bobathon, a full-day hackathon, 10+ times for up to 40 engineers.",
+        "Founded and lead a 5-intern initiative shipping a guardrailed agent-skills + MCP library across 10+ IBM products; designed and ran Bobathon, a full-day hackathon, 10+ times for up to 40 developers.",
         "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible per-tool cost, security, and test evidence.",
       ],
     },
