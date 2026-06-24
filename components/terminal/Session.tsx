@@ -264,7 +264,7 @@ export function Session({ blocks, active }: { blocks: Block[]; active: boolean }
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="h-full space-y-5 overflow-y-auto px-4 py-4 text-[14px] leading-relaxed sm:px-5"
+          className="h-full space-y-5 overflow-x-hidden overflow-y-auto px-4 py-4 text-[14px] leading-relaxed sm:px-5"
         >
           <div ref={contentRef} className="space-y-5">
             {blocks.map((b) => (
