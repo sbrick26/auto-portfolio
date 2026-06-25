@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.38.0",
+    "date": "2026-06-25",
+    "changes": [
+      "QA: fix regressions visual"
+    ]
+  },
+  {
     "version": "1.37.0",
     "date": "2026-06-24",
     "changes": [
