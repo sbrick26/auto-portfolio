@@ -92,6 +92,9 @@ test("project row expands and cross-jumps to the skill it proves", async ({ page
 });
 
 test("skill group fans a second-layer web with project proof", async ({ page }) => {
+  // canvas leaves idle-drift a few px per frame; freeze motion so Playwright's
+  // stability check can click them (visual.spec.ts does the same)
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await mapReady(page);
   await page.getByRole("button", { name: "Skills", exact: true }).click();
