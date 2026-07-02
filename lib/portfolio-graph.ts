@@ -3,7 +3,7 @@
 // so the layout is stable and unit-testable. The render layer (deterministic
 // grid-tree positions + idle float + pan/zoom) lives in components/skillmap/.
 //
-// Design: "Warm Paper Grid Tree" (handoff option 3a). A center card, six branch
+// Design: "Warm Paper Grid Tree" (handoff option 3a). A center card, eight branch
 // nodes on a fixed grid, leaf nodes fanning out from each branch, a slide-in
 // detail panel. Single teal accent, no force simulation.
 
@@ -14,10 +14,20 @@ import {
   projects,
   changelog,
   resume,
+  updates,
   type Project,
 } from "@/content/data";
+import { buildPipelineRun } from "@/lib/pipeline";
 
-export type BranchId = "about" | "skills" | "resume" | "changelog" | "projects" | "contact";
+export type BranchId =
+  | "about"
+  | "skills"
+  | "resume"
+  | "updates"
+  | "changelog"
+  | "projects"
+  | "pipeline"
+  | "contact";
 export type LeafStatus = "done" | "active" | "next";
 
 /** A leaf (sub-item) hanging off a branch. The circle itself is the marker. */
@@ -62,10 +72,18 @@ export interface Branch {
   dir: -1 | 1;
   /** fixed world x for the branch column */
   x: number;
+  /** |world y| of the pill from the card midline (world y = dir * y) */
+  y: number;
   /** leaf nodes drawn on the canvas (empty = panel-only branch, e.g. changelog) */
   leaves: Leaf[];
   /** panel-only rows for branches that intentionally have no canvas leaves */
   versions?: { version: string; date: string; changes: string[] }[];
+  /** panel-only live feed rows (updates branch), newest first */
+  feed?: { date: string; time?: string; text: string; tag?: string }[];
+  /** panel-only lifecycle steps (pipeline branch), in run order */
+  flow?: { label: string; detail: string; token: string; actor: string }[];
+  /** run-specific facts for the pipeline branch header (latest self-deploy) */
+  run?: { version: string; date: string; idea: string };
 }
 
 export interface PanelMe {
@@ -74,6 +92,8 @@ export interface PanelMe {
   status: string;
   summary: string;
   initials: string;
+  location: string;
+  links: { label: string; href: string }[];
 }
 
 export interface PortfolioGraph {
@@ -85,15 +105,21 @@ export interface PortfolioGraph {
   branchOfLeaf: Record<string, BranchId>;
 }
 
-// Fixed grid positions (handoff "Layout" table). Up branches above the card,
-// down branches below; Skills(up)/Projects(down) share the center spine.
-const BRANCH_POS: Record<BranchId, { dir: -1 | 1; x: number }> = {
-  about: { dir: -1, x: -340 },
-  skills: { dir: -1, x: 0 },
-  resume: { dir: -1, x: 340 },
-  changelog: { dir: 1, x: -340 },
-  projects: { dir: 1, x: 0 },
-  contact: { dir: 1, x: 340 },
+// Fixed grid positions (handoff "Layout" table, grown to eight). Up branches
+// above the card, down branches below, four per row, arranged as an ARC: the
+// edge tiles pull in horizontally and push out vertically, so the map hugs
+// screen proportions. The leafy branches (Skills, Projects) sit nearest the
+// center spine so their fans have room; panel-only branches (Updates,
+// Changelog, Pipeline) ride the corners.
+const BRANCH_POS: Record<BranchId, { dir: -1 | 1; x: number; y: number }> = {
+  about: { dir: -1, x: -330, y: 205 },
+  skills: { dir: -1, x: -140, y: 150 },
+  resume: { dir: -1, x: 140, y: 150 },
+  updates: { dir: -1, x: 330, y: 205 },
+  changelog: { dir: 1, x: -330, y: 205 },
+  projects: { dir: 1, x: -140, y: 150 },
+  pipeline: { dir: 1, x: 140, y: 150 },
+  contact: { dir: 1, x: 330, y: 205 },
 };
 
 // Short, scannable leaf labels for the about notes (kept in content order).
@@ -303,6 +329,27 @@ export function buildPortfolioGraph(): PortfolioGraph {
     changes: c.changes,
   }));
 
+  // ---- Updates: panel-only live feed, newest first. updates.json is
+  // newest-last and grows freely (the 16:00 check-in appends to it), so this
+  // stays current with zero design work.
+  const feed = [...updates].reverse().map((u) => ({
+    date: u.date,
+    time: u.time,
+    text: u.text,
+    tag: u.tag,
+  }));
+
+  // ---- Pipeline: panel-only walk of the agent system that ships this site.
+  // The step sequence is the real lifecycle; the run facts (version/date/idea)
+  // come from the latest changelog entry via lib/pipeline.ts.
+  const pipelineRun = buildPipelineRun(changelog);
+  const flow = pipelineRun.stages.map((s) => ({
+    label: s.node,
+    detail: s.detail,
+    token: s.token,
+    actor: s.actor,
+  }));
+
   const branchDefs: Branch[] = [
     {
       id: "about",
@@ -327,6 +374,25 @@ export function buildPortfolioGraph(): PortfolioGraph {
       lead: "The short version.",
       leaves: resumeLeaves,
       ...BRANCH_POS.resume,
+    },
+    {
+      id: "updates",
+      label: "Updates",
+      title: "Live Feed",
+      lead: "What I'm actually working on, newest first - the same log the agents write to as this site ships.",
+      leaves: [],
+      feed,
+      ...BRANCH_POS.updates,
+    },
+    {
+      id: "pipeline",
+      label: "Pipeline",
+      title: "The Pipeline",
+      lead: "The agent system that builds this site: one idea a day rides a branch through review, CI, and a preview to a one-tap approval, then ships itself to prod.",
+      leaves: [],
+      flow,
+      run: { version: pipelineRun.version, date: pipelineRun.date, idea: pipelineRun.idea },
+      ...BRANCH_POS.pipeline,
     },
     {
       id: "changelog",
@@ -373,6 +439,12 @@ export function buildPortfolioGraph(): PortfolioGraph {
       status: "Open to new challenges",
       summary: profile.summary,
       initials: "SB",
+      location: profile.location,
+      links: [
+        { label: "GitHub", href: profile.links.github },
+        { label: "LinkedIn", href: profile.links.linkedin },
+        { label: "Email", href: `mailto:${profile.links.email}` },
+      ],
     },
     branches: branchDefs,
     branchById,

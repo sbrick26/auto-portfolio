@@ -1,5 +1,6 @@
-// Branch icons - the six custom 24x24 line glyphs from the design handoff.
-// stroke-only (round caps/joins), colored by the node via currentColor.
+// Branch icons - the eight custom 24x24 line glyphs (six from the design
+// handoff plus updates/pipeline). stroke-only (round caps/joins), colored by
+// the node via currentColor.
 
 import type { ReactNode } from "react";
 import type { BranchId } from "@/lib/portfolio-graph";
@@ -25,6 +26,15 @@ const PATHS: Record<BranchId, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="8" />
       <path d="M12 7.6v4.4l3 2" />
+    </>
+  ),
+  updates: <path d="M2.5 12h3.4l2.6-6.5 3.2 13 2.8-9 1.9 2.5h5.1" />,
+  pipeline: (
+    <>
+      <path d="M20.5 11a8.6 8.6 0 0 0-16.2-2.4" />
+      <path d="M4.6 4.2v4.6h4.6" />
+      <path d="M3.5 13a8.6 8.6 0 0 0 16.2 2.4" />
+      <path d="M19.4 19.8v-4.6h-4.6" />
     </>
   ),
   contact: (

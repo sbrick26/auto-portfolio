@@ -1,13 +1,16 @@
 "use client";
 
-// The slide-in detail panel. Always shows the ACTIVE BRANCH as a list of rows
-// (one per leaf), highlighting the selected leaf and expanding its full detail
-// in place - so every fact from the old site (project metrics/arch/stack/links,
-// full resume bullets + the PDF/plain-text export, skill items, changelog notes,
-// contact links) is reachable here. Rows stay in sync with the canvas selection.
+// The slide-in detail panel. Shows the ACTIVE BRANCH as a list of rows (one per
+// leaf), highlighting the selected leaf and expanding its full detail in place -
+// so every fact from the old site (project metrics/arch/stack/links, full
+// resume bullets + the PDF/plain-text export, skill items, changelog notes, the
+// live updates feed, the pipeline walk, contact links) is reachable here. Rows
+// stay in sync with the canvas selection, and the panel scrolls the selected
+// row into view when the selection comes from the canvas. Clicking the center
+// card opens the profile ("me") view instead of a branch.
 
-import { useCallback, useState } from "react";
-import type { Branch, Leaf } from "@/lib/portfolio-graph";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Branch, Leaf, PanelMe } from "@/lib/portfolio-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
 
 const ARCH_TINT: Record<string, string> = {
@@ -37,6 +40,7 @@ function legacyCopy(text: string): boolean {
 
 export function NodePanel({
   branch,
+  me,
   selectedLeafId,
   onClose,
   onSelectLeaf,
@@ -44,16 +48,59 @@ export function NodePanel({
   labelOf,
 }: {
   branch: Branch | null;
+  me: PanelMe | null;
   selectedLeafId: string | null;
   onClose: () => void;
   onSelectLeaf: (id: string) => void;
   onJump: (id: string) => void;
   labelOf: (id: string) => string;
 }) {
-  const open = !!branch;
+  const open = !!branch || !!me;
+
+  // When the selection comes from the canvas (or a cross-jump), bring the
+  // matching row into view so the panel and the map always agree.
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!selectedLeafId) return;
+    const row = bodyRef.current?.querySelector(".sm-row-on");
+    row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedLeafId]);
+
   return (
     <aside className={`sm-panel${open ? " sm-panel-open" : ""}`} aria-hidden={!open}>
-      {branch ? (
+      {me ? (
+        <>
+          <header className="sm-panel-head">
+            <div>
+              <div className="sm-kicker">{me.role}</div>
+              <h3 className="sm-panel-title">{me.name}</h3>
+            </div>
+            <button className="sm-panel-x" onClick={onClose} aria-label="close panel">
+              ✕
+            </button>
+          </header>
+          <div className="sm-panel-body">
+            <div className="sm-me-status">
+              <span className="sm-status-dot" />
+              {me.status} · {me.location}
+            </div>
+            <p className="sm-lead">{me.summary}</p>
+            <div className="sm-me-links">
+              {me.links.map((l) => (
+                <a
+                  key={l.label}
+                  className="sm-linkbtn"
+                  href={l.href}
+                  target={l.href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel="noreferrer"
+                >
+                  {l.label} ↗
+                </a>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : branch ? (
         <>
           <header className="sm-panel-head">
             <div>
@@ -64,7 +111,7 @@ export function NodePanel({
               ✕
             </button>
           </header>
-          <div className="sm-panel-body">
+          <div className="sm-panel-body" ref={bodyRef}>
             <p className="sm-lead">{branch.lead}</p>
 
             {branch.id === "changelog" ? (
@@ -83,6 +130,23 @@ export function NodePanel({
                   </li>
                 ))}
               </ul>
+            ) : branch.id === "updates" ? (
+              <ul className="sm-rowlist">
+                {(branch.feed ?? []).map((u, i) => (
+                  <li key={i} className="sm-row sm-row-static">
+                    <div className="sm-row-head">
+                      <span className="sm-feed-when">
+                        {u.date}
+                        {u.time ? ` · ${u.time}` : ""}
+                      </span>
+                      {u.tag ? <span className="sm-row-tag">{u.tag}</span> : null}
+                    </div>
+                    <p className="sm-row-blurb">{u.text}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : branch.id === "pipeline" ? (
+              <PipelineFlow branch={branch} />
             ) : (
               <ul className="sm-rowlist">
                 {branch.leaves.map((leaf) => (
@@ -103,6 +167,59 @@ export function NodePanel({
         </>
       ) : null}
     </aside>
+  );
+}
+
+// The pipeline walk, ANIMATED like the old terminal diagram: a pulse advances
+// through the real lifecycle stages on a steady cadence, lighting each row and
+// its traveling token as it arrives, then loops - because the system never
+// stops shipping. Static (all rows lit) under prefers-reduced-motion. Rows are
+// plain stacked cards, so it reads the same on a phone sheet and a desktop
+// panel.
+const FLOW_STEP_MS = 1100;
+
+function PipelineFlow({ branch }: { branch: Branch }) {
+  const flow = branch.flow ?? [];
+  const [step, setStep] = useState(0);
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    if (flow.length < 2) return;
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (mq?.matches) return;
+    setAnimate(true);
+    const t = setInterval(() => setStep((s) => (s + 1) % flow.length), FLOW_STEP_MS);
+    return () => clearInterval(t);
+  }, [flow.length]);
+
+  return (
+    <>
+      {branch.run ? (
+        <div className="sm-run">
+          <span className="sm-row-tag">
+            latest v{branch.run.version}
+            {branch.run.date ? ` · ${branch.run.date}` : ""}
+          </span>
+          <p className="sm-row-blurb">{branch.run.idea}</p>
+        </div>
+      ) : null}
+      <ol className="sm-rowlist sm-flowlist">
+        {flow.map((s, i) => {
+          const on = !animate || i === step;
+          return (
+            <li key={i} className={`sm-row sm-row-static sm-flow-row${on ? " sm-flow-on" : ""}`}>
+              <div className="sm-row-head">
+                <span className="sm-flow-num">{String(i + 1).padStart(2, "0")}</span>
+                <span className="sm-row-label">{s.label}</span>
+                <span className="sm-row-tag">{s.actor}</span>
+              </div>
+              <p className="sm-row-blurb">{s.detail}</p>
+              <div className="sm-flow-token">→ {s.token}</div>
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
 
