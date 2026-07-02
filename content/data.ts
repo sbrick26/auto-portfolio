@@ -18,6 +18,12 @@ export const profile = {
     linkedin: "https://www.linkedin.com/in/swayam-barik",
     email: "swayambarik@gmail.com",
   },
+  // The automatic-portfolio pipeline demo. Two cuts of the same video; the
+  // "Watch the demo" button picks the vertical one on phone-sized screens.
+  demo: {
+    horizontal: "https://imsway-demo-assets.s3.us-east-2.amazonaws.com/swaygent-demo-horizontal.mp4",
+    vertical: "https://imsway-demo-assets.s3.us-east-2.amazonaws.com/swaygent-demo-vertical.mp4",
+  },
 };
 
 export const about: string[] = [

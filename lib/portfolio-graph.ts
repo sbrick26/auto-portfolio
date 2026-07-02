@@ -111,6 +111,8 @@ export interface PanelMe {
   initials: string;
   location: string;
   links: { label: string; href: string }[];
+  /** demo video cuts; the panel button picks by screen width */
+  demo: { horizontal: string; vertical: string };
 }
 
 export interface PortfolioGraph {
@@ -521,6 +523,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
         { label: "LinkedIn", href: profile.links.linkedin },
         { label: "Email", href: `mailto:${profile.links.email}` },
       ],
+      demo: profile.demo,
     },
     branches: branchDefs,
     branchById,

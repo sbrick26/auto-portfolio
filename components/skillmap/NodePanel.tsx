@@ -98,6 +98,7 @@ export function NodePanel({
               {me.status} · {me.location}
             </div>
             <p className="sm-lead">{me.summary}</p>
+            <DemoButton demo={me.demo} />
             <div className="sm-me-links">
               {me.links.map((l) => (
                 <a
@@ -168,6 +169,23 @@ export function NodePanel({
         </>
       ) : null}
     </aside>
+  );
+}
+
+// "Watch the demo" - the automatic-portfolio pipeline, filmed. Two cuts exist;
+// phone-width screens get the vertical one. Decided when the panel opens
+// (this only ever renders client-side, after the card is tapped).
+function DemoButton({ demo }: { demo: PanelMe["demo"] }) {
+  const [href] = useState(() =>
+    window.matchMedia?.("(max-width: 640px)").matches ? demo.vertical : demo.horizontal,
+  );
+  return (
+    <div className="sm-demo">
+      <a className="sm-linkbtn sm-linkbtn-solid" href={href} target="_blank" rel="noreferrer">
+        ▶ Watch the demo
+      </a>
+      <span className="sm-demo-cap">the automatic portfolio pipeline, end to end</span>
+    </div>
   );
 }
 

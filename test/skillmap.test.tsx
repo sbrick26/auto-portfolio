@@ -50,6 +50,10 @@ describe("SkillMap", () => {
     expect(screen.getByRole("link", { name: /GitHub/ }).getAttribute("href")).toBe(
       profile.links.github,
     );
+    // the demo button serves the horizontal cut on desktop-width screens
+    expect(screen.getByRole("link", { name: /Watch the demo/ }).getAttribute("href")).toBe(
+      profile.demo.horizontal,
+    );
     expect(screen.getByRole("link", { name: /Email/ }).getAttribute("href")).toBe(
       `mailto:${profile.links.email}`,
     );

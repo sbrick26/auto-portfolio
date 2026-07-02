@@ -859,3 +859,13 @@ body {
   .sm-chat { animation: none; opacity: 1; transform: scale(1); }
   .sm-flow-row { transition: none; }
 }
+
+/* watch-the-demo block in the me panel */
+.sm-demo { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 16px; }
+.sm-demo-cap {
+  font-family: var(--font-jet), ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sm-dim);
+}
