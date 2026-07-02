@@ -77,10 +77,10 @@ describe("data-driven mapping (nothing from the old site is dropped)", () => {
     });
   });
 
-  it("changelog is panel-only: no canvas leaves, latest versions in rows", () => {
+  it("changelog is panel-only: no canvas leaves, FULL history in rows", () => {
     const b = graph.branchById.changelog;
     expect(b.leaves).toHaveLength(0);
-    expect(b.versions?.length).toBe(Math.min(6, changelog.length));
+    expect(b.versions?.length).toBe(changelog.length);
     expect(b.versions?.[0].version).toBe(changelog[0].version);
   });
 
@@ -113,6 +113,47 @@ describe("data-driven mapping (nothing from the old site is dropped)", () => {
     expect(graph.me.summary.length).toBeGreaterThan(0);
     expect(graph.me.links).toHaveLength(3);
     for (const l of graph.me.links) expect(l.href).toMatch(/^(https:\/\/|mailto:)/);
+  });
+});
+
+describe("section colors", () => {
+  it("gives every branch its own valid, distinct accent", () => {
+    const colors = graph.branches.map((b) => b.color);
+    for (const c of colors) expect(c).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(new Set(colors).size).toBe(colors.length);
+  });
+});
+
+describe("second layer (sub-skill web)", () => {
+  it("every skill item becomes a sub-leaf under its group, ids unique", () => {
+    const seen = new Set<string>();
+    skills.forEach((group, i) => {
+      const subs = graph.subLeavesByParent[`skill-${i}`] ?? [];
+      expect(subs).toHaveLength(group.items.length);
+      for (const s of subs) {
+        expect(seen.has(s.id)).toBe(false);
+        seen.add(s.id);
+        expect(graph.subLeafById[s.id]).toBe(s);
+        expect(graph.branchOfLeaf[s.id]).toBe("skills");
+        expect(s.label.length).toBeGreaterThan(0);
+        expect(s.label.length, `sub label too long: "${s.label}"`).toBeLessThanOrEqual(20);
+      }
+    });
+  });
+
+  it("sub-leaf cross-links resolve to real project leaves", () => {
+    for (const s of Object.values(graph.subLeafById)) {
+      for (const id of s.cross) {
+        expect(graph.leafById[id], `${s.id} -> missing ${id}`).toBeDefined();
+        expect(id.startsWith("project-")).toBe(true);
+      }
+    }
+  });
+
+  it("the web actually links: core skills are proven by shipped projects", () => {
+    const all = Object.values(graph.subLeafById);
+    const linked = all.filter((s) => s.cross.length > 0);
+    expect(linked.length).toBeGreaterThanOrEqual(6);
   });
 });
 

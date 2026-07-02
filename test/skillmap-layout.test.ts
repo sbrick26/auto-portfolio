@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   CARD_EDGE,
   CARD_HALF_W,
+  EDGE_EXIT_Y,
   EDGE_X,
   FLOAT_AMP,
+  JUNC_Y,
+  PILL_GAP,
   WORLD_H,
   WORLD_W,
   fanLeaves,
+  fanSubLeaves,
   floatOffset,
   hash,
   trunkPath,
@@ -80,6 +84,108 @@ describe("fan geometry (no text or node overlap)", () => {
         expect(Math.abs(lp.by) + 30, `${lp.leaf.id} escapes vertically`).toBeLessThanOrEqual(
           WORLD_H / 2 + 45,
         );
+      }
+    }
+  });
+});
+
+// point-to-segment distance, for keeping nodes off the connector lines
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+// every trunk polyline as segments, matching trunkPath()'s math
+function trunkSegments(b: Branch): [number, number, number, number][] {
+  const end = b.dir * (b.y - PILL_GAP);
+  if (Math.abs(b.x) > EDGE_X) {
+    const sx = Math.sign(b.x) * CARD_HALF_W;
+    const ey = b.dir * EDGE_EXIT_Y;
+    return [
+      [sx, ey, b.x, ey],
+      [b.x, ey, b.x, end],
+    ];
+  }
+  const jy = b.dir * JUNC_Y;
+  return [
+    [0, b.dir * CARD_EDGE, 0, jy],
+    [0, jy, b.x, jy],
+    [b.x, jy, b.x, end],
+  ];
+}
+
+describe("second layer (sub-skill web) geometry", () => {
+  const allTrunkSegs = graph.branches.flatMap(trunkSegments);
+  const tiles = graph.branches.map((b) => ({ x: b.x, y: b.dir * b.y }));
+
+  const subFansOf = (branchId: "skills") => {
+    const b = graph.branchById[branchId];
+    return fanLeaves(b).map((lp) => ({
+      lp,
+      subs: fanSubLeaves(lp, graph.subLeavesByParent[lp.leaf.id] ?? []),
+    }));
+  };
+
+  it("sub-skills stay clear of every tile, the card, and each other", () => {
+    for (const { subs } of subFansOf("skills")) {
+      for (let i = 0; i < subs.length; i++) {
+        const s = subs[i];
+        for (const t of tiles) {
+          expect(
+            dist(s.bx, s.by, t.x, t.y),
+            `${s.sub.id} crowds a tile`,
+          ).toBeGreaterThanOrEqual(DISC_R + 12 + DRIFT);
+        }
+        expect(Math.abs(s.by), `${s.sub.id} over the card`).toBeGreaterThanOrEqual(
+          CARD_EDGE + 20 + DRIFT,
+        );
+        for (let j = i + 1; j < subs.length; j++) {
+          expect(
+            dist(s.bx, s.by, subs[j].bx, subs[j].by),
+            `${s.sub.id} vs ${subs[j].sub.id}`,
+          ).toBeGreaterThanOrEqual(20 + DRIFT);
+        }
+      }
+    }
+  });
+
+  it("sub-skills never sit on another section's trunk lines", () => {
+    for (const { subs } of subFansOf("skills")) {
+      for (const s of subs) {
+        for (const [ax, ay, bx, by] of allTrunkSegs) {
+          expect(
+            segDist(s.bx, s.by, ax, ay, bx, by),
+            `${s.sub.id} sits on a trunk line`,
+          ).toBeGreaterThanOrEqual(28);
+        }
+      }
+    }
+  });
+
+  it("sub-skills keep clear of their parent's sibling leaves", () => {
+    for (const { lp, subs } of subFansOf("skills")) {
+      const siblings = fanLeaves(lp.branch).filter((o) => o.leaf.id !== lp.leaf.id);
+      for (const s of subs) {
+        for (const o of siblings) {
+          expect(
+            dist(s.bx, s.by, o.bx, o.by),
+            `${s.sub.id} crowds ${o.leaf.id}`,
+          ).toBeGreaterThanOrEqual(22 + DRIFT);
+        }
+      }
+    }
+  });
+
+  it("the web stays inside the deep-focus frame", () => {
+    for (const { subs } of subFansOf("skills")) {
+      for (const s of subs) {
+        expect(Math.abs(s.bx) + 48, `${s.sub.id} escapes horizontally`).toBeLessThanOrEqual(
+          WORLD_W / 2 + 60,
+        );
+        expect(Math.abs(s.by) + 24, `${s.sub.id} escapes vertically`).toBeLessThanOrEqual(460);
       }
     }
   });

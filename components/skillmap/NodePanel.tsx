@@ -10,8 +10,13 @@
 // card opens the profile ("me") view instead of a branch.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Branch, Leaf, PanelMe } from "@/lib/portfolio-graph";
+import type { Branch, Leaf, PanelMe, SubLeaf } from "@/lib/portfolio-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
+import { PipeIcon } from "./icons";
+
+// How many changelog versions show before the "show all" fold (same idea as
+// the old terminal's tail + show-all affordance).
+const CHANGELOG_RECENT = 6;
 
 const ARCH_TINT: Record<string, string> = {
   actor: "var(--sm-accent)",
@@ -42,6 +47,8 @@ export function NodePanel({
   branch,
   me,
   selectedLeafId,
+  selectedSubId,
+  subsOf,
   onClose,
   onSelectLeaf,
   onJump,
@@ -50,6 +57,8 @@ export function NodePanel({
   branch: Branch | null;
   me: PanelMe | null;
   selectedLeafId: string | null;
+  selectedSubId: string | null;
+  subsOf: (leafId: string) => SubLeaf[];
   onClose: () => void;
   onSelectLeaf: (id: string) => void;
   onJump: (id: string) => void;
@@ -67,7 +76,11 @@ export function NodePanel({
   }, [selectedLeafId]);
 
   return (
-    <aside className={`sm-panel${open ? " sm-panel-open" : ""}`} aria-hidden={!open}>
+    <aside
+      className={`sm-panel${open ? " sm-panel-open" : ""}`}
+      aria-hidden={!open}
+      style={branch ? ({ "--sm-b": branch.color } as React.CSSProperties) : undefined}
+    >
       {me ? (
         <>
           <header className="sm-panel-head">
@@ -115,21 +128,7 @@ export function NodePanel({
             <p className="sm-lead">{branch.lead}</p>
 
             {branch.id === "changelog" ? (
-              <ul className="sm-rowlist">
-                {(branch.versions ?? []).map((v) => (
-                  <li key={v.version} className="sm-row sm-row-static">
-                    <div className="sm-row-head">
-                      <span className="sm-row-label">v{v.version}</span>
-                      <span className="sm-row-tag">{v.date}</span>
-                    </div>
-                    <ul className="sm-bullets">
-                      {v.changes.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
+              <ChangelogList versions={branch.versions ?? []} />
             ) : branch.id === "updates" ? (
               <ul className="sm-rowlist">
                 {(branch.feed ?? []).map((u, i) => (
@@ -154,6 +153,8 @@ export function NodePanel({
                     key={leaf.id}
                     leaf={leaf}
                     selected={selectedLeafId === leaf.id}
+                    subs={subsOf(leaf.id)}
+                    selectedSubId={selectedSubId}
                     onSelect={onSelectLeaf}
                     onJump={onJump}
                     labelOf={labelOf}
@@ -170,27 +171,88 @@ export function NodePanel({
   );
 }
 
+// The changelog rows, newest first, with the old terminal's "show all" fold:
+// the latest few render immediately, the full history is one tap away.
+function ChangelogList({
+  versions,
+}: {
+  versions: { version: string; date: string; changes: string[] }[];
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? versions : versions.slice(0, CHANGELOG_RECENT);
+  const hidden = versions.length - shown.length;
+  return (
+    <>
+      <ul className="sm-rowlist">
+        {shown.map((v) => (
+          <li key={v.version} className="sm-row sm-row-static">
+            <div className="sm-row-head">
+              <span className="sm-row-label">v{v.version}</span>
+              <span className="sm-row-tag">{v.date}</span>
+            </div>
+            <ul className="sm-bullets">
+              {v.changes.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 ? (
+        <button type="button" className="sm-linkbtn sm-showall" onClick={() => setShowAll(true)}>
+          show all {versions.length} versions
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 // The pipeline walk, ANIMATED like the old terminal diagram: a pulse advances
-// through the real lifecycle stages on a steady cadence, lighting each row and
-// its traveling token as it arrives, then loops - because the system never
-// stops shipping. Static (all rows lit) under prefers-reduced-motion. Rows are
-// plain stacked cards, so it reads the same on a phone sheet and a desktop
-// panel.
-const FLOW_STEP_MS = 1100;
+// through the real lifecycle stages on a steady cadence, lighting each row (its
+// own glyph + its own tint) and the traveling token as it arrives. The panel
+// follows the pulse down the list and jumps back to the top when the loop
+// wraps - because the system never stops shipping. Static (all rows lit) under
+// prefers-reduced-motion. Rows are plain stacked cards, so it reads the same on
+// a phone sheet and a desktop panel.
+const FLOW_STEP_MS = 1400;
+const FLOW_TINTS = [
+  "var(--sm-accent)",
+  "var(--sm-blue)",
+  "var(--sm-violet)",
+  "var(--sm-gold)",
+  "var(--sm-coral)",
+  "var(--sm-green)",
+];
 
 function PipelineFlow({ branch }: { branch: Branch }) {
   const flow = branch.flow ?? [];
   const [step, setStep] = useState(0);
-  const [animate, setAnimate] = useState(false);
+  // decided once on mount: this component only ever renders client-side,
+  // after the pipeline tile is tapped
+  const [animate] = useState(
+    () =>
+      flow.length > 1 && !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches,
+  );
+  const rowsRef = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {
-    if (flow.length < 2) return;
-    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (mq?.matches) return;
-    setAnimate(true);
+    if (!animate) return;
     const t = setInterval(() => setStep((s) => (s + 1) % flow.length), FLOW_STEP_MS);
     return () => clearInterval(t);
-  }, [flow.length]);
+  }, [animate, flow.length]);
+
+  // follow the pulse: scroll each lit row into view; when the loop wraps,
+  // jump the panel back to the top of the walk
+  useEffect(() => {
+    if (!animate) return;
+    const row = rowsRef.current[step];
+    if (!row) return;
+    if (step === 0) {
+      row.closest(".sm-panel-body")?.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [step, animate]);
 
   return (
     <>
@@ -207,9 +269,18 @@ function PipelineFlow({ branch }: { branch: Branch }) {
         {flow.map((s, i) => {
           const on = !animate || i === step;
           return (
-            <li key={i} className={`sm-row sm-row-static sm-flow-row${on ? " sm-flow-on" : ""}`}>
+            <li
+              key={i}
+              ref={(el) => {
+                rowsRef.current[i] = el;
+              }}
+              className={`sm-row sm-row-static sm-flow-row${on ? " sm-flow-on" : ""}`}
+              style={{ "--flow-tint": FLOW_TINTS[i % FLOW_TINTS.length] } as React.CSSProperties}
+            >
               <div className="sm-row-head">
-                <span className="sm-flow-num">{String(i + 1).padStart(2, "0")}</span>
+                <span className="sm-flow-icon">
+                  <PipeIcon k={s.key} />
+                </span>
                 <span className="sm-row-label">{s.label}</span>
                 <span className="sm-row-tag">{s.actor}</span>
               </div>
@@ -226,16 +297,21 @@ function PipelineFlow({ branch }: { branch: Branch }) {
 function PanelRow({
   leaf,
   selected,
+  subs,
+  selectedSubId,
   onSelect,
   onJump,
   labelOf,
 }: {
   leaf: Leaf;
   selected: boolean;
+  subs: SubLeaf[];
+  selectedSubId: string | null;
   onSelect: (id: string) => void;
   onJump: (id: string) => void;
   labelOf: (id: string) => string;
 }) {
+  const activeSub = selectedSubId ? subs.find((s) => s.id === selectedSubId) ?? null : null;
   const hasDot = leaf.branch === "skills" || leaf.branch === "projects";
   const dotClass =
     leaf.branch === "skills"
@@ -255,8 +331,45 @@ function PanelRow({
 
       {selected ? (
         <div className="sm-row-detail">
-          {/* skills: the real skill list + the projects that prove it */}
-          {leaf.items?.length ? (
+          {/* skills: each item is a live sub-node - tap to light it on the
+              canvas and see the projects that prove it */}
+          {subs.length ? (
+            <>
+              <div className="sm-chips">
+                {subs.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`sm-chip sm-chip-sub${selectedSubId === s.id ? " sm-chip-on" : ""}`}
+                    onClick={() => onSelect(s.id)}
+                  >
+                    {s.full}
+                  </button>
+                ))}
+              </div>
+              {activeSub ? (
+                <div className="sm-jumpwrap">
+                  <span className="sm-jump-label">
+                    {activeSub.cross.length ? "proven in" : "foundational - not tied to one build"}
+                  </span>
+                  {activeSub.cross.length ? (
+                    <div className="sm-chips">
+                      {activeSub.cross.map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          className="sm-chip sm-chip-jump"
+                          onClick={() => onJump(id)}
+                        >
+                          {labelOf(id)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : leaf.items?.length ? (
             <div className="sm-chips">
               {leaf.items.map((it) => (
                 <span key={it} className="sm-chip">

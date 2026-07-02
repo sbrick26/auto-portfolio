@@ -74,6 +74,8 @@ export interface Branch {
   x: number;
   /** |world y| of the pill from the card midline (world y = dir * y) */
   y: number;
+  /** the section's accent color (tile, leaves, connectors, panel) */
+  color: string;
   /** leaf nodes drawn on the canvas (empty = panel-only branch, e.g. changelog) */
   leaves: Leaf[];
   /** panel-only rows for branches that intentionally have no canvas leaves */
@@ -81,9 +83,24 @@ export interface Branch {
   /** panel-only live feed rows (updates branch), newest first */
   feed?: { date: string; time?: string; text: string; tag?: string }[];
   /** panel-only lifecycle steps (pipeline branch), in run order */
-  flow?: { label: string; detail: string; token: string; actor: string }[];
+  flow?: { key: string; label: string; detail: string; token: string; actor: string }[];
   /** run-specific facts for the pipeline branch header (latest self-deploy) */
   run?: { version: string; date: string; idea: string };
+}
+
+/** A second-layer node: one concrete skill inside a skill-group leaf, cross-
+ * linked to the projects whose stacks prove it. Fully data-driven: add an item
+ * to a group in content/data.ts and it lands on the canvas automatically. */
+export interface SubLeaf {
+  id: string;
+  /** parent leaf id (a skills-group leaf) */
+  parent: string;
+  /** short canvas caption */
+  label: string;
+  /** the full skill name (panel chip) */
+  full: string;
+  /** project leaf ids whose stack mentions this skill */
+  cross: string[];
 }
 
 export interface PanelMe {
@@ -101,8 +118,11 @@ export interface PortfolioGraph {
   branches: Branch[];
   branchById: Record<BranchId, Branch>;
   leafById: Record<string, Leaf>;
-  /** parent branch id for any leaf id - panel + dim/highlight resolution */
+  /** parent branch id for any leaf OR sub-leaf id - panel + highlight resolution */
   branchOfLeaf: Record<string, BranchId>;
+  /** second-layer skill web, keyed by the owning skills-group leaf */
+  subLeavesByParent: Record<string, SubLeaf[]>;
+  subLeafById: Record<string, SubLeaf>;
 }
 
 // Fixed grid positions (handoff "Layout" table, grown to eight). Up branches
@@ -121,6 +141,23 @@ const BRANCH_POS: Record<BranchId, { dir: -1 | 1; x: number; y: number }> = {
   pipeline: { dir: 1, x: 140, y: 150 },
   contact: { dir: 1, x: 330, y: 205 },
 };
+
+// One muted, paper-friendly accent per section. Skills keeps the signature
+// teal; the rest sit in the same low-saturation register so the map reads as
+// one system, just color-coded.
+const BRANCH_COLOR: Record<BranchId, string> = {
+  about: "#8c6f93",
+  skills: "#127c70",
+  resume: "#667fa5",
+  updates: "#b5853c",
+  changelog: "#c1715a",
+  projects: "#5f8b63",
+  pipeline: "#4e7e94",
+  contact: "#a8677d",
+};
+
+// Position + palette for one branch, spread into its definition.
+const posOf = (id: BranchId) => ({ ...BRANCH_POS[id], color: BRANCH_COLOR[id] });
 
 // Short, scannable leaf labels for the about notes (kept in content order).
 const ABOUT_TITLES = ["IBM / today", "before IBM", "this site", "the pipeline"];
@@ -173,6 +210,22 @@ function deriveShort(name: string): string {
   const head = name.split(/[(–—\-:]/)[0].trim();
   const words = head.split(/\s+/).slice(0, 3).join(" ");
   return words.length > 22 ? words.slice(0, 21).trimEnd() + "…" : words;
+}
+
+// Sub-leaf caption: first segment of the full skill name, kept node-sized.
+function subShort(name: string): string {
+  const head = name.split(/[(/+]/)[0].trim();
+  return head.length > 20 ? head.slice(0, 19).trimEnd() + "…" : head;
+}
+
+// A project's stack token proves a skill item when either mentions the other
+// (case-insensitive), so "SQL / Db2" matches the "Db2" token and "MCP servers"
+// matches "MCP". Loose on purpose: new items/projects link up automatically.
+function itemMatchesToken(item: string, token: string): boolean {
+  const a = item.toLowerCase();
+  const b = token.toLowerCase();
+  if (b.length < 3 || a.length < 3) return a === b;
+  return a.includes(b) || b.includes(a);
 }
 
 // Which skill CATEGORY a project's stack token proves. Owns its own taxonomy on
@@ -322,8 +375,9 @@ export function buildPortfolioGraph(): PortfolioGraph {
     href: c.href,
   }));
 
-  // ---- Changelog: panel-only, no canvas leaves (owner's rule) ----
-  const versions = changelog.slice(0, 6).map((c) => ({
+  // ---- Changelog: panel-only, no canvas leaves (owner's rule). The FULL
+  // history rides along; the panel folds it behind "show all".
+  const versions = changelog.map((c) => ({
     version: c.version,
     date: c.date,
     changes: c.changes,
@@ -344,6 +398,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
   // come from the latest changelog entry via lib/pipeline.ts.
   const pipelineRun = buildPipelineRun(changelog);
   const flow = pipelineRun.stages.map((s) => ({
+    key: s.key,
     label: s.node,
     detail: s.detail,
     token: s.token,
@@ -357,7 +412,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       title: "About",
       lead: "AI Solutions Engineer at IBM. I build autonomous multi-agent systems and MCP servers that modernize enterprise mainframe and ERP workloads - and ship them end to end.",
       leaves: aboutLeaves,
-      ...BRANCH_POS.about,
+      ...posOf("about"),
     },
     {
       id: "skills",
@@ -365,7 +420,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       title: "Skills",
       lead: "Where the strength concentrates, and where it is headed next.",
       leaves: skillLeaves,
-      ...BRANCH_POS.skills,
+      ...posOf("skills"),
     },
     {
       id: "resume",
@@ -373,7 +428,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       title: "Resume",
       lead: "The short version.",
       leaves: resumeLeaves,
-      ...BRANCH_POS.resume,
+      ...posOf("resume"),
     },
     {
       id: "updates",
@@ -382,7 +437,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       lead: "What I'm actually working on, newest first - the same log the agents write to as this site ships.",
       leaves: [],
       feed,
-      ...BRANCH_POS.updates,
+      ...posOf("updates"),
     },
     {
       id: "pipeline",
@@ -392,7 +447,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       leaves: [],
       flow,
       run: { version: pipelineRun.version, date: pipelineRun.date, idea: pipelineRun.idea },
-      ...BRANCH_POS.pipeline,
+      ...posOf("pipeline"),
     },
     {
       id: "changelog",
@@ -401,7 +456,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       lead: "How this site keeps shipping its own improvements.",
       leaves: [],
       versions,
-      ...BRANCH_POS.changelog,
+      ...posOf("changelog"),
     },
     {
       id: "projects",
@@ -409,7 +464,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       title: "Projects",
       lead: "Selected builds. Each links back to the skills it used.",
       leaves: projectLeaves,
-      ...BRANCH_POS.projects,
+      ...posOf("projects"),
     },
     {
       id: "contact",
@@ -417,7 +472,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       title: "Contact",
       lead: "Open to interesting problems.",
       leaves: contactLeaves,
-      ...BRANCH_POS.contact,
+      ...posOf("contact"),
     },
   ];
 
@@ -431,6 +486,27 @@ export function buildPortfolioGraph(): PortfolioGraph {
       branchOfLeaf[leaf.id] = b.id;
     }
   }
+
+  // ---- Second layer: every skill ITEM becomes a sub-leaf under its group,
+  // cross-linked to the projects whose stacks prove it. The intricate web,
+  // grown entirely from content/data.ts.
+  const subLeavesByParent: Record<string, SubLeaf[]> = {};
+  const subLeafById: Record<string, SubLeaf> = {};
+  skills.forEach((group, i) => {
+    const parent = `skill-${i}`;
+    const subs = group.items.map((it, j): SubLeaf => {
+      const cross = projects
+        .map((p, idx) => ({ idx, hit: p.stack.some((t) => itemMatchesToken(it.name, t)) }))
+        .filter(({ hit }) => hit)
+        .map(({ idx }) => `project-${idx}`);
+      return { id: `${parent}-item-${j}`, parent, label: subShort(it.name), full: it.name, cross };
+    });
+    subLeavesByParent[parent] = subs;
+    for (const s of subs) {
+      subLeafById[s.id] = s;
+      branchOfLeaf[s.id] = "skills";
+    }
+  });
 
   return {
     me: {
@@ -450,5 +526,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
     branchById,
     leafById,
     branchOfLeaf,
+    subLeavesByParent,
+    subLeafById,
   };
 }

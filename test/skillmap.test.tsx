@@ -107,6 +107,41 @@ describe("SkillMap", () => {
     expect(screen.getByRole("button", { name: "Core Stack" })).toBeDefined();
   });
 
+  it("a skill group leaf fans out its sub-skill web with project proof", () => {
+    const { container } = render(<SkillMap />);
+    clickBranch("Skills");
+    fireEvent.click(screen.getByRole("button", { name: "Core Stack" }));
+    // second layer on the canvas (the name also appears as a panel chip, so
+    // pick the canvas node explicitly)
+    const python = screen
+      .getAllByRole("button", { name: "Python" })
+      .find((el) => el.className.includes("sm-subleaf")) as HTMLElement;
+    expect(python).toBeDefined();
+    // tapping a sub-skill shows the projects that prove it in the panel (the
+    // group row shows its own "proven in" list too, hence getAll)
+    fireEvent.click(python);
+    expect(screen.getAllByText("proven in").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByRole("button", { name: "Python" }).some((el) =>
+        el.className.includes("sm-chip-on"),
+      ),
+    ).toBe(true);
+    expect(container.querySelectorAll(".sm-subleaf").length).toBe(
+      graph.subLeavesByParent["skill-0"].length,
+    );
+  });
+
+  it("changelog folds history behind a show-all expander", () => {
+    const { container } = render(<SkillMap />);
+    clickBranch("Changelog");
+    const total = graph.branchById.changelog.versions!.length;
+    expect(container.querySelectorAll(".sm-rowlist .sm-row").length).toBe(Math.min(6, total));
+    if (total > 6) {
+      fireEvent.click(screen.getByRole("button", { name: `show all ${total} versions` }));
+      expect(container.querySelectorAll(".sm-rowlist .sm-row").length).toBe(total);
+    }
+  });
+
   it("selecting a row in the panel highlights it in place", () => {
     const { container } = render(<SkillMap />);
     clickBranch("Skills");

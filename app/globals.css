@@ -682,3 +682,180 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sm-flow-row:not(.sm-flow-on) { opacity: 1; }
 }
+
+/* leaf labels: above the dot on up fans (the spoke arrives from below), below
+   on down fans - never on the line. A paper halo covers neighbor spokes. */
+.sm-leaf-up .sm-leaf-label { top: auto; bottom: calc(100% + 7px); }
+.sm-leaf-label {
+  background: rgba(243, 238, 227, 0.88);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+/* focus: swap the square browser outline for a round teal ring */
+.sm-branch:focus, .sm-leaf:focus, .sm-card:focus, .sm-recenter:focus { outline: none; }
+.sm-branch:focus-visible .sm-branch-disc,
+.sm-leaf:focus-visible .sm-leaf-dot { box-shadow: 0 0 0 3px rgba(18, 124, 112, 0.35); }
+.sm-card:focus-visible { border-color: var(--sm-accent); }
+.sm-recenter:focus-visible { border-color: var(--sm-accent); color: var(--sm-ink); }
+
+/* ============================================================
+   v3.1 additions: per-section colors, sub-skill web, animated card
+   ============================================================ */
+
+/* section colors: every node/connector carries --sm-b from its branch */
+.sm-trunk.sm-on, .sm-spoke.sm-on { stroke: var(--sm-b, var(--sm-line-active)); }
+.sm-branch:hover .sm-branch-disc,
+.sm-branch.sm-on .sm-branch-disc {
+  border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 55%, transparent);
+  color: var(--sm-b, var(--sm-accent));
+  background: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 9%, var(--sm-surface));
+}
+.sm-branch.sm-on .sm-branch-disc {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sm-b, var(--sm-accent)) 15%, transparent),
+    0 10px 22px -14px var(--sm-shadow);
+}
+.sm-branch.sm-on .sm-branch-label { color: var(--sm-b, var(--sm-accent-deep)); }
+.sm-branch:focus-visible .sm-branch-disc {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sm-b, var(--sm-accent)) 35%, transparent);
+}
+
+/* leaf dots: ALL filled with their section color (hollow states retired) */
+.sm-leaf .sm-leaf-dot {
+  background: var(--sm-b, var(--sm-accent));
+  border-color: var(--sm-b, var(--sm-accent));
+}
+.sm-leaf:hover .sm-leaf-dot,
+.sm-leaf.sm-on .sm-leaf-dot {
+  border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 60%, var(--sm-ink));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sm-b, var(--sm-accent)) 18%, transparent);
+}
+.sm-leaf:hover .sm-leaf-label,
+.sm-leaf.sm-on .sm-leaf-label { color: var(--sm-b, var(--sm-accent-deep)); }
+.sm-leaf-pulse { border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 45%, transparent); }
+
+/* second layer: smaller sub-skill nodes + thinner spokes */
+.sm-subleaf { width: 10px; height: 10px; }
+.sm-subleaf .sm-leaf-label { font-size: 8.4px; max-width: 96px; }
+.sm-subspoke { stroke-width: 1; opacity: 0.75; }
+
+/* panel accents follow the section color */
+.sm-kicker { color: var(--sm-b, var(--sm-accent)); }
+.sm-row-on {
+  border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 40%, transparent);
+  background: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 8%, var(--sm-surface));
+}
+.sm-dot-done, .sm-dot-active, .sm-dot-filled, .sm-dot-plain { background: var(--sm-b, var(--sm-accent)); }
+.sm-dot-next { border-color: var(--sm-b, var(--sm-dim)); background: transparent; }
+.sm-chip-jump {
+  border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 40%, transparent);
+  color: var(--sm-b, var(--sm-accent-deep));
+}
+.sm-chip-jump:hover { background: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 10%, transparent); }
+.sm-chip-sub { cursor: pointer; }
+.sm-chip-sub:hover { border-color: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 45%, transparent); }
+.sm-chip-on {
+  border-color: var(--sm-b, var(--sm-accent));
+  color: var(--sm-b, var(--sm-accent-deep));
+  background: color-mix(in srgb, var(--sm-b, var(--sm-accent)) 12%, transparent);
+}
+.sm-showall { margin-top: 12px; }
+
+/* ---- animated center card ---- */
+/* rotating ring of every section color around the card */
+@property --sm-ang {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.sm-card::before {
+  content: "";
+  position: absolute;
+  inset: -2.5px;
+  border-radius: 20px;
+  padding: 2.5px;
+  background: conic-gradient(
+    from var(--sm-ang),
+    #8c6f93, #127c70, #667fa5, #b5853c, #c1715a, #5f8b63, #4e7e94, #a8677d, #8c6f93
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.85;
+  animation: sm-ring-spin 9s linear infinite, sm-ring-pulse 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sm-ring-spin { to { --sm-ang: 360deg; } }
+@keyframes sm-ring-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.95; } }
+
+/* the pixel swaygent (dashboard sprite family), bobbing + waving */
+.sm-avatar { overflow: visible; }
+.sm-sprite {
+  position: relative;
+  width: 30px;
+  height: 40px;
+  animation: sm-bob 1.8s ease-in-out infinite;
+}
+.sm-spr, .sm-spr-hand {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: transparent;
+  image-rendering: pixelated;
+}
+.sm-spr {
+  left: 0;
+  top: 0;
+  box-shadow:
+    5px 0 0 0 #26222f, 10px 0 0 0 #26222f, 15px 0 0 0 #26222f, 20px 0 0 0 #26222f,
+    0 5px 0 0 #26222f, 5px 5px 0 0 #26222f, 10px 5px 0 0 #26222f, 15px 5px 0 0 #26222f, 20px 5px 0 0 #26222f, 25px 5px 0 0 #26222f,
+    0 10px 0 0 #26222f, 5px 10px 0 0 #f3cda0, 10px 10px 0 0 #f3cda0, 15px 10px 0 0 #f3cda0, 20px 10px 0 0 #f3cda0, 25px 10px 0 0 #26222f,
+    5px 15px 0 0 #f3cda0, 10px 15px 0 0 #17131d, 15px 15px 0 0 #17131d, 20px 15px 0 0 #f3cda0,
+    0 20px 0 0 #127c70, 5px 20px 0 0 #127c70, 10px 20px 0 0 #127c70, 15px 20px 0 0 #127c70, 20px 20px 0 0 #127c70, 25px 20px 0 0 #127c70,
+    0 25px 0 0 #127c70, 5px 25px 0 0 #127c70, 10px 25px 0 0 #127c70, 15px 25px 0 0 #127c70, 20px 25px 0 0 #127c70, 25px 25px 0 0 #127c70,
+    5px 30px 0 0 #127c70, 10px 30px 0 0 #127c70, 15px 30px 0 0 #127c70, 20px 30px 0 0 #127c70,
+    5px 35px 0 0 #3a4a63, 20px 35px 0 0 #3a4a63;
+}
+/* the waving hand: one skin pixel beside the face */
+.sm-spr-hand {
+  left: 27px;
+  top: 16px;
+  background: #f3cda0;
+  animation: sm-wave 0.7s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+@keyframes sm-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes sm-wave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+/* the little chat bubble that pops in to say hi */
+.sm-chat {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 62%;
+  z-index: 2;
+  padding: 2.5px 7px;
+  background: var(--sm-ink);
+  color: #f7f3e9;
+  font-family: var(--font-jet), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 8px 8px 8px 2px;
+  white-space: nowrap;
+  transform-origin: bottom left;
+  transform: scale(0);
+  animation: sm-chat-pop 6.5s ease-in-out infinite 1.2s;
+  pointer-events: none;
+}
+@keyframes sm-chat-pop {
+  0%, 54% { opacity: 0; transform: scale(0); }
+  58%, 88% { opacity: 1; transform: scale(1); }
+  93%, 100% { opacity: 0; transform: scale(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-card::before { animation: none; }
+  .sm-sprite, .sm-spr-hand { animation: none; }
+  .sm-chat { animation: none; opacity: 1; transform: scale(1); }
+  .sm-flow-row { transition: none; }
+}

@@ -22,10 +22,12 @@ import {
   WORLD_H,
   WORLD_W,
   fanLeaves,
+  fanSubLeaves,
   floatOffset,
   trunkPath,
   type LeafPos,
   type Pt,
+  type SubPos,
 } from "@/lib/skillmap-layout";
 import { APP_VERSION } from "@/lib/version";
 import { NodePanel } from "./NodePanel";
@@ -42,11 +44,18 @@ export function SkillMap() {
   // focus zoom keep them legible at the tighter pitch)
   const [compact, setCompact] = useState(false);
 
-  // resolve a selected leaf/branch id to its owning branch (panel + highlight)
+  // resolve a selected leaf/sub-leaf/branch id to its owning branch
   const activeBranchId: BranchId | null = selectedId
     ? graph.branchOfLeaf[selectedId] ?? (graph.branchById[selectedId as BranchId] ? (selectedId as BranchId) : null)
     : null;
-  const selectedLeafId = selectedId && graph.leafById[selectedId] ? selectedId : null;
+  const selectedSubId = selectedId && graph.subLeafById[selectedId] ? selectedId : null;
+  // a selected sub-skill keeps its PARENT leaf highlighted/expanded in the panel
+  const selectedLeafId =
+    selectedId && graph.leafById[selectedId]
+      ? selectedId
+      : selectedSubId
+        ? graph.subLeafById[selectedSubId].parent
+        : null;
 
   // ---- layout (pure: positions depend only on the graph + compact mode) ----
   const branches = useMemo(
@@ -63,9 +72,14 @@ export function SkillMap() {
     const m = new Map<string, Pt>();
     m.set("me", { x: 0, y: 0 });
     for (const b of branches) m.set(b.id, { x: b.x, y: b.dir * b.y });
-    for (const lp of allLeafPositions) m.set(lp.leaf.id, { x: lp.bx, y: lp.by });
+    for (const lp of allLeafPositions) {
+      m.set(lp.leaf.id, { x: lp.bx, y: lp.by });
+      for (const sp of fanSubLeaves(lp, graph.subLeavesByParent[lp.leaf.id] ?? [])) {
+        m.set(sp.sub.id, { x: sp.bx, y: sp.by });
+      }
+    }
     return m;
-  }, [branches, allLeafPositions]);
+  }, [branches, allLeafPositions, graph]);
 
   // Accordion: only the active branch's leaves are on the canvas; everything
   // else is just the eight tiles + the card. Click a tile to fan it out, click
@@ -74,6 +88,19 @@ export function SkillMap() {
     () => (activeBranch ? fanLeaves(activeBranch) : []),
     [activeBranch],
   );
+
+  // Second layer: selecting a skill-group leaf (or one of its sub-skills)
+  // fans the group's individual skills out from that leaf - the intricate web.
+  const subParentId = selectedSubId
+    ? graph.subLeafById[selectedSubId].parent
+    : selectedLeafId && (graph.subLeavesByParent[selectedLeafId]?.length ?? 0) > 0
+      ? selectedLeafId
+      : null;
+  const visibleSubPositions = useMemo<SubPos[]>(() => {
+    if (!subParentId) return [];
+    const parent = visibleLeafPositions.find((lp) => lp.leaf.id === subParentId);
+    return parent ? fanSubLeaves(parent, graph.subLeavesByParent[subParentId] ?? []) : [];
+  }, [subParentId, visibleLeafPositions, graph]);
 
   // ---- camera (kept out of React; eased per frame) ----
   const cam = useRef({ panX: 0, panY: 0, scale: 1 });
@@ -228,11 +255,23 @@ export function SkillMap() {
         const sp = spokeRef.current.get(lp.leaf.id);
         if (sp) sp.setAttribute("d", `M${lp.branch.x},${lp.branch.dir * lp.branch.y} L${x},${y}`);
       }
+      // sub-skills drift too; their spokes track BOTH floating endpoints
+      for (const s of visibleSubPositions) {
+        const f = amp ? floatOffset(s.sub.id, t, 3) : { x: 0, y: 0 };
+        const x = s.bx + f.x;
+        const y = s.by + f.y;
+        const el = leafElRef.current.get(s.sub.id);
+        if (el) el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+        const pf = amp ? floatOffset(s.parent.leaf.id, t, amp) : { x: 0, y: 0 };
+        const sp = spokeRef.current.get(s.sub.id);
+        if (sp)
+          sp.setAttribute("d", `M${s.parent.bx + pf.x},${s.parent.by + pf.y} L${x},${y}`);
+      }
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [visibleLeafPositions]);
+  }, [visibleLeafPositions, visibleSubPositions]);
 
   // zoom, clamped; shared by the wheel, the +/- buttons, and pinch
   const applyZoom = useCallback((next: number, immediacy = 0.5) => {
@@ -367,6 +406,7 @@ export function SkillMap() {
                 key={`trunk-${b.id}`}
                 d={trunkPath(b, compact ? EDGE_X * COMPACT_X : EDGE_X)}
                 className={`sm-trunk${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
+                style={{ "--sm-b": b.color } as React.CSSProperties}
                 fill="none"
               />
             ))}
@@ -377,6 +417,18 @@ export function SkillMap() {
                   spokeRef.current.set(lp.leaf.id, el);
                 }}
                 className="sm-spoke sm-on"
+                style={{ "--sm-b": lp.branch.color } as React.CSSProperties}
+                fill="none"
+              />
+            ))}
+            {visibleSubPositions.map((s) => (
+              <path
+                key={`subspoke-${s.sub.id}`}
+                ref={(el) => {
+                  spokeRef.current.set(s.sub.id, el);
+                }}
+                className="sm-spoke sm-subspoke sm-on"
+                style={{ "--sm-b": s.parent.branch.color } as React.CSSProperties}
                 fill="none"
               />
             ))}
@@ -385,7 +437,10 @@ export function SkillMap() {
 
         {/* nodes */}
         <div ref={worldRef} className="sm-world">
-          {/* center card - itself a node with its own panel */}
+          {/* center card - itself a node with its own panel. The avatar is the
+              pixel swaygent (same 8-bit sprite family as the agent dashboard),
+              waving hello under a popping chat bubble, ringed by a slow pulse
+              of every section's color. */}
           <button
             className={`sm-card${selectedId === "me" ? " sm-on" : ""}`}
             style={{ transform: "translate(0px, 0px) translate(-50%, -50%)" }}
@@ -398,19 +453,19 @@ export function SkillMap() {
           >
             <div className="sm-card-row">
               <span className="sm-avatar">
-                <span className="sm-avatar-dot" />
-                {graph.me.initials}
+                <span className="sm-chat" aria-hidden="true">
+                  hi!
+                </span>
+                <span className="sm-sprite" aria-hidden="true">
+                  <span className="sm-spr" />
+                  <span className="sm-spr-hand" />
+                </span>
               </span>
               <span className="sm-card-id">
                 <span className="sm-card-name">{graph.me.name}</span>
                 <span className="sm-card-role">{graph.me.role}</span>
               </span>
             </div>
-            <span className="sm-card-div" />
-            <span className="sm-card-status">
-              <span className="sm-status-dot" />
-              {graph.me.status}
-            </span>
           </button>
 
           {/* branch nodes; edge tiles carry their caption on the OUTWARD side
@@ -419,7 +474,12 @@ export function SkillMap() {
             <button
               key={b.id}
               className={`sm-branch ${b.dir < 0 ? "sm-branch-up" : "sm-branch-down"}${Math.abs(b.x) > (compact ? EDGE_X * COMPACT_X : EDGE_X) ? ` sm-branch-edge ${b.x < 0 ? "sm-branch-left" : "sm-branch-right"}` : ""}${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
-              style={{ transform: `translate(${b.x}px, ${b.dir * b.y}px) translate(-50%, -50%)` }}
+              style={
+                {
+                  transform: `translate(${b.x}px, ${b.dir * b.y}px) translate(-50%, -50%)`,
+                  "--sm-b": b.color,
+                } as React.CSSProperties
+              }
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
@@ -441,6 +501,9 @@ export function SkillMap() {
             const cls = [
               "sm-leaf",
               `sm-leaf-${leaf.status ?? (leaf.filled ? "filled" : "plain")}`,
+              // label on the far side of the spoke: above the dot for up fans,
+              // below for down fans, so it never sits on its own line
+              lp.branch.dir < 0 ? "sm-leaf-up" : "sm-leaf-down",
               dimmed(lp.branch.id) ? "sm-dim" : "",
               sel ? "sm-on" : "",
             ]
@@ -453,12 +516,15 @@ export function SkillMap() {
                   leafElRef.current.set(leaf.id, el);
                 }}
                 className={cls}
-                style={{
-                  // seed the real position so the first frame never flashes at
-                  // the origin; the rAF loop takes over for the idle float
-                  transform: `translate(${lp.bx}px, ${lp.by}px) translate(-50%, -50%)`,
-                  animationDelay: `${j * 40}ms`,
-                }}
+                style={
+                  {
+                    // seed the real position so the first frame never flashes
+                    // at the origin; the rAF loop takes over for the idle float
+                    transform: `translate(${lp.bx}px, ${lp.by}px) translate(-50%, -50%)`,
+                    animationDelay: `${j * 40}ms`,
+                    "--sm-b": lp.branch.color,
+                  } as React.CSSProperties
+                }
                 onPointerDown={stopDown}
                 onClick={(ev) => {
                   ev.stopPropagation();
@@ -473,6 +539,33 @@ export function SkillMap() {
               </button>
             );
           })}
+
+          {/* second layer: the selected skill group's individual skills */}
+          {visibleSubPositions.map((s, j) => (
+            <button
+              key={s.sub.id}
+              ref={(el) => {
+                leafElRef.current.set(s.sub.id, el);
+              }}
+              className={`sm-leaf sm-subleaf ${s.parent.branch.dir < 0 ? "sm-leaf-up" : "sm-leaf-down"}${selectedId === s.sub.id ? " sm-on" : ""}`}
+              style={
+                {
+                  transform: `translate(${s.bx}px, ${s.by}px) translate(-50%, -50%)`,
+                  animationDelay: `${80 + j * 30}ms`,
+                  "--sm-b": s.parent.branch.color,
+                } as React.CSSProperties
+              }
+              onPointerDown={stopDown}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                toggleSelect(s.sub.id);
+              }}
+              aria-label={s.sub.full}
+            >
+              <span className="sm-leaf-dot" />
+              <span className="sm-leaf-label">{s.sub.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -506,6 +599,8 @@ export function SkillMap() {
         branch={activeBranch}
         me={selectedId === "me" ? graph.me : null}
         selectedLeafId={selectedLeafId}
+        selectedSubId={selectedSubId}
+        subsOf={(id) => graph.subLeavesByParent[id] ?? []}
         onClose={deselect}
         onSelectLeaf={toggleSelect}
         onJump={jumpTo}

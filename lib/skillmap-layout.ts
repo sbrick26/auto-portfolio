@@ -5,9 +5,9 @@
 // grows. The render layer (camera, idle float, DOM) lives in
 // components/skillmap/SkillMap.tsx.
 
-import type { Branch, Leaf } from "@/lib/portfolio-graph";
+import type { Branch, Leaf, SubLeaf } from "@/lib/portfolio-graph";
 
-export const CARD_EDGE = 64; // trunk leaves the card at this y offset
+export const CARD_EDGE = 41; // trunk meets the card edge (card is ~82px tall)
 export const JUNC_Y = 95; // shared horizontal "bus" row
 export const PILL_GAP = 20; // trunk stops this short of the pill center
 export const FLOAT_AMP = 4; // idle drift amplitude (px)
@@ -81,6 +81,37 @@ export function fanLeaves(branch: Branch): LeafPos[] {
       bx: branch.x + R * Math.cos(rad),
       by: pillY + R * Math.sin(rad),
     };
+  });
+}
+
+export interface SubPos {
+  sub: SubLeaf;
+  parent: LeafPos;
+  bx: number;
+  by: number;
+}
+
+// Second-layer fan: a leaf's sub-skills spread around the leaf's outward
+// bearing, CLAMPED to within 30deg of straight out (up for top branches, down
+// for bottom). Edge parents would otherwise aim their web sideways into a
+// corner tile or another section's trunk; instead the spokes run longer and
+// more vertical, where there is always clean space. Deterministic, sized by
+// count, and gated by the sub-layer geometry tests.
+const SUB_MAX_OFF = (30 * Math.PI) / 180;
+
+export function fanSubLeaves(parent: LeafPos, subs: SubLeaf[]): SubPos[] {
+  const n = subs.length;
+  if (n === 0) return [];
+  const pillY = parent.branch.dir * parent.branch.y;
+  const raw = Math.atan2(parent.by - pillY, parent.bx - parent.branch.x);
+  const out = parent.branch.dir < 0 ? -Math.PI / 2 : Math.PI / 2;
+  const bearing = out + Math.max(-SUB_MAX_OFF, Math.min(SUB_MAX_OFF, raw - out));
+  const half = (Math.min(44, 12 + n * 6) * Math.PI) / 180;
+  const R = 112 + Math.max(0, n - 4) * 11;
+  const step = n > 1 ? (2 * half) / (n - 1) : 0;
+  return subs.map((sub, j) => {
+    const a = bearing + (j - (n - 1) / 2) * step;
+    return { sub, parent, bx: parent.bx + R * Math.cos(a), by: parent.by + R * Math.sin(a) };
   });
 }
 
