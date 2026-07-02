@@ -76,12 +76,73 @@ export function NodePanel({
     row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedLeafId]);
 
+  // Phone bottom sheet: opens at HALF height (peek) so the map and the
+  // selected node stay visible, drag the grab bar up for the full panel,
+  // drag down to return to peek and again to dismiss. Desktop ignores the
+  // sheet classes entirely (the grab bar is display:none there).
+  const asideRef = useRef<HTMLElement | null>(null);
+  const [sheet, setSheet] = useState<"peek" | "full">("peek");
+  const sheetDrag = useRef<{ y0: number; base: number; h: number } | null>(null);
+  // every fresh open starts back at peek (render-phase reset, not an effect)
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setSheet("peek");
+  }
+
+  const grabDown = (e: React.PointerEvent) => {
+    const el = asideRef.current;
+    if (!el) return;
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    const h = el.clientHeight || 1;
+    sheetDrag.current = { y0: e.clientY, base: sheet === "peek" ? h * 0.52 : 0, h };
+    el.style.transition = "none";
+  };
+  const grabMove = (e: React.PointerEvent) => {
+    const d = sheetDrag.current;
+    const el = asideRef.current;
+    if (!d || !el) return;
+    const y = Math.max(0, Math.min(d.h * 0.64, d.base + (e.clientY - d.y0)));
+    el.style.transform = `translateY(${y}px)`;
+  };
+  const grabUp = (e: React.PointerEvent) => {
+    const d = sheetDrag.current;
+    const el = asideRef.current;
+    sheetDrag.current = null;
+    if (!d || !el) return;
+    // clearing the inline transform hands off to the class snap point; the
+    // restored transition animates from wherever the finger left it
+    el.style.transition = "";
+    el.style.transform = "";
+    const dy = e.clientY - d.y0;
+    if (Math.abs(dy) < 6) {
+      // a click/tap (no real drag) just toggles the snap point - the
+      // discoverable path for mouse users in a narrow window
+      setSheet(sheet === "peek" ? "full" : "peek");
+    } else if (dy < -40) setSheet("full");
+    else if (dy > 40) {
+      if (sheet === "full") setSheet("peek");
+      else onClose();
+    }
+  };
+
   return (
     <aside
-      className={`sm-panel${open ? " sm-panel-open" : ""}`}
+      ref={asideRef}
+      className={`sm-panel sm-sheet-${sheet}${open ? " sm-panel-open" : ""}`}
       aria-hidden={!open}
       style={branch ? ({ "--sm-b": branch.color } as React.CSSProperties) : undefined}
     >
+      <div
+        className="sm-grab"
+        onPointerDown={grabDown}
+        onPointerMove={grabMove}
+        onPointerUp={grabUp}
+        onPointerCancel={grabUp}
+        aria-hidden="true"
+      >
+        <span className="sm-grab-pill" />
+      </div>
       {me ? (
         <>
           <header className="sm-panel-head">

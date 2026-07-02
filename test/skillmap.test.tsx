@@ -214,4 +214,30 @@ describe("SkillMap", () => {
     // the pinch is never read as a tap: the fan stays open
     expect(screen.getByRole("button", { name: "AI & Agents" })).toBeDefined();
   });
+
+  it("bottom sheet: opens at peek; grab bar clicks and drags between snap points", () => {
+    const { container } = render(<SkillMap />);
+    clickBranch("Projects");
+    const panel = container.querySelector(".sm-panel") as HTMLElement;
+    const grab = container.querySelector(".sm-grab") as HTMLElement;
+    // opens at HALF height so the map stays visible
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // a plain click (no drag) toggles to the full panel - the mouse path
+    fireEvent.pointerDown(grab, { pointerId: 5, clientY: 300 });
+    fireEvent.pointerUp(grab, { pointerId: 5, clientY: 300 });
+    expect(panel.className).toContain("sm-sheet-full");
+
+    // dragging down from full returns to peek
+    fireEvent.pointerDown(grab, { pointerId: 6, clientY: 200 });
+    fireEvent.pointerMove(grab, { pointerId: 6, clientY: 320 });
+    fireEvent.pointerUp(grab, { pointerId: 6, clientY: 320 });
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // dragging down from peek dismisses the panel entirely
+    fireEvent.pointerDown(grab, { pointerId: 7, clientY: 200 });
+    fireEvent.pointerMove(grab, { pointerId: 7, clientY: 330 });
+    fireEvent.pointerUp(grab, { pointerId: 7, clientY: 330 });
+    expect(container.querySelector(".sm-panel-open")).toBeNull();
+  });
 });

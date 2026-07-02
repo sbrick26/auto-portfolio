@@ -15,19 +15,48 @@ export const CARD_HALF_W = 119; // half the center card width (side trunk exits)
 export const EDGE_X = 300; // |x| beyond this = edge branch (side-exit trunk)
 export const EDGE_EXIT_Y = 26; // side exits sit above/below the card midline
 
-// World extents the camera fits on load: outer branches plus fans + labels
-// across, pills plus fans + labels down. The circle is an ARC: edge branches
-// sit closer in x but further out in y than the inner pair, so the whole map
-// hugs typical screen proportions instead of one wide flat row.
+// World extents open fans may reach (gated by the world-bounds tests). The
+// camera no longer fits these on load - the home view fits the RESTING box
+// below - but fans must still stay inside a sane world for the focus zoom.
 export const WORLD_W = 960;
 export const WORLD_H = 700;
 
-// Compact (phone) mode: branch columns pull inward so the card + all eight
-// tiles fit a narrow screen WITHOUT panning; canvas fans are skipped there
-// (the panel lists every leaf) so nothing collides at the tighter pitch.
-export const COMPACT_X = 0.62;
-export const COMPACT_WORLD_W = 650;
-export const COMPACT_WORLD_H = 500;
+// ---- aspect-adaptive spacing ----
+// The resting content box (eight tiles + captions + card) is rescaled so its
+// SHAPE tracks the viewport shape at every size - phone, shrunk desktop
+// window, ultrawide - and the home fit then fills the screen with it. One
+// continuous rule, no phone-only special case: columns pull in as the window
+// narrows while rows push out, so the whole circle is always visible at once
+// and uses the screen.
+export const BASE_HALF_X = 330; // widest tile column at rest (edge tiles)
+export const BASE_HALF_Y = 205; // tallest tile row at rest (edge tiles)
+export const LABEL_PAD_X = 62; // edge captions sit outward of their tile
+export const LABEL_PAD_Y = 46; // top/bottom captions + tile halo
+const BASE_ASPECT = (BASE_HALF_X + LABEL_PAD_X) / (BASE_HALF_Y + LABEL_PAD_Y);
+
+// Column/row scale pair for a viewport. The aspect correction is split across
+// both axes (sqrt) so neither direction distorts alone; the row scale then
+// solves the remainder exactly. Clamps keep the pitch readable: columns never
+// tighter than 0.55, rows between 0.85 and 2 times the resting spacing.
+export function adaptiveScales(w: number, h: number): { sx: number; sy: number } {
+  if (!w || !h) return { sx: 1, sy: 1 };
+  const k = w / h / BASE_ASPECT;
+  const sx = Math.max(0.55, Math.min(1.18, Math.sqrt(k)));
+  const hw = BASE_HALF_X * sx + LABEL_PAD_X;
+  const sy = Math.max(0.85, Math.min(2, (hw * (h / w) - LABEL_PAD_Y) / BASE_HALF_Y));
+  return { sx, sy };
+}
+
+// Home ("recenter") zoom: fill the viewport with the rescaled resting box.
+// The floor keeps tiny windows readable; the cap keeps huge screens from
+// ballooning the tiles.
+export function homeFit(w: number, h: number): number {
+  if (!w || !h) return 1;
+  const { sx, sy } = adaptiveScales(w, h);
+  const hw = BASE_HALF_X * sx + LABEL_PAD_X;
+  const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;
+  return Math.max(0.5, Math.min(1.18, (0.97 * w) / (2 * hw), (0.97 * h) / (2 * hh)));
+}
 
 // Connector from the center card to a branch pill, following wherever the pill
 // sits (the stems are dynamic: move a branch and its trunk redraws). Inner
@@ -61,14 +90,21 @@ export interface LeafPos {
 
 // Deterministic straight-spoke fan for a branch's leaves (handoff math). The
 // spread and radius both grow with the leaf count, so a branch keeps its leaves
-// apart no matter how many entries land in content/data.ts.
-export function fanLeaves(branch: Branch): LeafPos[] {
+// apart no matter how many entries land in content/data.ts. When the columns
+// are pulled in (sx < 1, narrow viewports), the fan TILTS VERTICAL: the spread
+// narrows so no leaf reaches sideways into the neighboring compressed column,
+// and the radius grows to preserve the leaf-to-leaf chord. sx = 1 reproduces
+// the resting fan exactly.
+export function fanLeaves(branch: Branch, sx = 1): LeafPos[] {
   const n = branch.leaves.length;
   if (n === 0) return [];
   // spread caps at 58deg per side: any wider and a large fan reaches sideways
   // into the arc's corner tiles (the geometry tests gate this)
-  const halfSpread = Math.min(58, 25 + n * 9);
-  const R = 122 + Math.max(0, n - 4) * 14;
+  const base = Math.min(58, 25 + n * 9);
+  const t = Math.max(0, Math.min(1, (sx - 0.55) / 0.45));
+  const halfSpread = base * (0.5 + 0.5 * t);
+  const R0 = 122 + Math.max(0, n - 4) * 14;
+  const R = Math.min(R0 * 1.75, (R0 * base) / halfSpread);
   const angStep = n > 1 ? (2 * halfSpread) / (n - 1) : 0;
   const outward = branch.dir < 0 ? -90 : 90;
   const pillY = branch.dir * branch.y;

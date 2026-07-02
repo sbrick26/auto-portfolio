@@ -585,11 +585,47 @@ body {
     bottom: 12px;
     width: auto;
     max-width: none;
-    height: 62%;
+    height: 86%;
     transform: translateY(110%);
   }
-  .sm-panel-open { transform: translateY(0); }
+  /* bottom sheet snap points: peek keeps the map + selected node visible,
+     dragging the grab bar snaps to the full panel and back */
+  .sm-panel-open.sm-sheet-peek { transform: translateY(52%); }
+  .sm-panel-open.sm-sheet-full { transform: translateY(0); }
+  .sm-grab { display: flex; }
   .sm-hint { display: none; }
+}
+
+/* sheet grab bar: phone-only affordance (display gated above) */
+.sm-grab {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 9px 0 3px;
+  cursor: grab;
+  touch-action: none;
+}
+.sm-grab-pill {
+  width: 42px;
+  height: 5px;
+  border-radius: 100px;
+  background: var(--sm-border);
+}
+
+/* generous invisible hit areas: the dots and tiles are visually small but
+   should never be hard to tap */
+.sm-leaf::after,
+.sm-subleaf::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+.sm-branch::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
 }
 
 @media (prefers-reduced-motion: reduce) {

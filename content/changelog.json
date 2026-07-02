@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.0.1",
+    "date": "2026-07-02",
+    "changes": [
+      "Aspect-adaptive spacing: the node grid reshapes to fill any screen or window size, phone to ultrawide",
+      "Mobile panel is now a half-height bottom sheet with drag to expand or dismiss, keeping the map visible",
+      "Larger starting zoom everywhere and bigger touch targets on every node"
+    ]
+  },
+  {
     "version": "3.0.0",
     "date": "2026-07-01",
     "changes": [
@@ -82,7 +91,7 @@
     "version": "1.29.0",
     "date": "2026-06-21",
     "changes": [
-      "can we redo pr 45 i don’t like the CRT animation can we just"
+      "can we redo pr 45 i don\u2019t like the CRT animation can we just"
     ]
   },
   {

@@ -257,3 +257,126 @@ describe("float", () => {
     expect(hash("skill-1")).toBe(hash("skill-1"));
   });
 });
+
+// ---- aspect-adaptive spacing (v3.0.1) ----
+// The grid reshapes to the viewport at EVERY size, so the clearance gates must
+// hold across the whole range of real screens, not just the base positions.
+import {
+  BASE_HALF_X,
+  BASE_HALF_Y,
+  LABEL_PAD_X,
+  LABEL_PAD_Y,
+  adaptiveScales,
+  homeFit,
+} from "@/lib/skillmap-layout";
+
+const VIEWPORTS: [number, number][] = [
+  [320, 568], // iPhone SE
+  [390, 660], // phone with browser chrome
+  [390, 844], // tall phone
+  [412, 915], // large android
+  [640, 700], // the compact/desktop CSS boundary
+  [768, 1024], // tablet portrait
+  [800, 600], // shrunk desktop window
+  [1024, 768],
+  [1280, 660], // laptop with browser chrome
+  [1440, 900],
+  [1920, 1080],
+  [2560, 1080], // ultrawide
+];
+
+const scaledBranches = (w: number, h: number) => {
+  const { sx, sy } = adaptiveScales(w, h);
+  return graph.branches.map((b) => ({ ...b, x: b.x * sx, y: b.y * sy }));
+};
+
+describe("adaptive spacing", () => {
+  it("tracks the viewport shape within its clamps", () => {
+    for (const [w, h] of VIEWPORTS) {
+      const { sx, sy } = adaptiveScales(w, h);
+      expect(sx, `${w}x${h}`).toBeGreaterThanOrEqual(0.55);
+      expect(sx, `${w}x${h}`).toBeLessThanOrEqual(1.18);
+      expect(sy, `${w}x${h}`).toBeGreaterThanOrEqual(0.85);
+      expect(sy, `${w}x${h}`).toBeLessThanOrEqual(2);
+    }
+    // narrower window -> tighter columns AND taller rows (more vertical)
+    const phone = adaptiveScales(390, 844);
+    const laptop = adaptiveScales(1440, 900);
+    expect(phone.sx).toBeLessThan(laptop.sx);
+    expect(phone.sy).toBeGreaterThan(laptop.sy);
+    // unmeasured stage falls back to the resting grid
+    expect(adaptiveScales(0, 0)).toEqual({ sx: 1, sy: 1 });
+    expect(homeFit(0, 0)).toBe(1);
+  });
+
+  it("home fit fills the stage without overflowing it", () => {
+    for (const [w, h] of VIEWPORTS) {
+      const { sx, sy } = adaptiveScales(w, h);
+      const fit = homeFit(w, h);
+      expect(fit, `${w}x${h}`).toBeGreaterThanOrEqual(0.5);
+      expect(fit, `${w}x${h}`).toBeLessThanOrEqual(1.18);
+      const hw = BASE_HALF_X * sx + LABEL_PAD_X;
+      const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;
+      // the resting box never spills off screen at the home zoom...
+      expect(2 * hw * fit, `${w}x${h} overflows x`).toBeLessThanOrEqual(w + 1);
+      expect(2 * hh * fit, `${w}x${h} overflows y`).toBeLessThanOrEqual(h + 1);
+      // ...and unless the zoom cap kicked in, it FILLS one axis
+      if (fit < 1.18) {
+        const fill = Math.max((2 * hw * fit) / w, (2 * hh * fit) / h);
+        expect(fill, `${w}x${h} leaves the screen empty`).toBeGreaterThanOrEqual(0.9);
+      }
+    }
+  });
+
+  it("keeps tiles clear of each other and the card at every shape", () => {
+    for (const [w, h] of VIEWPORTS) {
+      const tiles = scaledBranches(w, h).map((b) => ({ id: b.id, x: b.x, y: b.dir * b.y }));
+      for (let i = 0; i < tiles.length; i++) {
+        expect(
+          Math.abs(tiles[i].y),
+          `${tiles[i].id} rides the card at ${w}x${h}`,
+        ).toBeGreaterThanOrEqual(95);
+        for (let j = i + 1; j < tiles.length; j++) {
+          const d = dist(tiles[i].x, tiles[i].y, tiles[j].x, tiles[j].y);
+          expect(
+            d,
+            `${tiles[i].id} and ${tiles[j].id} collide at ${w}x${h}`,
+          ).toBeGreaterThanOrEqual(2 * DISC_R + 6);
+        }
+      }
+    }
+  });
+
+  it("keeps every fan's clearances at every viewport shape", () => {
+    for (const [w, h] of VIEWPORTS) {
+      const { sx } = adaptiveScales(w, h);
+      const branches = scaledBranches(w, h);
+      const tiles = branches.map((b) => ({ x: b.x, y: b.dir * b.y }));
+      for (const b of branches) {
+        const fan = fanLeaves(b, sx);
+        for (let i = 0; i < fan.length; i++) {
+          const lp = fan[i];
+          // leaves stay apart even as the fan tilts vertical
+          for (let j = i + 1; j < fan.length; j++) {
+            const d = dist(lp.bx, lp.by, fan[j].bx, fan[j].by);
+            expect(
+              d,
+              `${lp.leaf.id} and ${fan[j].leaf.id} collide at ${w}x${h}`,
+            ).toBeGreaterThanOrEqual(MIN_LEAF_GAP);
+          }
+          expect(
+            Math.abs(lp.by),
+            `${lp.leaf.id} sits over the card at ${w}x${h}`,
+          ).toBeGreaterThanOrEqual(CARD_EDGE + 20 + DRIFT);
+          for (const t of tiles) {
+            const d = dist(lp.bx, lp.by, t.x, t.y);
+            expect(
+              d,
+              `${lp.leaf.id} is ${Math.round(d)}px from a tile at ${w}x${h}`,
+            ).toBeGreaterThanOrEqual(DISC_R + 8 + DRIFT);
+          }
+        }
+      }
+    }
+  });
+});
