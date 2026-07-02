@@ -13,11 +13,11 @@
     "e2e:ci": "playwright test --grep-invert @visual"
   },
   "dependencies": {
-    "framer-motion": "^12.42.0",
+    "framer-motion": "^12.42.2",
     "next": "16.2.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "sst": "4.16.0"
+    "sst": "4.17.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
