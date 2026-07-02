@@ -10,6 +10,7 @@
 // card opens the profile ("me") view instead of a branch.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Branch, Leaf, PanelMe, SubLeaf } from "@/lib/portfolio-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
 import { PipeIcon } from "./icons";
@@ -174,18 +175,89 @@ export function NodePanel({
 
 // "Watch the demo" - the automatic-portfolio pipeline, filmed. Two cuts exist;
 // phone-width screens get the vertical one. Decided when the panel opens
-// (this only ever renders client-side, after the card is tapped).
+// (this only ever renders client-side, after the card is tapped). Plays in an
+// in-site lightbox, never a new tab; the S3 objects are the untouched original
+// exports, so the native player streams the footage at full quality.
 function DemoButton({ demo }: { demo: PanelMe["demo"] }) {
-  const [href] = useState(() =>
+  const [src] = useState(() =>
     window.matchMedia?.("(max-width: 640px)").matches ? demo.vertical : demo.horizontal,
   );
+  const [open, setOpen] = useState(false);
   return (
     <div className="sm-demo">
-      <a className="sm-linkbtn sm-linkbtn-solid" href={href} target="_blank" rel="noreferrer">
+      <button type="button" className="sm-linkbtn sm-linkbtn-solid" onClick={() => setOpen(true)}>
         ▶ Watch the demo
-      </a>
+      </button>
       <span className="sm-demo-cap">the automatic portfolio pipeline, end to end</span>
+      {open ? <DemoModal src={src} onClose={() => setOpen(false)} /> : null}
     </div>
+  );
+}
+
+// The lightbox: a dark stage over the map with the native video controls
+// (scrub, volume, pip) plus an explicit full screen affordance. Escape, the
+// close button, or a tap on the backdrop all return to the map. Portaled to
+// <body> so the panel's own stacking and transforms cannot clip it.
+function DemoModal({ src, onClose }: { src: string; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const fullscreen = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    // iOS Safari has no element.requestFullscreen; its native player has its own
+    type IOSVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+    if (v.requestFullscreen) void v.requestFullscreen().catch(() => {});
+    else (v as IOSVideo).webkitEnterFullscreen?.();
+  }, []);
+
+  return createPortal(
+    <div
+      className="sm-vmodal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="demo video"
+      onClick={onClose}
+    >
+      <div className="sm-vmodal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="sm-vmodal-bar">
+          <span className="sm-vmodal-title">the automatic portfolio pipeline</span>
+          <button
+            type="button"
+            className="sm-vmodal-btn"
+            onClick={fullscreen}
+            aria-label="play full screen"
+          >
+            ⛶ full screen
+          </button>
+          <button
+            type="button"
+            className="sm-vmodal-btn"
+            onClick={onClose}
+            aria-label="close video"
+          >
+            ✕
+          </button>
+        </div>
+        <video
+          ref={videoRef}
+          className="sm-vmodal-video"
+          src={src}
+          controls
+          autoPlay
+          playsInline
+          preload="metadata"
+        />
+      </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -454,7 +454,7 @@ export function SkillMap() {
             <div className="sm-card-row">
               <span className="sm-avatar">
                 <span className="sm-chat" aria-hidden="true">
-                  hi!
+                  Hi! Tap me
                 </span>
                 <span className="sm-sprite" aria-hidden="true">
                   <span className="sm-spr" />
@@ -466,6 +466,10 @@ export function SkillMap() {
                 <span className="sm-card-role">{graph.me.role}</span>
               </span>
             </div>
+            <span className="sm-card-div" aria-hidden="true" />
+            <span className="sm-card-hint">
+              tap any node to explore. drag to pan, pinch or scroll to zoom.
+            </span>
           </button>
 
           {/* branch nodes; edge tiles carry their caption on the OUTWARD side

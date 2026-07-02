@@ -50,15 +50,35 @@ describe("SkillMap", () => {
     expect(screen.getByRole("link", { name: /GitHub/ }).getAttribute("href")).toBe(
       profile.links.github,
     );
-    // the demo button serves the horizontal cut on desktop-width screens
-    expect(screen.getByRole("link", { name: /Watch the demo/ }).getAttribute("href")).toBe(
-      profile.demo.horizontal,
-    );
+    expect(screen.getByRole("button", { name: /Watch the demo/ })).toBeDefined();
     expect(screen.getByRole("link", { name: /Email/ }).getAttribute("href")).toBe(
       `mailto:${profile.links.email}`,
     );
     fireEvent.click(screen.getByRole("button", { name: profile.name }));
     expect(screen.queryByRole("link", { name: /GitHub/ })).toBeNull();
+  });
+
+  it("plays the demo in an in-site lightbox, not a new tab", () => {
+    const { baseElement } = render(<SkillMap />);
+    fireEvent.click(screen.getByRole("button", { name: profile.name }));
+    fireEvent.click(screen.getByRole("button", { name: /Watch the demo/ }));
+
+    // full-quality original streams inside the site; horizontal cut on
+    // desktop-width screens (jsdom has no matchMedia -> desktop path)
+    const video = baseElement.querySelector<HTMLVideoElement>(".sm-vmodal-video");
+    expect(video?.getAttribute("src")).toBe(profile.demo.horizontal);
+    expect(video?.hasAttribute("controls")).toBe(true);
+    expect(screen.getByRole("button", { name: /play full screen/i })).toBeDefined();
+
+    // close button returns to the map
+    fireEvent.click(screen.getByRole("button", { name: /close video/i }));
+    expect(baseElement.querySelector(".sm-vmodal")).toBeNull();
+
+    // and Escape closes it too
+    fireEvent.click(screen.getByRole("button", { name: /Watch the demo/ }));
+    expect(baseElement.querySelector(".sm-vmodal")).not.toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(baseElement.querySelector(".sm-vmodal")).toBeNull();
   });
 
   it("keeps the resume take-aways: PDF download and copy-as-text", () => {

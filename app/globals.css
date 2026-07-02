@@ -274,6 +274,13 @@ body {
 .sm-card-name { font-family: var(--font-news), ui-serif, Georgia, serif; font-weight: 600; font-size: 17px; line-height: 1.1; color: var(--sm-ink); }
 .sm-card-role { font-family: var(--font-jet), ui-monospace, monospace; font-size: 10px; color: var(--sm-sub); }
 .sm-card-div { height: 1px; background: var(--sm-border-soft); margin: 1px 0; }
+.sm-card-hint {
+  font-family: var(--font-jet), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+  color: var(--sm-dim);
+}
 .sm-card-status {
   display: flex;
   align-items: center;
@@ -868,6 +875,85 @@ body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--sm-dim);
+}
+
+/* demo lightbox: dark stage over the whole map (above panel z:40 / topbar
+   z:20). The box hugs the video, so the 16:9 and 9:16 cuts both sit centered
+   with the chrome tight around them on any screen. */
+.sm-vmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(30, 26, 21, 0.82);
+  backdrop-filter: blur(3px);
+  animation: sm-vmodal-in 0.18s ease-out;
+}
+@keyframes sm-vmodal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sm-vmodal-box {
+  display: flex;
+  flex-direction: column;
+  max-width: min(1100px, 96vw);
+  max-height: 94vh;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #14110d;
+  border: 1px solid rgba(251, 248, 241, 0.14);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+.sm-vmodal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+}
+.sm-vmodal-title {
+  /* must be able to shrink: if the bar sets the box's min-content width, the
+     flex stretch would force the video wider than its aspect (pillarboxing) */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-jet), ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(251, 248, 241, 0.6);
+}
+.sm-vmodal-btn {
+  font-family: var(--font-space), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  border: 1px solid rgba(251, 248, 241, 0.2);
+  color: rgba(251, 248, 241, 0.85);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.sm-vmodal-btn:hover {
+  background: rgba(251, 248, 241, 0.1);
+  border-color: rgba(251, 248, 241, 0.4);
+}
+.sm-vmodal-video {
+  display: block;
+  align-self: center;
+  background: #000;
+  /* replaced-element constraint rules keep the aspect true against BOTH
+     maxes, so neither cut ever letterboxes inside its own element */
+  max-width: min(1064px, 92vw);
+  max-height: calc(94vh - 46px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sm-vmodal { animation: none; backdrop-filter: none; }
 }
 
 /* compact (phone) focus: while a fan is open, inactive tiles step almost all

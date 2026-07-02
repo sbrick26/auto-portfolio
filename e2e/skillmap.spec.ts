@@ -104,16 +104,30 @@ test("skill group fans a second-layer web with project proof", async ({ page }) 
   await expect(page.getByText("proven in").first()).toBeVisible();
 });
 
-test("center card offers the demo, cut by device", async ({ page, isMobile }) => {
+test("center card plays the demo in an in-site lightbox, cut by device", async ({
+  page,
+  isMobile,
+}) => {
+  // don't stream the real footage from S3 in CI; the contract is the modal
+  // and which cut it loads, not playback
+  await page.route("**/imsway-demo-assets.s3.**", (r) => r.abort());
   await page.goto("/");
   await mapReady(page);
   await page.getByRole("button", { name: "Swayam Barik" }).click();
-  const demo = page.getByRole("link", { name: /Watch the demo/ });
-  await expect(demo).toBeVisible();
-  await expect(demo).toHaveAttribute(
-    "href",
+  await page.getByRole("button", { name: /Watch the demo/ }).click();
+
+  const modal = page.locator(".sm-vmodal");
+  await expect(modal).toBeVisible();
+  await expect(modal.locator("video")).toHaveAttribute(
+    "src",
     isMobile ? /swaygent-demo-vertical\.mp4$/ : /swaygent-demo-horizontal\.mp4$/,
   );
+  await expect(modal.getByRole("button", { name: /play full screen/i })).toBeVisible();
+
+  // close returns to the map without ever leaving the page
+  await modal.getByRole("button", { name: /close video/i }).click();
+  await expect(modal).toBeHidden();
+  await expect(page.getByRole("button", { name: /Watch the demo/ })).toBeVisible();
 });
 
 test("changelog folds history behind show-all", async ({ page }) => {
