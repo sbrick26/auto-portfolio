@@ -315,7 +315,7 @@ describe("adaptive spacing", () => {
     for (const [w, h] of VIEWPORTS) {
       const { sx, sy } = adaptiveScales(w, h);
       const fit = homeFit(w, h);
-      expect(fit, `${w}x${h}`).toBeGreaterThanOrEqual(0.5);
+      expect(fit, `${w}x${h}`).toBeGreaterThanOrEqual(0.45);
       expect(fit, `${w}x${h}`).toBeLessThanOrEqual(1.18);
       const hw = BASE_HALF_X * sx + LABEL_PAD_X;
       const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;

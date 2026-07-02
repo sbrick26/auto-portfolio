@@ -603,7 +603,9 @@ body {
   .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-lead,
   .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-run,
   .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-flowlist { display: none; }
-  .sm-grab { display: flex; }
+  /* higher specificity: the base .sm-grab block below comes later in
+     the file and would win the cascade otherwise */
+  .sm-panel .sm-grab { display: flex; }
   .sm-hint { display: none; }
 }
 

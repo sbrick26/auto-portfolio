@@ -30,7 +30,7 @@ export const WORLD_H = 700;
 // and uses the screen.
 export const BASE_HALF_X = 330; // widest tile column at rest (edge tiles)
 export const BASE_HALF_Y = 205; // tallest tile row at rest (edge tiles)
-export const LABEL_PAD_X = 100; // edge captions: disc + gap + text, from center
+export const LABEL_PAD_X = 118; // edge captions: disc + gap + text + side margin
 export const LABEL_PAD_Y = 56; // top/bottom captions + tile halo
 const BASE_ASPECT = (BASE_HALF_X + LABEL_PAD_X) / (BASE_HALF_Y + LABEL_PAD_Y);
 
@@ -66,7 +66,7 @@ export function homeFit(w: number, h: number): number {
   const { sx, sy } = adaptiveScales(w, h);
   const hw = BASE_HALF_X * sx + LABEL_PAD_X;
   const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;
-  return Math.max(0.5, Math.min(1.18, (0.97 * w) / (2 * hw), (0.97 * sh) / (2 * hh)));
+  return Math.max(0.45, Math.min(1.18, (0.97 * w) / (2 * hw), (0.97 * sh) / (2 * hh)));
 }
 
 // Connector from the center card to a branch pill, following wherever the pill
