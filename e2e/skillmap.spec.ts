@@ -72,12 +72,18 @@ test("updates panel streams the live feed", async ({ page }) => {
   expect(await page.locator(".sm-feed-when").count()).toBeGreaterThan(5);
 });
 
-test("pipeline panel walks the run with its latest version", async ({ page }) => {
+test("pipeline panel walks the run with its latest version", async ({ page, isMobile }) => {
   await page.goto("/");
   await mapReady(page);
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
-  await expect(page.getByText(/latest v\d+\./)).toBeVisible();
   expect(await page.locator(".sm-flowlist .sm-row").count()).toBeGreaterThanOrEqual(8);
+  if (isMobile) {
+    // the peek sheet shows the compact stepper (every stage icon at once);
+    // the run banner and full list arrive with the expanded sheet
+    await expect(page.locator(".sm-flowstep")).toBeVisible();
+    await page.locator(".sm-grab").click();
+  }
+  await expect(page.getByText(/latest v\d+\./)).toBeVisible();
 });
 
 test("project row expands and cross-jumps to the skill it proves", async ({ page }) => {

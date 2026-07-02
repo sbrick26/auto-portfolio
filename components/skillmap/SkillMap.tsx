@@ -14,13 +14,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildPortfolioGraph, type BranchId } from "@/lib/portfolio-graph";
 import {
-  COMPACT_WORLD_H,
-  COMPACT_WORLD_W,
-  COMPACT_X,
+  HOME_PAN_Y,
+  adaptiveScales,
+  homeFit,
   EDGE_X,
   FLOAT_AMP,
-  WORLD_H,
-  WORLD_W,
   fanLeaves,
   fanSubLeaves,
   floatOffset,
@@ -39,10 +37,12 @@ export function SkillMap() {
   const graph = useMemo(() => buildPortfolioGraph(), []);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // compact = phone-width stage: columns pull inward so the whole circle is
-  // visible without panning; fans still open there (dimmed neighbors + the
-  // focus zoom keep them legible at the tighter pitch)
+  // compact = phone-width stage: drives the CSS mode (bottom-sheet panel,
+  // stronger dimming). SPACING is not a binary mode anymore - see stage below.
   const [compact, setCompact] = useState(false);
+  // measured stage size; the branch grid reshapes to it continuously, so a
+  // shrunk desktop window and a phone adapt by the same rule
+  const [stage, setStage] = useState({ w: 0, h: 0 });
 
   // resolve a selected leaf/sub-leaf/branch id to its owning branch
   const activeBranchId: BranchId | null = selectedId
@@ -57,16 +57,20 @@ export function SkillMap() {
         ? graph.subLeafById[selectedSubId].parent
         : null;
 
-  // ---- layout (pure: positions depend only on the graph + compact mode) ----
+  // ---- layout (pure: positions depend only on the graph + stage shape) ----
+  const { sx, sy } = useMemo(() => adaptiveScales(stage.w, stage.h), [stage]);
   const branches = useMemo(
-    () => graph.branches.map((b) => (compact ? { ...b, x: b.x * COMPACT_X } : b)),
-    [graph, compact],
+    () => graph.branches.map((b) => ({ ...b, x: b.x * sx, y: b.y * sy })),
+    [graph, sx, sy],
   );
   const activeBranch = activeBranchId
     ? branches.find((b) => b.id === activeBranchId) ?? null
     : null;
 
-  const allLeafPositions = useMemo<LeafPos[]>(() => branches.flatMap(fanLeaves), [branches]);
+  const allLeafPositions = useMemo<LeafPos[]>(
+    () => branches.flatMap((b) => fanLeaves(b, sx)),
+    [branches, sx],
+  );
   // world position of every selectable node (for camera focus + cross-jumps)
   const posById = useMemo(() => {
     const m = new Map<string, Pt>();
@@ -85,8 +89,8 @@ export function SkillMap() {
   // else is just the eight tiles + the card. Click a tile to fan it out, click
   // off (background / the tile again) to fold it back in.
   const visibleLeafPositions = useMemo<LeafPos[]>(
-    () => (activeBranch ? fanLeaves(activeBranch) : []),
-    [activeBranch],
+    () => (activeBranch ? fanLeaves(activeBranch, sx) : []),
+    [activeBranch, sx],
   );
 
   // Second layer: selecting a skill-group leaf (or one of its sub-skills)
@@ -125,7 +129,7 @@ export function SkillMap() {
     (id: string | null) => {
       const fit = fitRef.current;
       if (!id) {
-        camT.current = { panX: 0, panY: 0, scale: fit };
+        camT.current = { panX: 0, panY: HOME_PAN_Y * fit, scale: fit };
         return;
       }
       const p = posById.get(id) ?? { x: 0, y: 0 };
@@ -134,10 +138,11 @@ export function SkillMap() {
       const b = graph.branchById[id as BranchId];
       const fx = p.x;
       // aim past a leafy pill at its fan so the whole spread is in view
-      const fy = b && b.leaves.length ? p.y + b.dir * 85 : p.y;
+      // (fans are shorter on narrow stages, so aim closer there)
+      const fy = b && b.leaves.length ? p.y + b.dir * (mobile ? 60 : 85) : p.y;
       const s = Math.min(1.25, Math.max(0.95, fit * 1.35));
       const cx = mobile ? 0 : -158; // desktop: shift left, clear of the panel
-      const cy = mobile ? -h * 0.3 : 0; // mobile: rise above the bottom sheet
+      const cy = mobile ? -h * 0.21 : 0; // mobile: rise above the PEEK sheet
       camT.current = { scale: s, panX: cx - fx * s, panY: cy - fy * s };
     },
     [posById, graph],
@@ -152,6 +157,17 @@ export function SkillMap() {
       });
     },
     [focusOn],
+  );
+
+  // canvas taps also snap the phone sheet back to PEEK - selecting a node on
+  // the map means the user is looking at the MAP, so it must stay visible
+  const [peekTick, setPeekTick] = useState(0);
+  const canvasSelect = useCallback(
+    (id: string) => {
+      setPeekTick((n) => n + 1);
+      toggleSelect(id);
+    },
+    [toggleSelect],
   );
 
   // jump straight to a node (panel cross-link: project <-> skill)
@@ -170,7 +186,7 @@ export function SkillMap() {
 
   const recenter = useCallback(() => {
     setSelectedId(null);
-    camT.current = { panX: 0, panY: 0, scale: fitRef.current };
+    camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
   }, []);
 
   // measure the stage and seed the world transform before first paint; on
@@ -185,23 +201,15 @@ export function SkillMap() {
       const el = stageRef.current;
       if (el) sizeRef.current = { w: el.clientWidth, h: el.clientHeight };
       const { w, h } = sizeRef.current;
-      // Fit the whole grid into the viewport. Phones use the compact world
-      // (columns pulled in, no fans), so the entire circle is visible at once.
-      const isCompact = w > 0 && w < 640;
-      setCompact(isCompact);
-      if (w && h)
-        fitRef.current = Math.max(
-          isCompact ? 0.45 : 0.6,
-          Math.min(
-            1,
-            w / (isCompact ? COMPACT_WORLD_W : WORLD_W),
-            h / (isCompact ? COMPACT_WORLD_H : WORLD_H),
-          ),
-        );
+      setCompact(w > 0 && w < 640);
+      // the grid reshapes to the stage (adaptiveScales) and the home fit
+      // fills the stage with the reshaped resting box
+      setStage((s) => (s.w === w && s.h === h ? s : { w, h }));
+      if (w && h) fitRef.current = homeFit(w, h);
       if (w && h && (!seeded || !selectedRef.current)) {
         if (!seeded) cam.current.scale = fitRef.current;
         seeded = true;
-        camT.current = { panX: 0, panY: 0, scale: fitRef.current };
+        camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
       }
       const c = cam.current;
       const tf = `translate(${w / 2 + c.panX}px, ${h / 2 + c.panY}px) scale(${c.scale})`;
@@ -215,6 +223,12 @@ export function SkillMap() {
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
+
+  // when the grid reshapes under a selection (resize/rotate), re-aim the
+  // camera at the selected node's NEW position instead of its old one
+  useEffect(() => {
+    if (selectedRef.current) focusOn(selectedRef.current);
+  }, [focusOn]);
 
   // honor reduced-motion
   useEffect(() => {
@@ -404,7 +418,7 @@ export function SkillMap() {
             {branches.map((b) => (
               <path
                 key={`trunk-${b.id}`}
-                d={trunkPath(b, compact ? EDGE_X * COMPACT_X : EDGE_X)}
+                d={trunkPath(b, EDGE_X * sx)}
                 className={`sm-trunk${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
                 style={{ "--sm-b": b.color } as React.CSSProperties}
                 fill="none"
@@ -447,7 +461,7 @@ export function SkillMap() {
             onPointerDown={stopDown}
             onClick={(ev) => {
               ev.stopPropagation();
-              toggleSelect("me");
+              canvasSelect("me");
             }}
             aria-label={graph.me.name}
           >
@@ -477,7 +491,7 @@ export function SkillMap() {
           {branches.map((b) => (
             <button
               key={b.id}
-              className={`sm-branch ${b.dir < 0 ? "sm-branch-up" : "sm-branch-down"}${Math.abs(b.x) > (compact ? EDGE_X * COMPACT_X : EDGE_X) ? ` sm-branch-edge ${b.x < 0 ? "sm-branch-left" : "sm-branch-right"}` : ""}${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
+              className={`sm-branch ${b.dir < 0 ? "sm-branch-up" : "sm-branch-down"}${Math.abs(b.x) > EDGE_X * sx ? ` sm-branch-edge ${b.x < 0 ? "sm-branch-left" : "sm-branch-right"}` : ""}${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
               style={
                 {
                   transform: `translate(${b.x}px, ${b.dir * b.y}px) translate(-50%, -50%)`,
@@ -487,7 +501,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                toggleSelect(b.id);
+                canvasSelect(b.id);
               }}
               aria-label={b.label}
             >
@@ -532,7 +546,7 @@ export function SkillMap() {
                 onPointerDown={stopDown}
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  toggleSelect(leaf.id);
+                  canvasSelect(leaf.id);
                 }}
                 aria-label={leaf.label}
               >
@@ -562,7 +576,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                toggleSelect(s.sub.id);
+                canvasSelect(s.sub.id);
               }}
               aria-label={s.sub.full}
             >
@@ -608,6 +622,7 @@ export function SkillMap() {
         onClose={deselect}
         onSelectLeaf={toggleSelect}
         onJump={jumpTo}
+        peekTick={peekTick}
         labelOf={(id) => graph.leafById[id]?.label ?? id}
       />
     </div>

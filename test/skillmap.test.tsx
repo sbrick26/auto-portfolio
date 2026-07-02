@@ -214,4 +214,51 @@ describe("SkillMap", () => {
     // the pinch is never read as a tap: the fan stays open
     expect(screen.getByRole("button", { name: "AI & Agents" })).toBeDefined();
   });
+
+  it("bottom sheet: opens at peek; grab bar clicks and drags between snap points", () => {
+    // the sheet only engages on narrow viewports; make matchMedia say so
+    const realMM = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...realMM(query),
+      matches: true,
+    })) as typeof window.matchMedia;
+    try {
+      sheetScenario();
+    } finally {
+      window.matchMedia = realMM;
+    }
+  });
+
+  function sheetScenario() {
+    const { container } = render(<SkillMap />);
+    clickBranch("Projects");
+    const panel = container.querySelector(".sm-panel") as HTMLElement;
+    const grab = container.querySelector(".sm-grab") as HTMLElement;
+    // opens at HALF height so the map stays visible
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // a plain click (no drag) toggles to the full panel - the mouse path
+    fireEvent.pointerDown(grab, { pointerId: 5, clientY: 300 });
+    fireEvent.pointerUp(grab, { pointerId: 5, clientY: 300 });
+    expect(panel.className).toContain("sm-sheet-full");
+
+    // tapping a node on the CANVAS snaps the sheet back to peek: selecting
+    // from the map means the user wants to SEE the map
+    fireEvent.click(container.querySelector(".sm-leaf") as HTMLElement);
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // expand again, then drag down from full to return to peek
+    fireEvent.pointerDown(grab, { pointerId: 5, clientY: 300 });
+    fireEvent.pointerUp(grab, { pointerId: 5, clientY: 300 });
+    fireEvent.pointerDown(grab, { pointerId: 6, clientY: 200 });
+    fireEvent.pointerMove(grab, { pointerId: 6, clientY: 320 });
+    fireEvent.pointerUp(grab, { pointerId: 6, clientY: 320 });
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // dragging down from peek dismisses the panel entirely
+    fireEvent.pointerDown(grab, { pointerId: 7, clientY: 200 });
+    fireEvent.pointerMove(grab, { pointerId: 7, clientY: 330 });
+    fireEvent.pointerUp(grab, { pointerId: 7, clientY: 330 });
+    expect(container.querySelector(".sm-panel-open")).toBeNull();
+  }
 });

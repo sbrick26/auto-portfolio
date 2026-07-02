@@ -54,6 +54,7 @@ export function NodePanel({
   onSelectLeaf,
   onJump,
   labelOf,
+  peekTick = 0,
 }: {
   branch: Branch | null;
   me: PanelMe | null;
@@ -64,27 +65,150 @@ export function NodePanel({
   onSelectLeaf: (id: string) => void;
   onJump: (id: string) => void;
   labelOf: (id: string) => string;
+  peekTick?: number;
 }) {
   const open = !!branch || !!me;
 
   // When the selection comes from the canvas (or a cross-jump), bring the
-  // matching row into view so the panel and the map always agree.
+  // matching row into view so the panel and the map always agree. Scroll the
+  // panel BODY explicitly: scrollIntoView would also scroll the map's
+  // overflow:hidden stage/root ancestors and shear the whole layout upward.
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!selectedLeafId) return;
-    const row = bodyRef.current?.querySelector(".sm-row-on");
-    row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const body = bodyRef.current;
+    const row = body?.querySelector<HTMLElement>(".sm-row-on");
+    if (!body || !row) return;
+    // the selected section always LEADS the panel - especially on the peek
+    // sheet, where only the first stretch of the body is visible
+    const top =
+      row.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
+    body.scrollTo({ top: Math.max(0, top - 10), behavior: "smooth" });
   }, [selectedLeafId]);
+
+  // Phone bottom sheet: opens at HALF height (peek) so the map and the
+  // selected node stay visible, drag the grab bar up for the full panel,
+  // drag down to return to peek and again to dismiss. Desktop ignores the
+  // sheet classes entirely (the grab bar is display:none there).
+  const asideRef = useRef<HTMLElement | null>(null);
+  const [sheet, setSheet] = useState<"peek" | "full">("peek");
+  const sheetDrag = useRef<{ y0: number; base: number; h: number } | null>(null);
+  // every fresh open starts back at peek, and every CANVAS tap (peekTick)
+  // snaps back to peek so the map stays visible (render-phase reset)
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevTick, setPrevTick] = useState(peekTick);
+  if (open !== prevOpen || peekTick !== prevTick) {
+    setPrevOpen(open);
+    setPrevTick(peekTick);
+    if (open) setSheet("peek");
+  }
+
+  // sheet gestures apply only when the panel IS a sheet (narrow viewport);
+  // jsdom has no matchMedia, so tests take the sheet path
+  const isSheet = () =>
+    typeof window.matchMedia === "function" ? window.matchMedia("(max-width: 640px)").matches : true;
+
+  const grabDown = (e: React.PointerEvent) => {
+    const el = asideRef.current;
+    if (!el || !isSheet()) return;
+    // a press on a real button (close, chips...) is never a sheet gesture -
+    // engaging here would swallow or distort the button's own click
+    if ((e.target as Element).closest?.("button")) return;
+    // capture so a release outside the bar/header still ends the drag
+    // cleanly (a stale drag would leave the sheet glued to the pointer)
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    const h = el.clientHeight || 1;
+    sheetDrag.current = { y0: e.clientY, base: sheet === "peek" ? h * 0.52 : 0, h };
+    el.style.transition = "none";
+  };
+  const grabMove = (e: React.PointerEvent) => {
+    const d = sheetDrag.current;
+    const el = asideRef.current;
+    if (!d || !el) return;
+    const y = Math.max(0, Math.min(d.h * 0.64, d.base + (e.clientY - d.y0)));
+    el.style.transform = `translateY(${y}px)`;
+  };
+  // clearing the inline transform hands off to the class snap point; the
+  // restored transition animates from wherever the finger left it
+  const grabSettle = () => {
+    const el = asideRef.current;
+    if (el) {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
+  };
+  const grabUp = (e: React.PointerEvent) => {
+    const d = sheetDrag.current;
+    sheetDrag.current = null;
+    if (!d) return;
+    grabSettle();
+    const dy = e.clientY - d.y0;
+    if (Math.abs(dy) < 6) {
+      // a plain tap/click on the bar or the header toggles the snap point -
+      // the discoverable path for mouse users (buttons keep their own job)
+      if (!(e.target as Element).closest?.("button")) {
+        setSheet(sheet === "peek" ? "full" : "peek");
+      }
+    } else if (dy < -40) setSheet("full");
+    else if (dy > 40) {
+      if (sheet === "full") setSheet("peek");
+      else onClose();
+    }
+  };
+  // a canceled gesture (browser took over the pointer) must never toggle
+  const grabCancel = () => {
+    sheetDrag.current = null;
+    grabSettle();
+  };
+  const grabKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setSheet(sheet === "peek" ? "full" : "peek");
+    }
+  };
+  const sheetHandlers = {
+    onPointerDown: grabDown,
+    onPointerMove: grabMove,
+    onPointerUp: grabUp,
+    onPointerCancel: grabCancel,
+  };
 
   return (
     <aside
-      className={`sm-panel${open ? " sm-panel-open" : ""}`}
+      ref={asideRef}
+      className={`sm-panel sm-sheet-${sheet}${open ? " sm-panel-open" : ""}`}
       aria-hidden={!open}
       style={branch ? ({ "--sm-b": branch.color } as React.CSSProperties) : undefined}
     >
+      <div
+        className="sm-grab"
+        {...sheetHandlers}
+        onKeyDown={grabKey}
+        role="button"
+        tabIndex={open ? 0 : -1}
+        aria-label={sheet === "peek" ? "expand panel" : "collapse panel"}
+      >
+        <span className="sm-grab-pill" />
+        <svg
+          className={`sm-grab-chev${sheet === "full" ? " sm-grab-chev-down" : ""}`}
+          viewBox="0 0 12 6"
+          width="12"
+          height="6"
+          aria-hidden="true"
+        >
+          <path
+            d="M1 5 L6 1 L11 5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
       {me ? (
         <>
-          <header className="sm-panel-head">
+          <header className="sm-panel-head" {...sheetHandlers}>
             <div>
               <div className="sm-kicker">{me.role}</div>
               <h3 className="sm-panel-title">{me.name}</h3>
@@ -117,7 +241,7 @@ export function NodePanel({
         </>
       ) : branch ? (
         <>
-          <header className="sm-panel-head">
+          <header className="sm-panel-head" {...sheetHandlers}>
             <div>
               <div className="sm-kicker">{branch.label}</div>
               <h3 className="sm-panel-title">{branch.title}</h3>
@@ -331,21 +455,62 @@ function PipelineFlow({ branch }: { branch: Branch }) {
     return () => clearInterval(t);
   }, [animate, flow.length]);
 
-  // follow the pulse: scroll each lit row into view; when the loop wraps,
-  // jump the panel back to the top of the walk
+  // follow the pulse: keep each lit row inside the VISIBLE part of the panel
+  // body (on the peek sheet only a strip of the body is on screen, so the
+  // walk must scroll within that strip), scrolling ONLY the body - see the
+  // selection effect above. When the loop wraps, jump back to the top.
   useEffect(() => {
     if (!animate) return;
     const row = rowsRef.current[step];
-    if (!row) return;
+    const body = row?.closest(".sm-panel-body");
+    if (!row || !body) return;
+    // at peek the list is hidden (the stepper shows instead) - nothing to follow
+    if (row.offsetHeight === 0) return;
     if (step === 0) {
-      row.closest(".sm-panel-body")?.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      body.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const bodyRect = body.getBoundingClientRect();
+    const visibleH = Math.max(
+      120,
+      Math.min(bodyRect.bottom, window.innerHeight) - bodyRect.top,
+    );
+    const top = row.getBoundingClientRect().top - bodyRect.top + body.scrollTop;
+    if (top < body.scrollTop) {
+      body.scrollTo({ top: Math.max(0, top - 8), behavior: "smooth" });
+      return;
+    }
+    const bottomOver = top + row.clientHeight - (body.scrollTop + visibleH);
+    if (bottomOver > 0) {
+      body.scrollTo({ top: body.scrollTop + bottomOver + 10, behavior: "smooth" });
     }
   }, [step, animate]);
 
   return (
     <>
+      {/* peek-sheet stepper: EVERY stage as an icon, the live one lit in its
+          tint with its name + detail below - the whole walk reads in the
+          half-open strip. The full list takes over when expanded. */}
+      {animate ? (
+        <div className="sm-flowstep" aria-hidden="true">
+          <div className="sm-flowstep-icons">
+            {flow.map((s, i) => (
+              <span
+                key={i}
+                className={`sm-flowstep-dot${i === step ? " sm-flowstep-on" : ""}`}
+                style={{ "--flow-tint": FLOW_TINTS[i % FLOW_TINTS.length] } as React.CSSProperties}
+              >
+                <PipeIcon k={s.key} />
+              </span>
+            ))}
+          </div>
+          <div className="sm-flowstep-label">
+            {flow[step].label}
+            <span className="sm-flowstep-actor">{flow[step].actor}</span>
+          </div>
+          <p className="sm-flowstep-detail">{flow[step].detail}</p>
+        </div>
+      ) : null}
       {branch.run ? (
         <div className="sm-run">
           <span className="sm-row-tag">
