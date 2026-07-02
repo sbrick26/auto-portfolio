@@ -16,7 +16,9 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
-      maxDiffPixelRatio: 0.02,
+      // tight enough that a card-sized region changing FAILS (2% let a full
+      // card redesign pass silently), loose enough for antialiasing drift
+      maxDiffPixelRatio: 0.005,
     },
   },
   projects: [

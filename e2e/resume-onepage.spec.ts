@@ -28,16 +28,10 @@ test.describe("resume one-page guarantee", () => {
     });
     await page.setViewportSize({ width: PRINT_W, height: 1200 });
 
-    await page.goto("/");
-    await expect(
-      page.getByRole("button", { name: "skills", exact: true }).first(),
-    ).toBeVisible({ timeout: 15_000 });
-
-    const input = page.locator('input[aria-label="terminal input"]:visible');
-    await input.fill("resume");
-    await input.press("Enter");
-    // .resume-doc is always mounted (display:none on screen) - no click needed.
-    await expect(page.locator(".resume-doc")).toBeAttached({ timeout: 5_000 });
+    // dedicated print route: the resume-doc mounts without any UI driving,
+    // decoupled from whichever homepage design is live.
+    await page.goto("/resume-print");
+    await expect(page.locator(".resume-doc")).toBeAttached({ timeout: 15_000 });
 
     // Render with the REAL fonts and the print stylesheet, exactly as it prints.
     await page.evaluate(async () => {

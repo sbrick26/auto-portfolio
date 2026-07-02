@@ -12,11 +12,17 @@ export const profile = {
   location: "San Francisco, CA",
   status: "building autonomous dev pipelines",
   summary:
-    "AI engineer at IBM by day, builder of systems that build themselves by night. This site is run by a fleet of agents that ship improvements to it daily.",
+    "AI forward deployed architect, working presales through post-sales: from first pilot to production systems. In my free time I set up agentic loops that build tools for myself and others. This site is one of them, and it ships its own improvements daily.",
   links: {
     github: "https://github.com/sbrick26",
     linkedin: "https://www.linkedin.com/in/swayam-barik",
     email: "swayambarik@gmail.com",
+  },
+  // The automatic-portfolio pipeline demo. Two cuts of the same video; the
+  // "Watch the demo" button picks the vertical one on phone-sized screens.
+  demo: {
+    horizontal: "https://imsway-demo-assets.s3.us-east-2.amazonaws.com/swaygent-demo-horizontal.mp4",
+    vertical: "https://imsway-demo-assets.s3.us-east-2.amazonaws.com/swaygent-demo-vertical.mp4",
   },
 };
 
