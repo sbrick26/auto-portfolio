@@ -216,6 +216,20 @@ describe("SkillMap", () => {
   });
 
   it("bottom sheet: opens at peek; grab bar clicks and drags between snap points", () => {
+    // the sheet only engages on narrow viewports; make matchMedia say so
+    const realMM = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...realMM(query),
+      matches: true,
+    })) as typeof window.matchMedia;
+    try {
+      sheetScenario();
+    } finally {
+      window.matchMedia = realMM;
+    }
+  });
+
+  function sheetScenario() {
     const { container } = render(<SkillMap />);
     clickBranch("Projects");
     const panel = container.querySelector(".sm-panel") as HTMLElement;
@@ -228,7 +242,14 @@ describe("SkillMap", () => {
     fireEvent.pointerUp(grab, { pointerId: 5, clientY: 300 });
     expect(panel.className).toContain("sm-sheet-full");
 
-    // dragging down from full returns to peek
+    // tapping a node on the CANVAS snaps the sheet back to peek: selecting
+    // from the map means the user wants to SEE the map
+    fireEvent.click(container.querySelector(".sm-leaf") as HTMLElement);
+    expect(panel.className).toContain("sm-sheet-peek");
+
+    // expand again, then drag down from full to return to peek
+    fireEvent.pointerDown(grab, { pointerId: 5, clientY: 300 });
+    fireEvent.pointerUp(grab, { pointerId: 5, clientY: 300 });
     fireEvent.pointerDown(grab, { pointerId: 6, clientY: 200 });
     fireEvent.pointerMove(grab, { pointerId: 6, clientY: 320 });
     fireEvent.pointerUp(grab, { pointerId: 6, clientY: 320 });
@@ -239,5 +260,5 @@ describe("SkillMap", () => {
     fireEvent.pointerMove(grab, { pointerId: 7, clientY: 330 });
     fireEvent.pointerUp(grab, { pointerId: 7, clientY: 330 });
     expect(container.querySelector(".sm-panel-open")).toBeNull();
-  });
+  }
 });

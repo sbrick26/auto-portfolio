@@ -30,32 +30,43 @@ export const WORLD_H = 700;
 // and uses the screen.
 export const BASE_HALF_X = 330; // widest tile column at rest (edge tiles)
 export const BASE_HALF_Y = 205; // tallest tile row at rest (edge tiles)
-export const LABEL_PAD_X = 62; // edge captions sit outward of their tile
-export const LABEL_PAD_Y = 46; // top/bottom captions + tile halo
+export const LABEL_PAD_X = 100; // edge captions: disc + gap + text, from center
+export const LABEL_PAD_Y = 56; // top/bottom captions + tile halo
 const BASE_ASPECT = (BASE_HALF_X + LABEL_PAD_X) / (BASE_HALF_Y + LABEL_PAD_Y);
 
 // Column/row scale pair for a viewport. The aspect correction is split across
 // both axes (sqrt) so neither direction distorts alone; the row scale then
 // solves the remainder exactly. Clamps keep the pitch readable: columns never
-// tighter than 0.55, rows between 0.85 and 2 times the resting spacing.
+// tighter than 0.55, rows between 0.85 and 1.8 times the resting spacing (any
+// taller and the edge rows ride the screen edges instead of framing the card).
+// Screen chrome the map must clear at the home zoom: the recenter/zoom
+// controls up top, the brand + hint row along the bottom. The home camera
+// centers the grid inside this SAFE box (offset by HOME_PAN_Y), so the About
+// tile never hides under the controls.
+export const SAFE_TOP = 54;
+export const SAFE_BOTTOM = 34;
+export const HOME_PAN_Y = (SAFE_TOP - SAFE_BOTTOM) / 2;
+
 export function adaptiveScales(w: number, h: number): { sx: number; sy: number } {
   if (!w || !h) return { sx: 1, sy: 1 };
-  const k = w / h / BASE_ASPECT;
+  const sh = Math.max(1, h - SAFE_TOP - SAFE_BOTTOM);
+  const k = w / sh / BASE_ASPECT;
   const sx = Math.max(0.55, Math.min(1.18, Math.sqrt(k)));
   const hw = BASE_HALF_X * sx + LABEL_PAD_X;
-  const sy = Math.max(0.85, Math.min(2, (hw * (h / w) - LABEL_PAD_Y) / BASE_HALF_Y));
+  const sy = Math.max(0.85, Math.min(1.8, (hw * (sh / w) - LABEL_PAD_Y) / BASE_HALF_Y));
   return { sx, sy };
 }
 
-// Home ("recenter") zoom: fill the viewport with the rescaled resting box.
+// Home ("recenter") zoom: fill the safe box with the rescaled resting grid.
 // The floor keeps tiny windows readable; the cap keeps huge screens from
 // ballooning the tiles.
 export function homeFit(w: number, h: number): number {
   if (!w || !h) return 1;
+  const sh = Math.max(1, h - SAFE_TOP - SAFE_BOTTOM);
   const { sx, sy } = adaptiveScales(w, h);
   const hw = BASE_HALF_X * sx + LABEL_PAD_X;
   const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;
-  return Math.max(0.5, Math.min(1.18, (0.97 * w) / (2 * hw), (0.97 * h) / (2 * hh)));
+  return Math.max(0.5, Math.min(1.18, (0.97 * w) / (2 * hw), (0.97 * sh) / (2 * hh)));
 }
 
 // Connector from the center card to a branch pill, following wherever the pill
@@ -91,20 +102,19 @@ export interface LeafPos {
 // Deterministic straight-spoke fan for a branch's leaves (handoff math). The
 // spread and radius both grow with the leaf count, so a branch keeps its leaves
 // apart no matter how many entries land in content/data.ts. When the columns
-// are pulled in (sx < 1, narrow viewports), the fan TILTS VERTICAL: the spread
-// narrows so no leaf reaches sideways into the neighboring compressed column,
-// and the radius grows to preserve the leaf-to-leaf chord. sx = 1 reproduces
-// the resting fan exactly.
+// are pulled in (sx < 1, narrow viewports), the fan stays WIDE but the spokes
+// SHORTEN: an open fan owns the stage (its neighbors fade back), so width is
+// free space while the vertical room above the bottom sheet is scarce. sx = 1
+// reproduces the resting fan exactly.
 export function fanLeaves(branch: Branch, sx = 1): LeafPos[] {
   const n = branch.leaves.length;
   if (n === 0) return [];
   // spread caps at 58deg per side: any wider and a large fan reaches sideways
   // into the arc's corner tiles (the geometry tests gate this)
-  const base = Math.min(58, 25 + n * 9);
+  const halfSpread = Math.min(58, 25 + n * 9);
   const t = Math.max(0, Math.min(1, (sx - 0.55) / 0.45));
-  const halfSpread = base * (0.5 + 0.5 * t);
   const R0 = 122 + Math.max(0, n - 4) * 14;
-  const R = Math.min(R0 * 1.75, (R0 * base) / halfSpread);
+  const R = R0 * (0.78 + 0.22 * t);
   const angStep = n > 1 ? (2 * halfSpread) / (n - 1) : 0;
   const outward = branch.dir < 0 ? -90 : 90;
   const pillY = branch.dir * branch.y;

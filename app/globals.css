@@ -21,14 +21,14 @@
   --font-sans: var(--font-geist-sans);
 }
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 
-html, body { height: 100%; }
+/* base surface matches the map's warm paper so overscroll, rubber-band, and
+   repaint edges never flash a different color behind the fixed stage */
+html, body { height: 100%; overscroll-behavior: none; }
 
 body {
-  background:
-    radial-gradient(1100px 520px at 50% -8%, #2b3144 0%, transparent 62%),
-    var(--color-term-bg);
+  background: #f3eee3;
   color: var(--color-term-text);
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
   -webkit-font-smoothing: antialiased;
@@ -37,10 +37,10 @@ body {
 
 *::-webkit-scrollbar { width: 9px; height: 9px; }
 *::-webkit-scrollbar-thumb {
-  background: #353c4a; border-radius: 8px;
+  background: rgba(74, 62, 44, 0.26); border-radius: 8px;
   border: 2px solid transparent; background-clip: padding-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: #485065; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(74, 62, 44, 0.42); background-clip: padding-box; }
 *::-webkit-scrollbar-track { background: transparent; }
 
 ::selection { background: rgba(126, 240, 172, 0.25); }
@@ -596,21 +596,31 @@ body {
   .sm-hint { display: none; }
 }
 
-/* sheet grab bar: phone-only affordance (display gated above) */
+/* sheet grab bar: phone/narrow-only affordance (display gated above).
+   Pill + chevron read as "tap or drag me"; the chevron flips when full. */
 .sm-grab {
   display: none;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 3px;
   flex-shrink: 0;
-  padding: 9px 0 3px;
+  padding: 8px 0 4px;
   cursor: grab;
   touch-action: none;
+  color: rgba(74, 62, 44, 0.55);
 }
 .sm-grab-pill {
   width: 42px;
   height: 5px;
   border-radius: 100px;
-  background: var(--sm-border);
+  background: rgba(74, 62, 44, 0.28);
+}
+.sm-grab-chev { transition: transform 0.25s ease; }
+.sm-grab-chev-down { transform: rotate(180deg); }
+@media (max-width: 640px) {
+  /* the whole header is a drag/tap zone for the sheet */
+  .sm-panel-head { touch-action: none; cursor: grab; }
 }
 
 /* generous invisible hit areas: the dots and tiles are visually small but

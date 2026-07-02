@@ -266,6 +266,8 @@ import {
   BASE_HALF_Y,
   LABEL_PAD_X,
   LABEL_PAD_Y,
+  SAFE_BOTTOM,
+  SAFE_TOP,
   adaptiveScales,
   homeFit,
 } from "@/lib/skillmap-layout";
@@ -317,12 +319,14 @@ describe("adaptive spacing", () => {
       expect(fit, `${w}x${h}`).toBeLessThanOrEqual(1.18);
       const hw = BASE_HALF_X * sx + LABEL_PAD_X;
       const hh = BASE_HALF_Y * sy + LABEL_PAD_Y;
-      // the resting box never spills off screen at the home zoom...
+      // the resting box never spills out of the SAFE area (clear of the
+      // top controls and the bottom hint row) at the home zoom...
+      const sh = h - SAFE_TOP - SAFE_BOTTOM;
       expect(2 * hw * fit, `${w}x${h} overflows x`).toBeLessThanOrEqual(w + 1);
-      expect(2 * hh * fit, `${w}x${h} overflows y`).toBeLessThanOrEqual(h + 1);
+      expect(2 * hh * fit, `${w}x${h} overflows y`).toBeLessThanOrEqual(sh + 1);
       // ...and unless the zoom cap kicked in, it FILLS one axis
       if (fit < 1.18) {
-        const fill = Math.max((2 * hw * fit) / w, (2 * hh * fit) / h);
+        const fill = Math.max((2 * hw * fit) / w, (2 * hh * fit) / sh);
         expect(fill, `${w}x${h} leaves the screen empty`).toBeGreaterThanOrEqual(0.9);
       }
     }
@@ -348,15 +352,18 @@ describe("adaptive spacing", () => {
   });
 
   it("keeps every fan's clearances at every viewport shape", () => {
+    // an OPEN fan owns the stage: every other tile fades back (sm-dim), so
+    // the hard obstacles are the card, the fan's own tile, and its siblings.
+    // Cross-tile clearance is a full gate only at rest (no fans) - covered by
+    // the tiles test above.
     for (const [w, h] of VIEWPORTS) {
       const { sx } = adaptiveScales(w, h);
       const branches = scaledBranches(w, h);
-      const tiles = branches.map((b) => ({ x: b.x, y: b.dir * b.y }));
       for (const b of branches) {
+        const own = { x: b.x, y: b.dir * b.y };
         const fan = fanLeaves(b, sx);
         for (let i = 0; i < fan.length; i++) {
           const lp = fan[i];
-          // leaves stay apart even as the fan tilts vertical
           for (let j = i + 1; j < fan.length; j++) {
             const d = dist(lp.bx, lp.by, fan[j].bx, fan[j].by);
             expect(
@@ -368,13 +375,11 @@ describe("adaptive spacing", () => {
             Math.abs(lp.by),
             `${lp.leaf.id} sits over the card at ${w}x${h}`,
           ).toBeGreaterThanOrEqual(CARD_EDGE + 20 + DRIFT);
-          for (const t of tiles) {
-            const d = dist(lp.bx, lp.by, t.x, t.y);
-            expect(
-              d,
-              `${lp.leaf.id} is ${Math.round(d)}px from a tile at ${w}x${h}`,
-            ).toBeGreaterThanOrEqual(DISC_R + 8 + DRIFT);
-          }
+          const d = dist(lp.bx, lp.by, own.x, own.y);
+          expect(
+            d,
+            `${lp.leaf.id} crowds its own tile at ${w}x${h}`,
+          ).toBeGreaterThanOrEqual(DISC_R + 8 + DRIFT);
         }
       }
     }

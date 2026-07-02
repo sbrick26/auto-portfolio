@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildPortfolioGraph, type BranchId } from "@/lib/portfolio-graph";
 import {
+  HOME_PAN_Y,
   adaptiveScales,
   homeFit,
   EDGE_X,
@@ -128,7 +129,7 @@ export function SkillMap() {
     (id: string | null) => {
       const fit = fitRef.current;
       if (!id) {
-        camT.current = { panX: 0, panY: 0, scale: fit };
+        camT.current = { panX: 0, panY: HOME_PAN_Y * fit, scale: fit };
         return;
       }
       const p = posById.get(id) ?? { x: 0, y: 0 };
@@ -137,7 +138,8 @@ export function SkillMap() {
       const b = graph.branchById[id as BranchId];
       const fx = p.x;
       // aim past a leafy pill at its fan so the whole spread is in view
-      const fy = b && b.leaves.length ? p.y + b.dir * 85 : p.y;
+      // (fans are shorter on narrow stages, so aim closer there)
+      const fy = b && b.leaves.length ? p.y + b.dir * (mobile ? 60 : 85) : p.y;
       const s = Math.min(1.25, Math.max(0.95, fit * 1.35));
       const cx = mobile ? 0 : -158; // desktop: shift left, clear of the panel
       const cy = mobile ? -h * 0.21 : 0; // mobile: rise above the PEEK sheet
@@ -157,6 +159,17 @@ export function SkillMap() {
     [focusOn],
   );
 
+  // canvas taps also snap the phone sheet back to PEEK - selecting a node on
+  // the map means the user is looking at the MAP, so it must stay visible
+  const [peekTick, setPeekTick] = useState(0);
+  const canvasSelect = useCallback(
+    (id: string) => {
+      setPeekTick((n) => n + 1);
+      toggleSelect(id);
+    },
+    [toggleSelect],
+  );
+
   // jump straight to a node (panel cross-link: project <-> skill)
   const jumpTo = useCallback(
     (id: string) => {
@@ -173,7 +186,7 @@ export function SkillMap() {
 
   const recenter = useCallback(() => {
     setSelectedId(null);
-    camT.current = { panX: 0, panY: 0, scale: fitRef.current };
+    camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
   }, []);
 
   // measure the stage and seed the world transform before first paint; on
@@ -196,7 +209,7 @@ export function SkillMap() {
       if (w && h && (!seeded || !selectedRef.current)) {
         if (!seeded) cam.current.scale = fitRef.current;
         seeded = true;
-        camT.current = { panX: 0, panY: 0, scale: fitRef.current };
+        camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
       }
       const c = cam.current;
       const tf = `translate(${w / 2 + c.panX}px, ${h / 2 + c.panY}px) scale(${c.scale})`;
@@ -448,7 +461,7 @@ export function SkillMap() {
             onPointerDown={stopDown}
             onClick={(ev) => {
               ev.stopPropagation();
-              toggleSelect("me");
+              canvasSelect("me");
             }}
             aria-label={graph.me.name}
           >
@@ -488,7 +501,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                toggleSelect(b.id);
+                canvasSelect(b.id);
               }}
               aria-label={b.label}
             >
@@ -533,7 +546,7 @@ export function SkillMap() {
                 onPointerDown={stopDown}
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  toggleSelect(leaf.id);
+                  canvasSelect(leaf.id);
                 }}
                 aria-label={leaf.label}
               >
@@ -563,7 +576,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                toggleSelect(s.sub.id);
+                canvasSelect(s.sub.id);
               }}
               aria-label={s.sub.full}
             >
@@ -609,6 +622,7 @@ export function SkillMap() {
         onClose={deselect}
         onSelectLeaf={toggleSelect}
         onJump={jumpTo}
+        peekTick={peekTick}
         labelOf={(id) => graph.leafById[id]?.label ?? id}
       />
     </div>
