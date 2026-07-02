@@ -464,6 +464,8 @@ function PipelineFlow({ branch }: { branch: Branch }) {
     const row = rowsRef.current[step];
     const body = row?.closest(".sm-panel-body");
     if (!row || !body) return;
+    // at peek the list is hidden (the stepper shows instead) - nothing to follow
+    if (row.offsetHeight === 0) return;
     if (step === 0) {
       body.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -486,6 +488,29 @@ function PipelineFlow({ branch }: { branch: Branch }) {
 
   return (
     <>
+      {/* peek-sheet stepper: EVERY stage as an icon, the live one lit in its
+          tint with its name + detail below - the whole walk reads in the
+          half-open strip. The full list takes over when expanded. */}
+      {animate ? (
+        <div className="sm-flowstep" aria-hidden="true">
+          <div className="sm-flowstep-icons">
+            {flow.map((s, i) => (
+              <span
+                key={i}
+                className={`sm-flowstep-dot${i === step ? " sm-flowstep-on" : ""}`}
+                style={{ "--flow-tint": FLOW_TINTS[i % FLOW_TINTS.length] } as React.CSSProperties}
+              >
+                <PipeIcon k={s.key} />
+              </span>
+            ))}
+          </div>
+          <div className="sm-flowstep-label">
+            {flow[step].label}
+            <span className="sm-flowstep-actor">{flow[step].actor}</span>
+          </div>
+          <p className="sm-flowstep-detail">{flow[step].detail}</p>
+        </div>
+      ) : null}
       {branch.run ? (
         <div className="sm-run">
           <span className="sm-row-tag">

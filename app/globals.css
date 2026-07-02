@@ -592,6 +592,17 @@ body {
      dragging the grab bar snaps to the full panel and back */
   .sm-panel-open.sm-sheet-peek { transform: translateY(52%); }
   .sm-panel-open.sm-sheet-full { transform: translateY(0); }
+  /* at peek only a strip of the body is on screen and max-scroll stops at
+     the body's own height - this runway lets the LAST rows (the deploy end
+     of the pipeline walk) scroll all the way up into the visible strip */
+  .sm-panel-open.sm-sheet-peek .sm-panel-body { padding-bottom: 48vh; padding-bottom: 48dvh; }
+  /* pipeline at peek: the compact stepper IS the panel - every stage icon in
+     one strip, walking owner -> deploy -> wrap. Lead/latest/list wait for
+     the expanded sheet. */
+  .sm-panel-open.sm-sheet-peek .sm-flowstep { display: block; }
+  .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-lead,
+  .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-run,
+  .sm-panel-open.sm-sheet-peek .sm-panel-body:has(.sm-flowstep) .sm-flowlist { display: none; }
   .sm-grab { display: flex; }
   .sm-hint { display: none; }
 }
@@ -1000,6 +1011,63 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .sm-vmodal { animation: none; backdrop-filter: none; }
+}
+
+/* pipeline peek stepper: hidden by default (desktop + expanded sheet use the
+   full walking list); the mobile peek rules above switch it on */
+.sm-flowstep { display: none; }
+.sm-flowstep-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.sm-flowstep-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sm-border);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--sm-dim);
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+.sm-flowstep-dot svg { width: 14px; height: 14px; }
+.sm-flowstep-on {
+  background: var(--flow-tint);
+  border-color: var(--flow-tint);
+  color: #fbf8f1;
+  transform: scale(1.15);
+}
+.sm-flowstep-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-jet), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sm-ink);
+  margin-bottom: 5px;
+}
+.sm-flowstep-actor {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--sm-dim);
+}
+.sm-flowstep-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--sm-sub);
+  /* two lines reserved so the strip never jumps as details change length */
+  min-height: 2.6em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sm-flowstep-dot { transition: none; transform: none; }
 }
 
 /* compact (phone) focus: while a fan is open, inactive tiles step almost all
