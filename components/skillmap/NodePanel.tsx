@@ -79,10 +79,11 @@ export function NodePanel({
     const body = bodyRef.current;
     const row = body?.querySelector<HTMLElement>(".sm-row-on");
     if (!body || !row) return;
+    // the selected section always LEADS the panel - especially on the peek
+    // sheet, where only the first stretch of the body is visible
     const top =
       row.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
-    const visible = top >= body.scrollTop && top <= body.scrollTop + body.clientHeight - 48;
-    if (!visible) body.scrollTo({ top: Math.max(0, top - 12), behavior: "smooth" });
+    body.scrollTo({ top: Math.max(0, top - 10), behavior: "smooth" });
   }, [selectedLeafId]);
 
   // Phone bottom sheet: opens at HALF height (peek) so the map and the
@@ -454,9 +455,10 @@ function PipelineFlow({ branch }: { branch: Branch }) {
     return () => clearInterval(t);
   }, [animate, flow.length]);
 
-  // follow the pulse: keep each lit row in view (scrolling ONLY the panel
-  // body - see the selection effect above); when the loop wraps, jump the
-  // panel back to the top of the walk
+  // follow the pulse: keep each lit row inside the VISIBLE part of the panel
+  // body (on the peek sheet only a strip of the body is on screen, so the
+  // walk must scroll within that strip), scrolling ONLY the body - see the
+  // selection effect above. When the loop wraps, jump back to the top.
   useEffect(() => {
     if (!animate) return;
     const row = rowsRef.current[step];
@@ -466,11 +468,19 @@ function PipelineFlow({ branch }: { branch: Branch }) {
       body.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    const top =
-      row.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
-    const bottomOver = top + row.clientHeight - (body.scrollTop + body.clientHeight);
-    if (bottomOver > 0 || top < body.scrollTop) {
-      body.scrollTo({ top: Math.max(0, body.scrollTop + bottomOver + 10), behavior: "smooth" });
+    const bodyRect = body.getBoundingClientRect();
+    const visibleH = Math.max(
+      120,
+      Math.min(bodyRect.bottom, window.innerHeight) - bodyRect.top,
+    );
+    const top = row.getBoundingClientRect().top - bodyRect.top + body.scrollTop;
+    if (top < body.scrollTop) {
+      body.scrollTo({ top: Math.max(0, top - 8), behavior: "smooth" });
+      return;
+    }
+    const bottomOver = top + row.clientHeight - (body.scrollTop + visibleH);
+    if (bottomOver > 0) {
+      body.scrollTo({ top: body.scrollTop + bottomOver + 10, behavior: "smooth" });
     }
   }, [step, animate]);
 
