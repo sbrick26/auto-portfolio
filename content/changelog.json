@@ -1,5 +1,14 @@
 [
   {
+    "version": "3.0.0",
+    "date": "2026-07-01",
+    "changes": [
+      "v3: the terminal grew into a skill map. The homepage is now an interactive node map: a center card with a waving pixel swaygent, eight color-coded sections on an arc, leaf nodes that fan out per section, and a slide-in panel that carries everything the terminal knew.",
+      "Second-layer skill web: each skill group fans out its individual skills on the canvas, cross-linked to the projects that prove them.",
+      "Animated pipeline walk with per-stage glyphs, pinch zoom and zoom controls, a compact phone layout, and a dedicated print route that keeps the one-page resume PDF gates intact."
+    ]
+  },
+  {
     "version": "1.39.0",
     "date": "2026-06-25",
     "changes": [
@@ -73,7 +82,7 @@
     "version": "1.29.0",
     "date": "2026-06-21",
     "changes": [
-      "can we redo pr 45 i don\u2019t like the CRT animation can we just"
+      "can we redo pr 45 i don’t like the CRT animation can we just"
     ]
   },
   {
