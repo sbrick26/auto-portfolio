@@ -106,7 +106,6 @@ export interface SubLeaf {
 export interface PanelMe {
   name: string;
   role: string;
-  status: string;
   summary: string;
   initials: string;
   location: string;
@@ -514,7 +513,6 @@ export function buildPortfolioGraph(): PortfolioGraph {
     me: {
       name: profile.name,
       role: profile.role,
-      status: "Open to new challenges",
       summary: profile.summary,
       initials: "SB",
       location: profile.location,

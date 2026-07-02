@@ -91,6 +91,40 @@ test("project row expands and cross-jumps to the skill it proves", async ({ page
   await expect(page.getByRole("heading", { name: "Skills" })).toBeVisible();
 });
 
+test("skill group fans a second-layer web with project proof", async ({ page }) => {
+  await page.goto("/");
+  await mapReady(page);
+  await page.getByRole("button", { name: "Skills", exact: true }).click();
+  await page.getByRole("button", { name: "Core Stack", exact: true }).click();
+  // the sub-skill lands on the canvas; tapping it surfaces its proof
+  await page.getByRole("button", { name: "Python", exact: true }).first().click();
+  await expect(page.getByText("proven in").first()).toBeVisible();
+});
+
+test("center card offers the demo, cut by device", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await mapReady(page);
+  await page.getByRole("button", { name: "Swayam Barik" }).click();
+  const demo = page.getByRole("link", { name: /Watch the demo/ });
+  await expect(demo).toBeVisible();
+  await expect(demo).toHaveAttribute(
+    "href",
+    isMobile ? /swaygent-demo-vertical\.mp4$/ : /swaygent-demo-horizontal\.mp4$/,
+  );
+});
+
+test("changelog folds history behind show-all", async ({ page }) => {
+  await page.goto("/");
+  await mapReady(page);
+  await page.getByRole("button", { name: "Changelog", exact: true }).click();
+  const before = await page.locator(".sm-rowlist .sm-row").count();
+  const showAll = page.getByRole("button", { name: /show all \d+ versions/ });
+  if (await showAll.isVisible()) {
+    await showAll.click();
+    expect(await page.locator(".sm-rowlist .sm-row").count()).toBeGreaterThan(before);
+  }
+});
+
 test("recenter clears the selection and closes the panel", async ({ page }) => {
   await page.goto("/");
   await mapReady(page);

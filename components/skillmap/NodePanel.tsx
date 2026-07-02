@@ -95,7 +95,7 @@ export function NodePanel({
           <div className="sm-panel-body">
             <div className="sm-me-status">
               <span className="sm-status-dot" />
-              {me.status} · {me.location}
+              {me.location}
             </div>
             <p className="sm-lead">{me.summary}</p>
             <DemoButton demo={me.demo} />

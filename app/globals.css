@@ -869,3 +869,8 @@ body {
   text-transform: uppercase;
   color: var(--sm-dim);
 }
+
+/* compact (phone) focus: while a fan is open, inactive tiles step almost all
+   the way back so the tight pitch never reads as overlap */
+.sm-compact .sm-branch.sm-dim { opacity: 0.12; }
+.sm-compact .sm-trunk.sm-dim { opacity: 0.4; }

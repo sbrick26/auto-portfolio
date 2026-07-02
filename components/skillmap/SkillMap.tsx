@@ -386,7 +386,7 @@ export function SkillMap() {
   const dimmed = (id: BranchId) => activeBranchId !== null && activeBranchId !== id;
 
   return (
-    <div className="sm-root">
+    <div className={`sm-root${compact ? " sm-compact" : ""}`}>
       <div className="sm-grain" />
       <div className="sm-vignette" />
 
