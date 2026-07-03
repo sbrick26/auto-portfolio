@@ -1,5 +1,14 @@
 // jsdom is missing a few browser APIs the app uses; stub them for tests.
 
+import { vi } from "vitest";
+
+// No test should hit the real network. Components that fetch (e.g. the pipeline
+// panel's live "last shipped" strip) must fall back gracefully, so default fetch
+// to a rejecting stub; suites that exercise fetch install their own local mock.
+global.fetch = vi.fn(() =>
+  Promise.reject(new Error("network disabled in tests")),
+) as unknown as typeof fetch;
+
 window.HTMLElement.prototype.scrollIntoView = () => {};
 // jsdom logs "Not implemented" for scrollTo; Session uses it to follow output.
 window.HTMLElement.prototype.scrollTo = () => {};
