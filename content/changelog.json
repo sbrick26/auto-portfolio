@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.3.0",
+    "date": "2026-07-03",
+    "changes": [
+      "Live pipeline proof: pull the repo's real recent merges from GitHub and show \"last shipped Xh ago\""
+    ]
+  },
+  {
     "version": "3.2.0",
     "date": "2026-07-03",
     "changes": [
