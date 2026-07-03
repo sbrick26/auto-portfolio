@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Branch, Leaf, PanelMe, SubLeaf } from "@/lib/portfolio-graph";
 import { resumeToPlainText } from "@/lib/resume-export";
+import { fetchShipped, relativeShipped, type ShippedItem } from "@/lib/pipeline-feed";
 import { PipeIcon } from "./icons";
 
 // How many changelog versions show before the "show all" fold (same idea as
@@ -438,6 +439,54 @@ const FLOW_TINTS = [
   "var(--sm-green)",
 ];
 
+// Live proof that the pipeline is real: the repo's most recent merge, pulled
+// client-side from GitHub's public REST API, shown as "last shipped Xh ago"
+// with the change title and a one-click link to verify it on GitHub. Renders
+// NOTHING until (and unless) a real item loads - offline, rate-limited, or an
+// empty repo simply leaves the static changelog above it as the fallback. One
+// cached request per visit (see lib/pipeline-feed.ts). Hidden on the peek sheet
+// (globals.css) so the half-open strip stays the stepper alone.
+function LiveShipped() {
+  const [item, setItem] = useState<ShippedItem | null>(null);
+  const [rel, setRel] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+    fetchShipped({ signal: ctrl?.signal })
+      .then((items) => {
+        if (!alive) return;
+        const top = items[0] ?? null;
+        const label = top ? relativeShipped(top.iso, Date.now()) : null;
+        // both must resolve or we stay silent and let the changelog stand
+        if (top && label) {
+          setItem(top);
+          setRel(label);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+      ctrl?.abort();
+    };
+  }, []);
+
+  if (!item || !rel) return null;
+  return (
+    <a className="sm-liveship" href={item.url} target="_blank" rel="noreferrer">
+      <span className="sm-liveship-head">
+        <span className="sm-liveship-dot" />
+        last shipped {rel}
+        <span className="sm-liveship-src">live · GitHub</span>
+      </span>
+      <span className="sm-liveship-title">{item.title}</span>
+      <span className="sm-liveship-cta">
+        verify {item.pr ? `PR #${item.pr}` : item.sha} on GitHub ↗
+      </span>
+    </a>
+  );
+}
+
 function PipelineFlow({ branch }: { branch: Branch }) {
   const flow = branch.flow ?? [];
   const [step, setStep] = useState(0);
@@ -520,6 +569,7 @@ function PipelineFlow({ branch }: { branch: Branch }) {
           <p className="sm-row-blurb">{branch.run.idea}</p>
         </div>
       ) : null}
+      <LiveShipped />
       <ol className="sm-rowlist sm-flowlist">
         {flow.map((s, i) => {
           const on = !animate || i === step;
