@@ -165,10 +165,11 @@ export const projects: Project[] = [
     name: "IBM Z mainframe BMS-to-React modernization demo",
     domain: "financial services",
     blurb:
-      "Built a demo that takes an AI coding agent from legacy IBM Z CICS BMS green-screens to a modern React UI - the agent generates a React front end that calls the live mainframe for data and renders it, real green-screen-to-React modernization of a running Z system. Built on the public IBM CICS insurance sample app and demoed live as the centerpiece of a full-day Bobathon to 40 financial-services developers.",
+      "Built a demo that takes an AI coding agent from legacy IBM Z CICS BMS green-screens to a modern React UI - the agent generates a React front end that calls the live mainframe for data and renders it, real green-screen-to-React modernization of a running Z system. Built on the public IBM CICS insurance sample app and demoed live as the centerpiece of a full-day Bobathon to 40 financial-services developers, after which the client moved into a trial of the premium Z package.",
     metrics: [
       { value: "CICS to React", label: "live mainframe modernized" },
       { value: "40 devs", label: "live demo audience" },
+      { value: "trial", label: "premium Z package landed" },
     ],
     arch: [
       { label: "AI agent", kind: "actor" },
@@ -218,24 +219,6 @@ export const projects: Project[] = [
     status: "shipped",
   },
   {
-    name: "LucidLink MCP server + enablement kit",
-    domain: "media infrastructure",
-    blurb:
-      "Built a production-shaped LucidLink MCP server - 20 tools tiered into auto-approvable reads, dry-run-by-default guarded writes, and feature-flagged S3 Connect - plus a full Bob enablement pack and a 3-hour hands-on customer workshop teaching partners to build on the Python SDK with an AI agent. Safety designed in: token hygiene, guarded writes, chunked streaming for large media.",
-    metrics: [
-      { value: "20", label: "tiered MCP tools" },
-      { value: "3-hour", label: "hands-on partner workshop" },
-    ],
-    arch: [
-      { label: "AI agent", kind: "actor" },
-      { label: "MCP server", kind: "gateway" },
-      { label: "tiered guards", kind: "guard" },
-      { label: "LucidLink SDK", kind: "system" },
-    ],
-    stack: ["MCP", "Python", "LucidLink SDK", "uv"],
-    status: "shipped",
-  },
-  {
     name: "AIDLC guardrails framework",
     domain: "utility & energy",
     blurb:
@@ -272,6 +255,24 @@ export const projects: Project[] = [
       { label: "scored report", kind: "io" },
     ],
     stack: ["FastAPI", "SSE", "semgrep", "pytest", "SQLite"],
+    status: "shipped",
+  },
+  {
+    name: "bobwork: agent council UI",
+    domain: "personal project",
+    blurb:
+      "Built a web app for an AI coding CLI with a council mode: 5 parallel agent instances with distinct thinking styles answer anonymized via Fisher-Yates shuffle, 5 independent peer reviewers vote, and a chairman synthesizes - explicit bias mitigation designed in. Real-time WebSocket streaming, persistent SQLite chat history, and a 146-test suite (90 backend, 14 frontend, 42 council) gates every merge.",
+    metrics: [
+      { value: "5", label: "parallel council agents" },
+      { value: "146", label: "tests gating every merge" },
+    ],
+    arch: [
+      { label: "chat UI", kind: "io" },
+      { label: "5 council agents", kind: "actor" },
+      { label: "peer review", kind: "guard" },
+      { label: "chairman synthesis", kind: "actor" },
+    ],
+    stack: ["Next.js", "React", "Node.js", "SQLite"],
     status: "shipped",
   },
   {
@@ -348,10 +349,10 @@ export const resume = {
       points: [
         "Build 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
         "Drove an AI agent end to end on a live IBM i: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
-        "Built a mainframe modernization demo taking an agent from legacy IBM Z CICS green-screens to a React UI calling the live Z machine, centerpiece of a 40-developer full-day client event.",
-        "Designed an agentic HR framework with policy guardrails across 3 live workflows - job changes, promotions, comp checks - on Workday and ServiceNow for a sports entertainment client.",
-        "Founded and lead a 5-intern initiative shipping an agent-skills + MCP library across 10+ IBM products; designed and ran Bobathon, a full-day hackathon, 10+ times, and 2 trucking-client Bobathons drove Bob purchases.",
-        "Lead competitive displacement vs GitHub Copilot, Cursor, and Claude Code with ROI frameworks backed by a 3-agent bake-off producing reproducible per-tool cost, security, and test evidence.",
+        "Modernized IBM Z CICS green-screens into a React UI calling the live mainframe via an AI coding agent; anchored a 40-developer client Bobathon that landed a premium Z package trial.",
+        "Shipped watsonx Orchestrate agents on live client tenants: email triage classifying 2,000-3,000 EDI alerts/day (won bake-off vs Copilot Studio) and HR automation across 3 Workday + ServiceNow workflows.",
+        "Founded a 5-intern initiative shipping an agent-skills + MCP library across 10+ IBM products; mentored 2 intern hackathon teams to a 1st-place win out of 25.",
+        "Created Bobathon, a full-day enterprise hackathon series run 10+ times with 15-40 engineers each; 2 trucking-client events converted directly into product purchases.",
       ],
     },
     {
@@ -361,8 +362,7 @@ export const resume = {
       points: [
         "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI through end-to-end technical evaluations.",
         "Designed and ran a live watsonx demo at AWS re:Invent for ~400 booth attendees, generating 314 new pipeline opportunities across multiple industries.",
-        "Diagnosed 2 watsonx Orchestrate product gaps on a beverage-manufacturer PoX and built a custom Python connector wrapper; WXO shipped nested-folder support as a feature ~1 month later.",
-        "Created repeatable client-specific watsonx demo frameworks mapping business pain to quantifiable watsonx.ai and Orchestrate outcomes, cutting time-to-close across 20+ accounts.",
+        "Diagnosed 2 watsonx Orchestrate product gaps on a beverage-manufacturer pilot and built a custom Python connector wrapper; WXO released nested-folder support as a product feature ~1 month later.",
       ],
     },
     {
@@ -370,8 +370,9 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "Built a real-time grid-dispatch integration (80% success under overload) and shipped an RBAC system to AWS Marketplace serving hundreds of accounts; led a 5-person team.",
+        "Engineered a real-time grid-dispatch integration hitting 80% success during grid overload events and released an RBAC system to AWS Marketplace serving hundreds of accounts.",
         "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and led a PWA migration that lifted mobile app usage ~50%.",
+        "Led daily standups and sprint planning for a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, and Node.js.",
       ],
     },
     {
@@ -380,9 +381,8 @@ export const resume = {
       when: "Jun 2022 - Jan 2024",
       points: [
         "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
-        "Shipped Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
-        "Engineered 2 reusable API-driven iOS components - a stateful Connect/Follow action button and a re-orderable skills module - adopted across multiple profile sections.",
-        "Designed profile A/B experiments on LinkedIn's LIX and T-REX frameworks and facilitated monthly technical meetups for a 35-person early-career engineering cohort.",
+        "Launched Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
+        "Engineered 2 reusable API-driven iOS components adopted across profile sections; facilitated monthly meetups for a 35-person early-career engineering cohort.",
       ],
     },
     {
@@ -390,7 +390,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Shipped a Python/Firebase BI tool over thousands of MLS listings with image-processing AI, cutting outsourcing costs 80%.",
+        "Automated manual MLS listing review with a Python/Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%.",
       ],
     },
   ] as ResumeItem[],
