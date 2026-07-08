@@ -45,6 +45,24 @@ async function stubPipelineFeed(page: Page) {
   );
 }
 
+// The panel's ".sm-run" card shows the newest changelog entry (version, date,
+// idea) straight from content/data.ts. That text changes with EVERY release, and
+// its length decides whether the idea wraps to one, two, or three lines - which
+// changes the card's height and reflows every pipeline row below it. Pixel-
+// snapshotting it would break on the next ship no matter what (this is exactly
+// how the QA "fix regressions visual" loop kept regenerating this one baseline).
+// So for the snapshot we pin the card to a fixed height (rows below stay put) via
+// a TEST-ONLY style - the shipped panel is untouched - and mask the card's own
+// pixels so the release-specific words never drive the diff. The card frame,
+// LiveShipped strip, and the full pipeline flow below stay fully asserted.
+const RUN_CARD = ".sm-run";
+async function pinRunCard(page: Page) {
+  await page.addStyleTag({
+    content: `${RUN_CARD} .sm-row-blurb{height:36px;overflow:hidden;` +
+      `display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}`,
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
@@ -89,7 +107,10 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-pipeline.png");
+  await pinRunCard(page);
+  await expect(page).toHaveScreenshot("map-pipeline.png", {
+    mask: [page.locator(RUN_CARD)],
+  });
 });
 
 test("profile panel looks right @visual", async ({ page }) => {
