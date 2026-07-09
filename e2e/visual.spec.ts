@@ -89,7 +89,18 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-pipeline.png");
+  // The LATEST-run tag/blurb and the footer version badge carry the current
+  // release's version, date, and idea text - they change every ship, so mask
+  // them out. The card's fixed height (globals.css) keeps everything below from
+  // shifting, so what remains (panel design + the stubbed live-shipped proof)
+  // is a stable baseline that survives releases instead of drifting each one.
+  await expect(page).toHaveScreenshot("map-pipeline.png", {
+    mask: [
+      page.locator(".sm-run .sm-row-tag"),
+      page.locator(".sm-run .sm-row-blurb"),
+      page.locator(".sm-ver"),
+    ],
+  });
 });
 
 test("profile panel looks right @visual", async ({ page }) => {

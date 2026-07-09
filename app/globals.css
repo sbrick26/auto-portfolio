@@ -699,7 +699,10 @@ body {
   background: rgba(227, 240, 236, 0.5);
 }
 .sm-run .sm-row-tag { margin-left: 0; color: var(--sm-accent-deep); }
-.sm-run .sm-row-blurb { margin: 0; }
+/* Reserve the full 3-line height the 88-char clamp (lib/pipeline.ts) can reach
+   so a shorter changelog idea does not shrink the card and shift the whole panel
+   below it - keeps the layout (and its visual baseline) stable across releases. */
+.sm-run .sm-row-blurb { margin: 0; min-height: 4.5em; }
 
 /* live "last shipped" proof strip: a solid-accent card (distinct from the dashed
    static run block above it) that links straight to the real GitHub merge */
