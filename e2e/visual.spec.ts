@@ -89,7 +89,13 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-pipeline.png");
+  // The "latest v… " card (.sm-run) shows the newest changelog headline, which
+  // changes on every ship. Its box is now fixed-height (globals.css) so the rows
+  // below never reflow, but the text still differs run to run - mask just that
+  // card so the snapshot covers the rest of the panel without drifting.
+  await expect(page).toHaveScreenshot("map-pipeline.png", {
+    mask: [page.locator(".sm-run")],
+  });
 });
 
 test("profile panel looks right @visual", async ({ page }) => {

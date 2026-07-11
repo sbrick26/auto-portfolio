@@ -36,7 +36,10 @@ export type PipelineRun = {
 
 // Keep one short line of changelog prose readable as a token caption without
 // letting a long entry blow out the layout.
-function clamp(text: string, max = 88): string {
+// 76 chars is what fits the run card's fixed two-line box (see .sm-run in
+// globals.css); staying under it keeps the CSS line-clamp from adding a second
+// ellipsis on top of this one.
+function clamp(text: string, max = 76): string {
   const t = text.trim();
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 }

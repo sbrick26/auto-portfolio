@@ -699,7 +699,17 @@ body {
   background: rgba(227, 240, 236, 0.5);
 }
 .sm-run .sm-row-tag { margin-left: 0; color: var(--sm-accent-deep); }
-.sm-run .sm-row-blurb { margin: 0; }
+/* Reserve exactly two lines so the card height stays constant no matter how
+   long the latest idea is - otherwise a shorter/longer changelog headline
+   reflows every row below it and drifts the pipeline snapshot on each ship. */
+.sm-run .sm-row-blurb {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  height: calc(1.5em * 2);
+}
 
 /* live "last shipped" proof strip: a solid-accent card (distinct from the dashed
    static run block above it) that links straight to the real GitHub merge */

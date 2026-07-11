@@ -55,7 +55,7 @@ describe("buildPipelineRun", () => {
   it("truncates a long idea so the layout can't blow out", () => {
     const long = "x".repeat(200);
     const run = buildPipelineRun([{ version: "1.0.0", date: "2026-01-01", changes: [long] }]);
-    expect(run.idea.length).toBeLessThanOrEqual(88);
+    expect(run.idea.length).toBeLessThanOrEqual(76);
     expect(run.idea.endsWith("…")).toBe(true);
   });
 
