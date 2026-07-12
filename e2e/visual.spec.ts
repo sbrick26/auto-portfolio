@@ -15,6 +15,19 @@ async function mapReady(page: Page) {
   });
 }
 
+// The footer version badge (.sm-ver) renders APP_VERSION, i.e. package.json's
+// version. The pipeline runner bumps that version (npm version minor) and
+// appends the changelog entry in the "v$V" release commit AFTER this build's
+// snapshots are captured, so the badge - and, on the pipeline panel, the
+// "latest vX" run card that reads the same changelog - change on every single
+// drop. Pixel-asserting them means the baseline is stale the moment it is
+// committed, which is exactly what kept re-breaking these snapshots (main only
+// ever got re-baselined, never fixed). Mask the live release stamp so the
+// snapshots assert the stable layout, not the version of the day.
+function liveMasks(page: Page) {
+  return [page.locator(".sm-ver")];
+}
+
 // The pipeline panel renders LiveShipped, which fetches the repo's latest merge
 // from GitHub's public API and labels it "last shipped Xh ago" off the wall
 // clock. Both are non-deterministic (network + time), so the raw panel can never
@@ -53,7 +66,7 @@ test("map overview looks right @visual", async ({ page }) => {
   await page.goto("/");
   await mapReady(page);
   await page.waitForTimeout(600);
-  await expect(page).toHaveScreenshot("map-home.png");
+  await expect(page).toHaveScreenshot("map-home.png", { mask: liveMasks(page) });
 });
 
 test("skills fan looks right @visual", async ({ page }) => {
@@ -61,7 +74,7 @@ test("skills fan looks right @visual", async ({ page }) => {
   await mapReady(page);
   await page.getByRole("button", { name: "Skills", exact: true }).click();
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-skills.png");
+  await expect(page).toHaveScreenshot("map-skills.png", { mask: liveMasks(page) });
 });
 
 test("skill sub-web looks right @visual", async ({ page }) => {
@@ -70,7 +83,7 @@ test("skill sub-web looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Skills", exact: true }).click();
   await page.getByRole("button", { name: "Core Stack", exact: true }).click();
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-subweb.png");
+  await expect(page).toHaveScreenshot("map-subweb.png", { mask: liveMasks(page) });
 });
 
 test("project detail looks right @visual", async ({ page }) => {
@@ -79,7 +92,7 @@ test("project detail looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Projects", exact: true }).click();
   await page.locator(".sm-row-btn", { hasText: "Agent Pipeline" }).first().click();
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-project.png");
+  await expect(page).toHaveScreenshot("map-project.png", { mask: liveMasks(page) });
 });
 
 test("pipeline panel looks right @visual", async ({ page }) => {
@@ -87,9 +100,21 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.goto("/");
   await mapReady(page);
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
+  // The "latest vX" run card (.sm-run) shows the newest changelog headline,
+  // clamped but still one to three lines depending on its length. When a drop
+  // changes that headline the card's height changes, reflowing every row below
+  // it (that height cascade, not any real regression, is the ~8k-pixel diff
+  // that kept tripping this snapshot). Pin the blurb to a single line so the
+  // card footprint is constant, then mask the card so its live text is ignored
+  // - together they make the panel layout below it deterministic.
+  await page.addStyleTag({
+    content: ".sm-run .sm-row-blurb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+  });
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-pipeline.png");
+  await expect(page).toHaveScreenshot("map-pipeline.png", {
+    mask: [...liveMasks(page), page.locator(".sm-run")],
+  });
 });
 
 test("profile panel looks right @visual", async ({ page }) => {
@@ -97,5 +122,5 @@ test("profile panel looks right @visual", async ({ page }) => {
   await mapReady(page);
   await page.getByRole("button", { name: "Swayam Barik" }).click();
   await page.waitForTimeout(800);
-  await expect(page).toHaveScreenshot("map-me.png");
+  await expect(page).toHaveScreenshot("map-me.png", { mask: liveMasks(page) });
 });
