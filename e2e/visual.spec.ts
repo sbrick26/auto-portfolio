@@ -89,6 +89,9 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
+  // Mask version and date to avoid drift on releases
+  await page.locator(".sm-ver").evaluate(el => el.style.visibility = "hidden");
+  await page.locator(".sm-run").evaluate(el => el.style.visibility = "hidden");
   await expect(page).toHaveScreenshot("map-pipeline.png");
 });
 
