@@ -77,6 +77,26 @@ describe("data-driven mapping (nothing from the old site is dropped)", () => {
     });
   });
 
+  it("every project node caption belongs to ITS project (index map not drifted)", () => {
+    // PROJECT_SHORT in lib/portfolio-graph.ts is keyed by array index, so any
+    // insert/remove in content/data.ts projects silently shifts every caption
+    // after it (v3.5.0 shipped a ghost "LucidLink" node this way). Guard: each
+    // caption must share at least one real token with its project's name.
+    projects.forEach((p, i) => {
+      const leaf = graph.leafById[`project-${i}`];
+      const name = p.name.toLowerCase();
+      const tokens = leaf.label
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t.length >= 3);
+      const matches = tokens.some((t) => name.includes(t));
+      expect(
+        matches,
+        `caption "${leaf.label}" shares no token with project ${i} "${p.name}" - PROJECT_SHORT index map has drifted`,
+      ).toBe(true);
+    });
+  });
+
   it("changelog is panel-only: no canvas leaves, FULL history in rows", () => {
     const b = graph.branchById.changelog;
     expect(b.leaves).toHaveLength(0);
