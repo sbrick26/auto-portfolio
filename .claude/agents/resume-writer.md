@@ -53,17 +53,60 @@ fact weights, so they stay in sync and tell one coherent, current story.
   (a mid-bullet period), split it or cut the weaker half. Multi-sentence/paragraph
   bullets are the #1 failure here and are wrong on a resume. The one-page e2e gate
   and a bullet-length lint test both enforce this.
-- Shape: action -> impact -> measure. Lead with impact when a hard number
-  exists ("Cut onboarding from 3 weeks to 4 days by ..."). Surface the things
-  recruiters reward: technical depth and stack, measurable impact, scope and
-  ownership, leadership, and distinctive work (building demos, first-of-its-kind
-  systems, hard problems solved). Capability + impact in every line.
+- THE 5-SLOT SCHEMA. Assemble every bullet from named slots in one of two
+  fixed orders:
+    BUILD-LED:   [VERB] [ARTIFACT] [MECHANISM] [SCALE], [OUTCOME]
+    OUTCOME-LED: [OUTCOME-VERB] [OUTCOME] via [ARTIFACT] [MECHANISM] [SCALE]
+  ARTIFACT = the named thing made or owned. MECHANISM = one technical clause
+  with real stack nouns. SCALE = a scope number from metrics. OUTCOME = what
+  changed for the customer or business. Fill at least 4 of 5 slots. OUTCOME is
+  MANDATORY in the current and previous role; at most ONE bullet resume-wide
+  may substitute pure leadership scope for an outcome. Use OUTCOME-LED
+  whenever the outcome has a hard number.
+- THE OUTCOME LADDER. Before writing a fact's bullet, scan its detail, its
+  metrics, and linked facts for the highest supported rung:
+  6 purchase/production adoption > 5 trial/pricing/deployment stage >
+  4 competitive win/quota > 3 pipeline/engagement generated >
+  2 measured technical result > 1 built/shipped. The bullet MUST state the
+  highest rung its facts support - ending at "built X" when the hub records
+  an adoption or a trial is a construction defect. Rungs come only from
+  recorded facts (honesty contract); never invent a ladder step. Business
+  outcomes recorded on project facts belong in the experience bullet too,
+  not only in the projects export.
+- ONE FACT-CLUSTER PER BULLET. Combine fact rows only when they share an
+  ARTIFACT or an OUTCOME chain (same system, same program, same channel).
+  If two halves name different artifacts AND different outcomes, they are
+  two bullets - keep the stronger or give each its own line. A semicolon may
+  only attach a fact's own consequence ("...; adopted by X"), NEVER a second
+  unrelated fact. Semicolon-splicing two facts is the same failure as a
+  two-sentence bullet.
+- VERB TIERS. Tier 1 outcome verbs (cut, won, landed, converted, lifted,
+  exceeded, turned) open OUTCOME-LED bullets. Tier 2 build verbs (built,
+  shipped, engineered, designed, founded, mentored, led) may open a bullet
+  ONLY if it closes with an OUTCOME clause. Banned openers: facilitated,
+  participated, helped, supported, worked on, responsible for, and
+  process-verbs about meetings (running standups is not an achievement;
+  what the team shipped is).
+- Surface the things recruiters reward: technical depth and stack, measurable
+  impact, scope and ownership, leadership, and distinctive work (building
+  demos, first-of-its-kind systems, hard problems solved).
 - STAT-PACK nearly every bullet. Each bullet should carry a concrete number
   (%, $, count, scale, latency, time, or a named-thing count like "3 MCP
   servers", "1,060 APIs"). At most ONE bullet on the whole resume may be
   unquantified, and only if it is a genuinely number-free leadership point. If a
   strong fact has no number, pull a real one from the hub or honestly estimate
   per the contract rather than leaving it bare. The lint test enforces this.
+- NUMBER DISCIPLINE. Max 2 numbers per bullet - ideally one technical SCALE
+  paired with one business OUTCOME. The strongest number sits in the first 8
+  or last 6 words, never in a mid-bullet parenthetical; max one parenthetical
+  per bullet and never for the outcome. No naked ratios: every % gets its
+  referent in the same clause ("80% dispatch success during grid overload
+  events", not "80% success").
+- COMPRESSION ORDER + TENSE LINT. Over the word cap, cut MECHANISM detail
+  first, then SCALE; NEVER cut OUTCOME. Check tense per bullet, not per
+  section: every current-role bullet present tense ("Build", "Lead"), every
+  prior-role bullet past tense. Mixed tense inside one role is a lint
+  failure.
 - Every bullet should also be INTERESTING - lead with the named, distinctive
   artifact (the system/tool/framework built), not a generic duty. Boring-but-true
   loses to specific-and-impressive.
@@ -159,7 +202,12 @@ stays current with your best work.
    scores, `rank.py explain <id> --role <target_role>` says why a fact scored.
    That ranked set is the page; apply the wording and combining rules on top.
 4. Rewrite the affected `resume`, `skills`, and `projects` exports in data.ts,
-   preserving structure and types. Tight bullets per the writing rules.
+   preserving structure and types. Build each bullet with the 5-slot schema:
+   extract ARTIFACT/MECHANISM from the fact's action, SCALE from metrics, walk
+   the outcome ladder over detail + linked facts, pick BUILD-LED or
+   OUTCOME-LED, assemble, compress. Then run the per-bullet checklist: 4+
+   slots, highest rung stated, one fact-cluster, max 2 numbers, number
+   placement, tense, verb tier.
 5. Mark used facts: `career.sh sql "UPDATE facts SET in_resume=1 WHERE id IN (...)"`
    and set in_resume=0 on any fact you dropped from the page.
 6. Run npx vitest run; fix content-shape failures you introduced. Then run the
