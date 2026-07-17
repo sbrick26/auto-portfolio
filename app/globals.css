@@ -699,7 +699,12 @@ body {
   background: rgba(227, 240, 236, 0.5);
 }
 .sm-run .sm-row-tag { margin-left: 0; color: var(--sm-accent-deep); }
-.sm-run .sm-row-blurb { margin: 0; }
+/* Pin the run headline to a single line so a longer changelog entry on a new
+   release cannot reflow and shift every row below it. The block is masked in the
+   @visual snapshot, but visibility:hidden preserves layout, so an unpinned
+   reflow here still drifts LiveShipped and the flow rows. See project memory
+   pipeline-visual-snapshot-drift. */
+.sm-run .sm-row-blurb { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* live "last shipped" proof strip: a solid-accent card (distinct from the dashed
    static run block above it) that links straight to the real GitHub merge */
