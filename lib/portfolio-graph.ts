@@ -199,9 +199,9 @@ const PROJECT_SHORT: Record<number, string> = {
   2: "BMS → React",
   3: "Sterling MCP",
   4: "Agentic HR",
-  5: "LucidLink",
-  6: "AIDLC Guard",
-  7: "Agent Bake-off",
+  5: "AIDLC Guard",
+  6: "Agent Bake-off",
+  7: "Agent Council",
   8: "Email Triage",
   9: "Data Cleanse",
 };
