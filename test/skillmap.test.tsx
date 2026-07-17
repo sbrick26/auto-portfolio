@@ -50,7 +50,7 @@ describe("SkillMap", () => {
     expect(screen.getByRole("link", { name: /GitHub/ }).getAttribute("href")).toBe(
       profile.links.github,
     );
-    expect(screen.getByRole("button", { name: /Watch the demo/ })).toBeDefined();
+    expect(screen.getByRole("button", { name: /See it in action/ })).toBeDefined();
     expect(screen.getByRole("link", { name: /Email/ }).getAttribute("href")).toBe(
       `mailto:${profile.links.email}`,
     );
@@ -61,7 +61,7 @@ describe("SkillMap", () => {
   it("plays the demo in an in-site lightbox, not a new tab", () => {
     const { baseElement } = render(<SkillMap />);
     fireEvent.click(screen.getByRole("button", { name: profile.name }));
-    fireEvent.click(screen.getByRole("button", { name: /Watch the demo/ }));
+    fireEvent.click(screen.getByRole("button", { name: /See it in action/ }));
 
     // full-quality original streams inside the site; horizontal cut on
     // desktop-width screens (jsdom has no matchMedia -> desktop path)
@@ -75,7 +75,7 @@ describe("SkillMap", () => {
     expect(baseElement.querySelector(".sm-vmodal")).toBeNull();
 
     // and Escape closes it too
-    fireEvent.click(screen.getByRole("button", { name: /Watch the demo/ }));
+    fireEvent.click(screen.getByRole("button", { name: /See it in action/ }));
     expect(baseElement.querySelector(".sm-vmodal")).not.toBeNull();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(baseElement.querySelector(".sm-vmodal")).toBeNull();

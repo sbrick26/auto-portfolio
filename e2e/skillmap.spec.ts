@@ -120,7 +120,7 @@ test("center card plays the demo in an in-site lightbox, cut by device", async (
   await page.goto("/");
   await mapReady(page);
   await page.getByRole("button", { name: "Swayam Barik" }).click();
-  await page.getByRole("button", { name: /Watch the demo/ }).click();
+  await page.getByRole("button", { name: /See it in action/ }).click();
 
   const modal = page.locator(".sm-vmodal");
   await expect(modal).toBeVisible();
@@ -133,7 +133,7 @@ test("center card plays the demo in an in-site lightbox, cut by device", async (
   // close returns to the map without ever leaving the page
   await modal.getByRole("button", { name: /close video/i }).click();
   await expect(modal).toBeHidden();
-  await expect(page.getByRole("button", { name: /Watch the demo/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /See it in action/ })).toBeVisible();
 });
 
 test("changelog folds history behind show-all", async ({ page }) => {
