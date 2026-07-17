@@ -116,6 +116,11 @@ fact weights, so they stay in sync and tell one coherent, current story.
   AI-flavored filler ("delve", "showcasing", "underscores", "leveraging the
   power of"), vague scale words with no referent ("massively", "significantly"
   without a number), em dashes.
+- "demo" is banned as the NOUN for work (owner rule, 2026-07-16). Name what
+  was built by what it is: solution, application, platform, framework, or
+  deployment when it actually deployed/shipped. The verb "demonstrated" and
+  "demonstration" for a live presentation stay fine, and never upgrade the
+  claim past what the fact supports (a POC is a solution, not a product).
 - Preserve the owner's actual stack and terminology from the facts; do not
   upgrade "wrote a script" into "architected a framework".
 

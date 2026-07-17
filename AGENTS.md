@@ -40,6 +40,11 @@ before writing any code. Heed deprecation notices.
   weaken a test to get green.
 - The updates feed (content/updates.json) grows freely; the resume in content/data.ts
   changes only when genuinely warranted.
+- Wording rule (owner, 2026-07-16): "demo" is banned as the noun for work anywhere
+  user-facing (projects, resume, updates, UI labels). Call it a solution,
+  application, platform, framework, or deployment as accuracy allows;
+  "demonstrated/demonstration" for live presentations is fine. Applies to every
+  worker that writes content.
 - Never touch sst.config.ts, CI workflows, or .env handling without explicit human ask.
 - Cost rule: never create AWS resources with meaningful cost; deploys go through the
   human until CI/CD deploy is formally set up.

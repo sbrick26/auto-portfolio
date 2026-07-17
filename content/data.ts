@@ -29,7 +29,7 @@ export const profile = {
 export const about: string[] = [
   "I'm an AI Solutions Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
   "Before that I shipped full-stack web, mobile, and IoT products at Qureez for energy startups, and built user-facing iOS features on LinkedIn's profile team that reached hundreds of thousands of members.",
-  "This portfolio is itself a live demo: a thin front agent on a Mac Mini routes work to project leads and workers, opens pull requests to GitHub, runs CI gates, and deploys to AWS through SST.",
+  "This portfolio is itself a live deployment: a thin front agent on a Mac Mini routes work to project leads and workers, opens pull requests to GitHub, runs CI gates, and deploys to AWS through SST.",
   "Every morning the system picks one useful improvement, builds it on a branch, runs deterministic checks, reviews it, and opens a PR. User-visible changes wait for my one-tap approval over Telegram.",
 ];
 
@@ -145,7 +145,7 @@ export const projects: Project[] = [
     name: "IBM i RPG modernization MCP server",
     domain: "transport & logistics",
     blurb:
-      "Built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. A companion Bob 2.0 demo drove an agent end to end on a single 10,000+ line legacy file - business-rule extraction, fixed-to-free RPG modernization, then compile-run-test on the box. Cleared enterprise security review; two major transport and logistics companies adopted the product.",
+      "Built and hardened the MCP server that lets an AI agent pull, compile, run, and debug legacy RPG on a live IBM i over SSH: write allowlists, blocked destructive ops, driver-escaped bindings, env-loaded creds. A companion Bob 2.0 solution drove an agent end to end on a single 10,000+ line legacy file - business-rule extraction, fixed-to-free RPG modernization, then compile-run-test on the box. Cleared enterprise security review; two major transport and logistics companies adopted the product.",
     metrics: [
       { value: "10K+ lines", label: "RPG modernized end to end" },
       { value: "2", label: "logistics firms adopted" },
@@ -162,13 +162,13 @@ export const projects: Project[] = [
     status: "shipped",
   },
   {
-    name: "IBM Z mainframe BMS-to-React modernization demo",
+    name: "IBM Z mainframe BMS-to-React modernization solution",
     domain: "financial services",
     blurb:
-      "Built a demo that takes an AI coding agent from legacy IBM Z CICS BMS green-screens to a modern React UI - the agent generates a React front end that calls the live mainframe for data and renders it, real green-screen-to-React modernization of a running Z system. Built on the public IBM CICS insurance sample app and demoed live as the centerpiece of a full-day Bobathon to 40 financial-services developers, after which the client moved into a trial of the premium Z package.",
+      "Built a working solution that takes an AI coding agent from legacy IBM Z CICS BMS green-screens to a modern React UI - the agent generates a React front end that calls the live mainframe for data and renders it, real green-screen-to-React modernization of a running Z system. Built on the public IBM CICS insurance sample app and presented live as the centerpiece of a full-day Bobathon to 40 financial-services developers, after which the client moved into a trial of the premium Z package.",
     metrics: [
       { value: "CICS to React", label: "live mainframe modernized" },
-      { value: "40 devs", label: "live demo audience" },
+      { value: "40 devs", label: "live session audience" },
       { value: "trial", label: "premium Z package landed" },
     ],
     arch: [
@@ -298,7 +298,7 @@ export const projects: Project[] = [
     name: "data cleansing agent",
     domain: "state government",
     blurb:
-      "Built an AI-readiness demo for a state government agency: an agent finds and fixes quality issues across ~1,000 citizen records through a least-privilege Informix MCP server (4 tools), fully container-isolated for security review. Reaches 95%+ standardized formats and zero duplicates, turning days of manual work into minutes.",
+      "Built an AI-readiness solution for a state government agency: an agent finds and fixes quality issues across ~1,000 citizen records through a least-privilege Informix MCP server (4 tools), fully container-isolated for security review. Reaches 95%+ standardized formats and zero duplicates, turning days of manual work into minutes.",
     metrics: [
       { value: "95%+", label: "standardized formats" },
       { value: "zero", label: "duplicate records" },
@@ -361,7 +361,7 @@ export const resume = {
       when: "Mar 2025 - Jan 2026",
       points: [
         "Exceeded first-year quota by 125% across 20+ enterprise accounts, owning technical evaluations end to end and differentiating watsonx from Azure OpenAI, Bedrock, and Vertex AI.",
-        "Generated 314 pipeline opportunities with a live watsonx demo at AWS re:Invent that drew ~400 attendees to the IBM booth session.",
+        "Generated 314 pipeline opportunities with a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session.",
       ],
     },
     {

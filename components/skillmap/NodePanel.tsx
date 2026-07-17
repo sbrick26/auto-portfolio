@@ -298,7 +298,7 @@ export function NodePanel({
   );
 }
 
-// "Watch the demo" - the automatic-portfolio pipeline, filmed. Two cuts exist;
+// "See it in action" - the automatic-portfolio pipeline, filmed. Two cuts exist;
 // phone-width screens get the vertical one. Decided when the panel opens
 // (this only ever renders client-side, after the card is tapped). Plays in an
 // in-site lightbox, never a new tab; the S3 objects are the untouched original
@@ -311,7 +311,7 @@ function DemoButton({ demo }: { demo: PanelMe["demo"] }) {
   return (
     <div className="sm-demo">
       <button type="button" className="sm-linkbtn sm-linkbtn-solid" onClick={() => setOpen(true)}>
-        ▶ Watch the demo
+        ▶ See it in action
       </button>
       <span className="sm-demo-cap">the automatic portfolio pipeline, end to end</span>
       {open ? <DemoModal src={src} onClose={() => setOpen(false)} /> : null}
