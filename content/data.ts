@@ -340,19 +340,19 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning stalled POCs into adoptions. Exceeded first-year quota by 125%.",
+    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
   experience: [
     {
       title: "AI Solutions Engineer, Horizon West Market",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
-        "Build 3 production MCP servers - IBM i RPG modernization, LucidLink, and Sterling order-management (20 tools, 1,060 APIs) - letting AI agents drive live enterprise systems over SSH.",
-        "Drove an AI agent end to end on a live IBM i: rule extraction from a 10,000+ line legacy file, fixed-to-free RPG modernization, then compile-run-test on the box for a state pension fund.",
-        "Modernized IBM Z CICS green-screens into a React UI calling the live mainframe via an AI coding agent; anchored a 40-developer client Bobathon that landed a premium Z package trial.",
-        "Shipped watsonx Orchestrate agents on live client tenants: email triage classifying 2,000-3,000 EDI alerts/day (won bake-off vs Copilot Studio) and HR automation across 3 Workday + ServiceNow workflows.",
-        "Founded a 5-intern initiative shipping an agent-skills + MCP library across 10+ IBM products; mentored 2 intern hackathon teams to a 1st-place win out of 25.",
-        "Created Bobathon, a full-day enterprise hackathon series run 10+ times with 15-40 engineers each; 2 trucking-client events converted directly into product purchases.",
+        "Cut order-management incident resolution from hours to minutes via an MCP platform over a live Sterling OMS, exposing 1,060 APIs through 20 Python tools with full audit trails.",
+        "Win a platform bake-off vs Copilot Studio with a watsonx Orchestrate agent triaging 2,000-3,000 daily EDI alerts by severity for a national beverage manufacturer.",
+        "Modernize legacy RPG end to end with an AI agent on a live IBM i - 10,000+ line rule extraction, fixed-to-free conversion, on-box compile - drawing purchase interest from a state pension fund.",
+        "Ship a 3-agent HR pilot on live Workday and ServiceNow tenants, fixing ~8,000-line context-overflow timeouts with a list-then-detail tool, moving a sports entertainment account to pricing.",
+        "Create Bobathon, a full-day enterprise hackathon series run 10+ times, converting 2 trucking clients into product purchases and a financial-services client into a premium IBM Z trial.",
+        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse tool adopted by client engineers across a US go-to-market segment.",
       ],
     },
     {
@@ -360,9 +360,8 @@ export const resume = {
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [
-        "Exceeded first-year quota by 125% across 20+ accounts, differentiating watsonx from Azure OpenAI, AWS Bedrock, and Google Vertex AI through end-to-end technical evaluations.",
-        "Designed and ran a live watsonx demo at AWS re:Invent for ~400 booth attendees, generating 314 new pipeline opportunities across multiple industries.",
-        "Diagnosed 2 watsonx Orchestrate product gaps on a beverage-manufacturer pilot and built a custom Python connector wrapper; WXO released nested-folder support as a product feature ~1 month later.",
+        "Exceeded first-year quota by 125% across 20+ enterprise accounts, owning technical evaluations end to end and differentiating watsonx from Azure OpenAI, Bedrock, and Vertex AI.",
+        "Generated 314 pipeline opportunities with a live watsonx demo at AWS re:Invent that drew ~400 attendees to the IBM booth session.",
       ],
     },
     {
@@ -370,9 +369,9 @@ export const resume = {
       org: "Qureez",
       when: "Feb 2022 - Apr 2025",
       points: [
-        "Engineered a real-time grid-dispatch integration hitting 80% success during grid overload events and released an RBAC system to AWS Marketplace serving hundreds of accounts.",
-        "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and led a PWA migration that lifted mobile app usage ~50%.",
-        "Led daily standups and sprint planning for a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, and Node.js.",
+        "Engineered a real-time ERCOT grid-dispatch integration reaching 80% dispatch success during grid overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
+        "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and drove a PWA migration raising mobile app usage ~50%.",
+        "Led a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, Next.js, and Node.js for commercial and industrial buildings.",
       ],
     },
     {
@@ -380,9 +379,9 @@ export const resume = {
       org: "LinkedIn",
       when: "Jun 2022 - Jan 2024",
       points: [
-        "Shipped Swift/Obj-C iOS profile features; Top Skills engaged 600K+ members for a ~10% weekly-active lift via LIX A/B tests.",
-        "Launched Career Break (~11% more additions) and Next Best Action prompts (~14% more profile updates), driving the Skills First profile initiative.",
-        "Engineered 2 reusable API-driven iOS components adopted across profile sections; facilitated monthly meetups for a 35-person early-career engineering cohort.",
+        "Shipped user-facing Swift/Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
+        "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and the Career Break feature under the Skills First initiative.",
+        "Engineered 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections.",
       ],
     },
     {
@@ -390,7 +389,7 @@ export const resume = {
       org: "ALNA Properties",
       when: "Aug 2021 - Dec 2021",
       points: [
-        "Automated manual MLS listing review with a Python/Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%.",
+        "Automated manual MLS listing review with a Python + Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%.",
       ],
     },
   ] as ResumeItem[],
