@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.7.0",
+    "date": "2026-07-17",
+    "changes": [
+      "automated dependency updates (CI-verified)"
+    ]
+  },
+  {
     "version": "3.6.0",
     "date": "2026-07-16",
     "changes": [
