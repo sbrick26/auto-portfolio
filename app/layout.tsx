@@ -26,15 +26,15 @@ const newsreader = Newsreader({
 });
 
 const siteUrl = "https://imsway.dev";
-const title = "swayam barik // terminal";
+const title = "swayam barik // skill map";
 const description =
-  "Swayam Barik, AI Solutions Engineer @ IBM. Portfolio, run as a terminal, that ships its own daily improvements through a fleet of agents.";
+  "Swayam Barik, AI Solutions Engineer @ IBM. An interactive skill-map portfolio that ships its own daily improvements through a fleet of agents.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
   description,
-  applicationName: "swayam.os",
+  applicationName: "swayam.map",
   authors: [{ name: profile.name, url: siteUrl }],
   creator: profile.name,
   keywords: [
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: siteUrl,
-    siteName: "swayam.os",
+    siteName: "swayam.map",
     title,
     description,
   },

@@ -6,30 +6,43 @@ import { profile } from "@/content/data";
 
 // Shared by both the Open Graph and Twitter cards (twitter-image re-exports this).
 export const alt =
-  "swayam.os terminal: Swayam Barik, AI Solutions Engineer @ IBM. Portfolio run as a terminal.";
+  "swayam.map: Swayam Barik, AI Solutions Engineer @ IBM. An interactive skill-map portfolio that ships its own improvements through a fleet of agents.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Terminal palette, kept in sync with app/globals.css.
-const term = {
-  bg: "#181c26",
-  panel: "#1d222e",
-  border: "#424a5e",
-  text: "#edf0f5",
-  dim: "#a3acbc",
-  faint: "#717a8b",
-  green: "#7ef0ac",
-  cyan: "#66e2eb",
-  red: "#ff7e7e",
-  yellow: "#f0cd88",
+// Warm Paper Grid Tree palette, kept in sync with app/globals.css (--sm-*)
+// and lib/portfolio-graph.ts BRANCH_COLOR.
+const paper = {
+  bgTop: "#f7f3e9",
+  bgBottom: "#eee7d8",
+  surface: "#fbf8f0",
+  ink: "#2b2620",
+  faint: "rgba(43, 38, 32, 0.55)",
+  line: "rgba(43, 35, 24, 0.2)",
+  teal: "#127c70",
+  tealDeep: "#0b5c53",
 };
 
+// One node per site branch, in its section color (BRANCH_COLOR order).
+const NODES = [
+  "#8c6f93", // about
+  "#127c70", // skills
+  "#667fa5", // resume
+  "#b5853c", // updates
+  "#c1715a", // changelog
+  "#5f8b63", // projects
+  "#4e7e94", // pipeline
+  "#a8677d", // contact
+];
+
 // ImageResponse renders with satori: flexbox-only, no CSS grid, woff2 unsupported.
-// A single committed Geist Mono weight keeps the bundle well under the 500KB limit.
+// Two committed single-weight TTFs (Newsreader for the headline serif, Geist Mono
+// for kickers) keep the render self-contained.
 export default async function Image() {
-  const geistMono = await readFile(
-    join(process.cwd(), "assets/GeistMono-Regular.ttf")
-  );
+  const [newsreader, geistMono] = await Promise.all([
+    readFile(join(process.cwd(), "assets/Newsreader-Medium.ttf")),
+    readFile(join(process.cwd(), "assets/GeistMono-Regular.ttf")),
+  ]);
 
   return new ImageResponse(
     (
@@ -39,43 +52,55 @@ export default async function Image() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          padding: 64,
-          background: `radial-gradient(1100px 520px at 50% -8%, #2b3144 0%, ${term.bg} 62%)`,
-          fontFamily: "Geist Mono",
+          padding: 56,
+          background: `linear-gradient(175deg, ${paper.bgTop} 0%, ${paper.bgBottom} 100%)`,
+          fontFamily: "Newsreader",
         }}
       >
+        {/* the center card, echoing the map's me-card */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             flex: 1,
-            borderRadius: 16,
-            border: `1px solid ${term.border}`,
-            background: term.panel,
+            borderRadius: 20,
+            border: `1px solid ${paper.line}`,
+            background: paper.surface,
             overflow: "hidden",
           }}
         >
-          {/* title bar */}
+          {/* header strip: wordmark + branch nodes */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              padding: "20px 28px",
-              borderBottom: `1px solid ${term.border}`,
+              justifyContent: "space-between",
+              padding: "22px 40px",
+              borderBottom: `1px solid ${paper.line}`,
             }}
           >
             <div
-              style={{ width: 16, height: 16, borderRadius: 16, background: term.red }}
-            />
-            <div
-              style={{ width: 16, height: 16, borderRadius: 16, background: term.yellow }}
-            />
-            <div
-              style={{ width: 16, height: 16, borderRadius: 16, background: term.green }}
-            />
-            <div style={{ marginLeft: 16, fontSize: 24, color: term.faint }}>
-              swayam.os — portfolio
+              style={{
+                display: "flex",
+                fontFamily: "Geist Mono",
+                fontSize: 24,
+                color: paper.tealDeep,
+              }}
+            >
+              swayam.map
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              {NODES.map((c, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 16,
+                    background: c,
+                  }}
+                />
+              ))}
             </div>
           </div>
 
@@ -86,52 +111,63 @@ export default async function Image() {
               flexDirection: "column",
               flex: 1,
               justifyContent: "center",
-              padding: "0 56px",
+              padding: "0 64px",
             }}
           >
-            <div style={{ display: "flex", fontSize: 30, color: term.dim }}>
-              <span style={{ color: term.green }}>swayam@portfolio</span>
-              <span style={{ color: term.faint }}>:~$</span>
-              <span style={{ marginLeft: 16, color: term.text }}>whoami</span>
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Geist Mono",
+                fontSize: 26,
+                letterSpacing: 4,
+                textTransform: "uppercase",
+                color: paper.faint,
+              }}
+            >
+              interactive skill map
             </div>
 
             <div
               style={{
                 display: "flex",
-                fontSize: 92,
-                fontWeight: 700,
-                color: term.text,
-                marginTop: 20,
+                fontSize: 96,
+                color: paper.ink,
+                marginTop: 16,
               }}
             >
               {profile.name}
             </div>
 
             <div
-              style={{ display: "flex", fontSize: 40, color: term.cyan, marginTop: 8 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginTop: 14,
+              }}
             >
-              {profile.role}
+              <div
+                style={{
+                  width: 44,
+                  height: 4,
+                  background: paper.teal,
+                  borderRadius: 4,
+                  marginRight: 18,
+                }}
+              />
+              <div style={{ display: "flex", fontSize: 40, color: paper.tealDeep }}>
+                {profile.role}
+              </div>
             </div>
 
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
                 fontSize: 30,
-                color: term.dim,
-                marginTop: 28,
+                color: paper.faint,
+                marginTop: 26,
               }}
             >
-              <span style={{ color: term.green }}>$</span>
-              <span style={{ marginLeft: 16 }}>portfolio run as a terminal</span>
-              <div
-                style={{
-                  width: 18,
-                  height: 32,
-                  marginLeft: 10,
-                  background: term.green,
-                }}
-              />
+              a portfolio that ships its own improvements through a fleet of agents
             </div>
           </div>
 
@@ -140,10 +176,11 @@ export default async function Image() {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              padding: "22px 56px",
-              borderTop: `1px solid ${term.border}`,
-              fontSize: 26,
-              color: term.faint,
+              padding: "22px 64px",
+              borderTop: `1px solid ${paper.line}`,
+              fontFamily: "Geist Mono",
+              fontSize: 24,
+              color: paper.faint,
             }}
           >
             <span>imsway.dev</span>
@@ -155,12 +192,8 @@ export default async function Image() {
     {
       ...size,
       fonts: [
-        {
-          name: "Geist Mono",
-          data: geistMono,
-          style: "normal",
-          weight: 400,
-        },
+        { name: "Newsreader", data: newsreader, style: "normal", weight: 500 },
+        { name: "Geist Mono", data: geistMono, style: "normal", weight: 400 },
       ],
     }
   );
