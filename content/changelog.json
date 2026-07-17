@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.6.0",
+    "date": "2026-07-16",
+    "changes": [
+      "resume: rebuilt bullets with the 5-slot outcome-ladder method"
+    ]
+  },
+  {
     "version": "3.5.0",
     "date": "2026-07-08",
     "changes": [
