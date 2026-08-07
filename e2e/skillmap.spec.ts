@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Locator, Page } from "@playwright/test";
 
 // Functional contract for the skill-map homepage, on desktop AND mobile
 // (Pixel 7 project). Canvas-leaf interactions that the mobile bottom sheet
@@ -8,6 +8,17 @@ async function mapReady(page: Page) {
   await expect(page.getByRole("button", { name: "Skills", exact: true })).toBeVisible({
     timeout: 15_000,
   });
+}
+
+/** is this node actually inside the visible stage, or parked off-screen? */
+async function isOnStage(page: Page, node: Locator) {
+  const box = await node.boundingBox();
+  if (!box) return false;
+  const view = page.viewportSize();
+  if (!view) return false;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  return cx >= 0 && cx <= view.width && cy >= 0 && cy <= view.height;
 }
 
 test("loads the map with the card and all eight branches", async ({ page }) => {
@@ -146,6 +157,116 @@ test("changelog folds history behind show-all", async ({ page }) => {
     await showAll.click();
     expect(await page.locator(".sm-rowlist .sm-row").count()).toBeGreaterThan(before);
   }
+});
+
+test("a node URL deep-loads straight onto that node", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/#projects/sterling-mcp");
+  await mapReady(page);
+
+  // the panel opens on the projects branch, led by that project's row
+  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+  await expect(page.locator(".sm-row-on")).toContainText("Sterling MCP");
+
+  // and the node itself is on the canvas, framed inside the stage
+  const node = page.getByRole("button", { name: "Sterling MCP", exact: true });
+  await expect(node).toBeVisible();
+  expect(await isOnStage(page, node)).toBe(true);
+});
+
+test("selecting a node addresses it, and back returns to the previous view", async ({ page }) => {
+  await page.goto("/");
+  await mapReady(page);
+
+  await page.getByRole("button", { name: "Skills", exact: true }).click();
+  await expect(page).toHaveURL(/#skills$/);
+  await page.locator(".sm-row-btn", { hasText: "Core Stack" }).first().click();
+  await expect(page).toHaveURL(/#skills\/core-stack$/);
+
+  // back walks the selections instead of leaving the site
+  await page.goBack();
+  await expect(page).toHaveURL(/#skills$/);
+  await expect(page.getByRole("heading", { name: "Skills" })).toBeVisible();
+
+  await page.goBack();
+  await expect(page.locator(".sm-panel-open")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Skills", exact: true })).toBeVisible();
+});
+
+test("an unknown hash falls back to the home view", async ({ page }) => {
+  await page.goto("/#projects/does-not-exist");
+  await mapReady(page);
+  await expect(page.locator(".sm-panel-open")).toHaveCount(0);
+  await expect(page.locator(".sm-leaf")).toHaveCount(0);
+});
+
+test("copy link puts the node's own URL on the clipboard", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "clipboard permissions are chromium-only here");
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await mapReady(page);
+
+  await page.getByRole("button", { name: "Projects", exact: true }).click();
+  await page.locator(".sm-row-btn", { hasText: "Sterling MCP" }).first().click();
+  await page.getByRole("button", { name: "copy a link to this node" }).click();
+
+  await expect(page.getByRole("button", { name: "link copied" })).toBeVisible();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toBe(new URL("/#projects/sterling-mcp", page.url()).toString());
+});
+
+test("the map is reachable and framed by keyboard alone", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await mapReady(page);
+
+  // tab in from the top of the page: the first node focused is the card, and
+  // the camera keeps whatever has focus inside the stage
+  await page.keyboard.press("Tab");
+  const card = page.locator(".sm-card");
+  await expect(card).toBeFocused();
+
+  // walk the branch ring; every stop stays on screen
+  await page.keyboard.press("ArrowDown");
+  const branch = page.locator(".sm-branch:focus");
+  await expect(branch).toHaveCount(1);
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(400);
+  expect(await isOnStage(page, page.locator(".sm-branch:focus"))).toBe(true);
+
+  // Enter opens the panel and hands focus to its heading
+  const label = await page.locator(".sm-branch:focus").getAttribute("aria-label");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".sm-panel-title")).toBeFocused();
+
+  // Escape closes it and returns focus to the node it came from
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".sm-panel-open")).toHaveCount(0);
+  await expect(page.locator(".sm-branch:focus")).toHaveAttribute("aria-label", label!);
+});
+
+test("tabbing out of the map hands the camera back to the overview", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await mapReady(page);
+
+  const card = page.locator(".sm-card");
+  const home = (await card.boundingBox())!;
+
+  // focus drives the camera, so walking into the ring moves the view off home
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator(".sm-branch:focus")).toHaveCount(1);
+  await page.waitForTimeout(300);
+  const walked = (await card.boundingBox())!;
+  expect(Math.abs(walked.x - home.x) + Math.abs(walked.y - home.y)).toBeGreaterThan(20);
+
+  // leaving the map with nothing selected must not strand the visitor there
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.waitForTimeout(300);
+  const back = (await card.boundingBox())!;
+  expect(Math.abs(back.x - home.x)).toBeLessThan(4);
+  expect(Math.abs(back.y - home.y)).toBeLessThan(4);
 });
 
 test("recenter clears the selection and closes the panel", async ({ page }) => {

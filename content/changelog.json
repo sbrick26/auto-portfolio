@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.8.0",
+    "date": "2026-08-07",
+    "changes": [
+      "addressable map: every node gets a shareable URL, working back button, and keyboard reachability"
+    ]
+  },
+  {
     "version": "3.7.0",
     "date": "2026-07-17",
     "changes": [

@@ -52,10 +52,13 @@ export function NodePanel({
   selectedSubId,
   subsOf,
   onClose,
+  onEscape,
   onSelectLeaf,
   onJump,
   labelOf,
   peekTick = 0,
+  shareHash = "",
+  focusHeadingKey = 0,
 }: {
   branch: Branch | null;
   me: PanelMe | null;
@@ -63,12 +66,35 @@ export function NodePanel({
   selectedSubId: string | null;
   subsOf: (leafId: string) => SubLeaf[];
   onClose: () => void;
+  /** Escape from inside the panel: close AND hand focus back to the map */
+  onEscape?: () => void;
   onSelectLeaf: (id: string) => void;
   onJump: (id: string) => void;
   labelOf: (id: string) => string;
   peekTick?: number;
+  /** the selected node's address, e.g. "#projects/sterling-mcp" */
+  shareHash?: string;
+  /** bumped when a keyboard open should move focus into the panel */
+  focusHeadingKey?: number;
 }) {
   const open = !!branch || !!me;
+
+  // Keyboard opens land ON the panel heading, so the next Tab walks the panel's
+  // own content instead of restarting at the top of the map.
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (focusHeadingKey > 0) headingRef.current?.focus();
+  }, [focusHeadingKey]);
+
+  // the video lightbox opens from inside this panel and answers Escape itself;
+  // while it is up, Escape belongs to it alone
+  const [videoOpen, setVideoOpen] = useState(false);
+
+  const onPanelKey = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || videoOpen) return;
+    e.stopPropagation();
+    (onEscape ?? onClose)();
+  };
 
   // When the selection comes from the canvas (or a cross-jump), bring the
   // matching row into view so the panel and the map always agree. Scroll the
@@ -102,6 +128,9 @@ export function NodePanel({
     setPrevOpen(open);
     setPrevTick(peekTick);
     if (open) setSheet("peek");
+    // a closing panel takes the lightbox with it (it renders inside the "me"
+    // view), so the Escape guard must not stay armed
+    else setVideoOpen(false);
   }
 
   // sheet gestures apply only when the panel IS a sheet (narrow viewport);
@@ -178,6 +207,7 @@ export function NodePanel({
     <aside
       ref={asideRef}
       className={`sm-panel sm-sheet-${sheet}${open ? " sm-panel-open" : ""}`}
+      onKeyDown={onPanelKey}
       aria-hidden={!open}
       style={branch ? ({ "--sm-b": branch.color } as React.CSSProperties) : undefined}
     >
@@ -212,11 +242,16 @@ export function NodePanel({
           <header className="sm-panel-head" {...sheetHandlers}>
             <div>
               <div className="sm-kicker">{me.role}</div>
-              <h3 className="sm-panel-title">{me.name}</h3>
+              <h3 className="sm-panel-title" ref={headingRef} tabIndex={-1}>
+                {me.name}
+              </h3>
             </div>
-            <button className="sm-panel-x" onClick={onClose} aria-label="close panel">
-              ✕
-            </button>
+            <div className="sm-panel-acts">
+              <ShareLink hash={shareHash} />
+              <button className="sm-panel-x" onClick={onClose} aria-label="close panel">
+                ✕
+              </button>
+            </div>
           </header>
           <div className="sm-panel-body">
             <div className="sm-me-status">
@@ -224,7 +259,7 @@ export function NodePanel({
               {me.location}
             </div>
             <p className="sm-lead">{me.summary}</p>
-            <DemoButton demo={me.demo} />
+            <DemoButton demo={me.demo} open={videoOpen} setOpen={setVideoOpen} />
             <div className="sm-me-links">
               {me.links.map((l) => (
                 <a
@@ -245,11 +280,16 @@ export function NodePanel({
           <header className="sm-panel-head" {...sheetHandlers}>
             <div>
               <div className="sm-kicker">{branch.label}</div>
-              <h3 className="sm-panel-title">{branch.title}</h3>
+              <h3 className="sm-panel-title" ref={headingRef} tabIndex={-1}>
+                {branch.title}
+              </h3>
             </div>
-            <button className="sm-panel-x" onClick={onClose} aria-label="close panel">
-              ✕
-            </button>
+            <div className="sm-panel-acts">
+              <ShareLink hash={shareHash} />
+              <button className="sm-panel-x" onClick={onClose} aria-label="close panel">
+                ✕
+              </button>
+            </div>
           </header>
           <div className="sm-panel-body" ref={bodyRef}>
             <p className="sm-lead">{branch.lead}</p>
@@ -298,16 +338,86 @@ export function NodePanel({
   );
 }
 
+// Copy a link straight to whatever is selected. Every node has its own address
+// (lib/node-url.ts), so this hands over "the Sterling MCP node", not "the site,
+// go click around". Same clipboard path as the resume copy, same confirmation.
+function ShareLink({ hash }: { hash: string }) {
+  const [copied, setCopied] = useState(false);
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => clearTimeout(resetRef.current ?? undefined), []);
+
+  const copy = useCallback(async () => {
+    const { origin, pathname, search } = window.location;
+    const url = `${origin}${pathname}${search}${hash}`;
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      } else {
+        ok = legacyCopy(url);
+      }
+    } catch {
+      ok = legacyCopy(url);
+    }
+    if (ok) {
+      setCopied(true);
+      clearTimeout(resetRef.current ?? undefined);
+      resetRef.current = setTimeout(() => setCopied(false), 1800);
+    }
+  }, [hash]);
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`sm-panel-x sm-panel-share${copied ? " sm-panel-share-on" : ""}`}
+        onClick={copy}
+        aria-label={copied ? "link copied" : "copy a link to this node"}
+      >
+        {copied ? (
+          "✓"
+        ) : (
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            <path
+              d="M6.6 9.4a2.8 2.8 0 0 0 4 0l2.1-2.1a2.8 2.8 0 0 0-4-4l-1 1M9.4 6.6a2.8 2.8 0 0 0-4 0L3.3 8.7a2.8 2.8 0 0 0 4 4l1-1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+      </button>
+      {/* the swapped aria-label alone is silent in most screen readers, since
+          the button keeps focus and nothing re-announces it. This says it. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "link copied" : ""}
+      </span>
+    </>
+  );
+}
+
 // "See it in action" - the automatic-portfolio pipeline, filmed. Two cuts exist;
 // phone-width screens get the vertical one. Decided when the panel opens
 // (this only ever renders client-side, after the card is tapped). Plays in an
 // in-site lightbox, never a new tab; the S3 objects are the untouched original
 // exports, so the native player streams the footage at full quality.
-function DemoButton({ demo }: { demo: PanelMe["demo"] }) {
+// Open state lives in the panel: it needs to know a lightbox is up so Escape
+// closes the video without also closing the panel behind it.
+function DemoButton({
+  demo,
+  open,
+  setOpen,
+}: {
+  demo: PanelMe["demo"];
+  open: boolean;
+  setOpen: (v: boolean) => void;
+}) {
   const [src] = useState(() =>
     window.matchMedia?.("(max-width: 640px)").matches ? demo.vertical : demo.horizontal,
   );
-  const [open, setOpen] = useState(false);
   return (
     <div className="sm-demo">
       <button type="button" className="sm-linkbtn sm-linkbtn-solid" onClick={() => setOpen(true)}>
