@@ -45,6 +45,33 @@ async function stubPipelineFeed(page: Page) {
   );
 }
 
+// The version badge and the run card read package.json and the newest changelog
+// entry, so both change on every release. Hiding them was not enough: the mask
+// used visibility:hidden, which still occupies layout, so a headline that wrapped
+// to a different number of lines pushed LiveShipped and every flow row below it
+// down and drifted the snapshot anyway - the recurring per-release failure.
+//
+// Pin the text to fixed strings instead, the same trick the stubbed feed above
+// uses: the run card renders real markup with real styling (now actually visible
+// in the baseline rather than blanked out), it just no longer moves with the
+// release. The blurb sits under lib/pipeline's 88-character clamp so it wraps
+// the way a real entry does.
+const PIPELINE_VERSION = "v0.0.0";
+const PIPELINE_RUN_TAG = "latest v0.0.0 · 2026-01-01";
+const PIPELINE_RUN_IDEA = "the daily improvement this run shipped, straight from the changelog";
+
+async function pinReleaseText(page: Page) {
+  await page.locator(".sm-ver").evaluate((el, text) => {
+    el.textContent = text;
+  }, PIPELINE_VERSION);
+  await page.locator(".sm-run .sm-row-tag").evaluate((el, text) => {
+    el.textContent = text;
+  }, PIPELINE_RUN_TAG);
+  await page.locator(".sm-run .sm-row-blurb").evaluate((el, text) => {
+    el.textContent = text;
+  }, PIPELINE_RUN_IDEA);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
@@ -89,9 +116,7 @@ test("pipeline panel looks right @visual", async ({ page }) => {
   await page.getByRole("button", { name: "Pipeline", exact: true }).click();
   // reduced motion keeps the walker static (all rows lit)
   await page.waitForTimeout(800);
-  // Mask version and date to avoid drift on releases
-  await page.locator(".sm-ver").evaluate(el => el.style.visibility = "hidden");
-  await page.locator(".sm-run").evaluate(el => el.style.visibility = "hidden");
+  await pinReleaseText(page);
   await expect(page).toHaveScreenshot("map-pipeline.png");
 });
 
