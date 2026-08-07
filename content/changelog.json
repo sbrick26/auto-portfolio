@@ -1,9 +1,15 @@
 [
   {
+    "version": "3.11.0",
+    "date": "2026-08-07",
+    "changes": [
+      "QA: fix regressions"
+    ]
+  },
+  {
     "version": "3.10.0",
     "date": "2026-08-07",
     "changes": [
-      "Close the currently open PR without merging, re-run QA from scratch on",
       "map nodes select on the first click: a press no longer slides out from under the cursor"
     ]
   },
@@ -46,7 +52,7 @@
     "version": "3.4.0",
     "date": "2026-07-03",
     "changes": [
-      "QA: fix regressions visual"
+      "visual regression coverage widened: the map's pipeline view is now snapshot-gated at desktop and phone widths"
     ]
   },
   {
@@ -60,7 +66,7 @@
     "version": "3.2.0",
     "date": "2026-07-03",
     "changes": [
-      "QA: fix regressions visual"
+      "visual regression snapshots refreshed after a QA sweep"
     ]
   },
   {
@@ -99,7 +105,7 @@
     "version": "1.38.0",
     "date": "2026-06-25",
     "changes": [
-      "QA: fix regressions visual"
+      "visual regression snapshots refreshed after a QA sweep"
     ]
   },
   {
@@ -120,14 +126,14 @@
     "version": "1.35.0",
     "date": "2026-06-24",
     "changes": [
-      "Fix mobile (390px) horizontal overflow clipping the boot version line "
+      "mobile: fixed the 390px horizontal overflow that clipped the boot version line"
     ]
   },
   {
     "version": "1.34.0",
     "date": "2026-06-24",
     "changes": [
-      "Redesign the loading/startup animation on the portfolio site to have a"
+      "redesigned startup animation: the loading screen now opens into the terminal instead of cutting to it"
     ]
   },
   {
@@ -141,7 +147,7 @@
     "version": "1.32.0",
     "date": "2026-06-22",
     "changes": [
-      "continue on existing PR 48; can we use pr 48 and continue an"
+      "skills graph reworked into a settled radial web: groups fan around a root, projects branch off the skill they prove, cross-links show the overlap"
     ]
   },
   {
@@ -162,7 +168,7 @@
     "version": "1.29.0",
     "date": "2026-06-21",
     "changes": [
-      "can we redo pr 45 i don\u2019t like the CRT animation can we just"
+      "the CRT power-on effect is gone: boot now eases a spinning swayam.os mark straight into the terminal"
     ]
   },
   {
@@ -183,14 +189,14 @@
     "version": "1.26.0",
     "date": "2026-06-18",
     "changes": [
-      "can we improve the project cards they need to be bit more in"
+      "project cards read at a glance: headline metrics as scannable tiles, weighted larger on the flagship card"
     ]
   },
   {
     "version": "1.25.0",
     "date": "2026-06-18",
     "changes": [
-      "can we make the projects section look better like the cars a"
+      "project cards rebuilt: per-status accent rail, tinted status pill, and real metrics surfaced from the project data"
     ]
   },
   {
@@ -218,7 +224,7 @@
     "version": "1.21.0",
     "date": "2026-06-17",
     "changes": [
-      "for every section except for updates can we make sure that i"
+      "every section except the live updates tail now lands at its top, so output reads from the beginning"
     ]
   },
   {
@@ -281,7 +287,7 @@
     "version": "1.12.0",
     "date": "2026-06-12",
     "changes": [
-      "the updates and to words look really close together can you "
+      "prompt hint: the `updates` and `help` chips no longer crowd each other"
     ]
   },
   {
@@ -302,7 +308,7 @@
     "version": "1.9.0",
     "date": "2026-06-11",
     "changes": [
-      "daily improvement"
+      "reduced-motion support: typing, cursor blink, and the live-dot pulse all hold still when the OS asks"
     ]
   },
   {

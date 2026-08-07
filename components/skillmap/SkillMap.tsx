@@ -47,6 +47,10 @@ import { NodePanel } from "./NodePanel";
 import { BranchIcon } from "./icons";
 
 const CAM_EASE = 0.18; // camera smoothing toward target
+const CAM_MEMORY = 90; // frames of camera history kept (~1.5s), for aim forgiveness
+// world px around a node still counted as aimed at it (matches the invisible
+// ::after hit areas in globals.css)
+const AIM_SLOP = 12;
 
 // The address bar IS the selection state, subscribed to as an external store.
 // One consequence, and it is the whole point: a click on a node, the back
@@ -175,6 +179,23 @@ export function SkillMap() {
     if (worldRef.current)
       worldRef.current.style.transform = `translate(${ox}px, ${oy}px) scale(${c.scale})`;
     worldGRef.current?.setAttribute("transform", `translate(${ox} ${oy}) scale(${c.scale})`);
+  }, []);
+
+  // A rolling memory of the last ~1.5s of camera frames, written by the render
+  // loop as a fixed ring so it allocates nothing. It exists so a press can be
+  // judged against the map the visitor was LOOKING at, not only the map as it
+  // is by the time their finger lands - see nodeAimedAt.
+  const camLog = useRef({
+    frames: Array.from({ length: CAM_MEMORY }, () => ({ panX: 0, panY: 0, scale: 1 })),
+    n: 0,
+  });
+  const rememberCamera = useCallback(() => {
+    const log = camLog.current;
+    const slot = log.frames[log.n % CAM_MEMORY];
+    slot.panX = cam.current.panX;
+    slot.panY = cam.current.panY;
+    slot.scale = cam.current.scale;
+    log.n++;
   }, []);
 
   // Point the camera at a node: ZOOM IN on it and center it in the space the
@@ -420,9 +441,13 @@ export function SkillMap() {
       setStage((s) => (s.w === w && s.h === h ? s : { w, h }));
       if (w && h) fitRef.current = homeFit(w, h);
       if (w && h && (!seeded || !selectedRef.current)) {
-        if (!seeded) cam.current.scale = fitRef.current;
+        const first = !seeded;
         seeded = true;
         camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
+        // The first paint must BE home, not ease into it. Seeding only the
+        // scale left the pan a step short, so the map opened a few px adrift
+        // and jolted into place on the next frame. A resize still eases.
+        if (first) cam.current = { ...camT.current };
       }
       paintCamera();
     };
@@ -471,6 +496,7 @@ export function SkillMap() {
       c.scale += (ct.scale - c.scale) * e;
 
       paintCamera();
+      rememberCamera();
 
       const amp = reduceRef.current ? 0 : FLOAT_AMP;
       for (const lp of visibleLeafPositions) {
@@ -498,7 +524,7 @@ export function SkillMap() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [visibleLeafPositions, visibleSubPositions, paintCamera]);
+  }, [visibleLeafPositions, visibleSubPositions, paintCamera, rememberCamera]);
 
   // zoom, clamped; shared by the wheel, the +/- buttons, and pinch
   const applyZoom = useCallback((next: number, immediacy = 0.5) => {
@@ -535,9 +561,60 @@ export function SkillMap() {
     panY: number;
   } | null>(null);
 
+  // The node this press was AIMED at, even though it landed on the background.
+  //
+  // While the camera glides, the map slides under the visitor's hand: they
+  // reach for a node where they can see it, and by the time the press lands
+  // that node has moved on. The press then reads as a background tap, which
+  // folds the whole branch away - punishing the visitor for the map's own
+  // motion. This is the other half of the "had to click twice" bug: pointer
+  // capture already saves a press that STARTS on a node, and this saves the one
+  // that only just missed. A miss is re-tested against the last ~1.5s of camera
+  // frames, so it lands on whatever was under that point in the view the
+  // visitor was actually looking at. When the camera is at rest every remembered
+  // frame is the current one, so a background tap still means what it says.
+  const aimedAt = useRef<string | null>(null);
+  const nodeAimedAt = useCallback(
+    (clientX: number, clientY: number): string | null => {
+      const stageEl = stageRef.current;
+      if (!stageEl) return null;
+      const r = stageEl.getBoundingClientRect();
+      const { w, h } = sizeRef.current;
+      const log = camLog.current;
+      const depth = Math.min(log.n, CAM_MEMORY);
+      // newest frame first: prefer the reading closest to the press itself
+      for (let k = 0; k < depth; k++) {
+        const f = log.frames[(log.n - 1 - k + CAM_MEMORY) % CAM_MEMORY];
+        const wx = (clientX - r.left - (w / 2 + f.panX)) / f.scale;
+        const wy = (clientY - r.top - (h / 2 + f.panY)) / f.scale;
+        let best: string | null = null;
+        let bestDist = Infinity;
+        for (const [id, el] of nodeElRef.current) {
+          if (!el?.isConnected) continue;
+          const p = posById.get(id);
+          if (!p) continue;
+          const dx = Math.abs(wx - p.x);
+          const dy = Math.abs(wy - p.y);
+          if (dx > el.offsetWidth / 2 + AIM_SLOP || dy > el.offsetHeight / 2 + AIM_SLOP) continue;
+          // the card is far bigger than a leaf, so nearest-center wins rather
+          // than whichever node happens to be first in the map
+          const dist = dx + dy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = id;
+          }
+        }
+        if (best) return best;
+      }
+      return null;
+    },
+    [posById],
+  );
+
   const onPointerDown = (ev: React.PointerEvent) => {
     pointers.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     (ev.currentTarget as Element).setPointerCapture?.(ev.pointerId);
+    aimedAt.current = null;
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
       pinch.current = {
@@ -557,12 +634,16 @@ export function SkillMap() {
         py: camT.current.panY,
         moved: false,
       };
+      aimedAt.current = nodeAimedAt(ev.clientX, ev.clientY);
     }
   };
   const onPointerMove = (ev: React.PointerEvent) => {
     if (pointers.current.has(ev.pointerId))
       pointers.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     const pz = pinch.current;
+    // a hand-driven pan or pinch needs no forgiveness: the map moved because
+    // the visitor moved it, so the remembered frames stop being useful history
+    if (pz || drag.current) camLog.current.n = 0;
     if (pz && pointers.current.size >= 2) {
       const [a, b] = [...pointers.current.values()];
       applyZoom(pz.scale * (Math.hypot(a.x - b.x, a.y - b.y) / pz.dist), 1);
@@ -602,8 +683,13 @@ export function SkillMap() {
     }
     if (pointers.current.size === 0) {
       const d = drag.current;
+      const aimed = aimedAt.current;
       drag.current = null;
-      if (d && !d.moved) deselect();
+      aimedAt.current = null;
+      if (d && !d.moved) {
+        if (aimed) canvasSelect(aimed);
+        else deselect();
+      }
     }
   };
 
