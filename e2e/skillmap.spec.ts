@@ -245,6 +245,30 @@ test("the map is reachable and framed by keyboard alone", async ({ page }) => {
   await expect(page.locator(".sm-branch:focus")).toHaveAttribute("aria-label", label!);
 });
 
+test("tabbing out of the map hands the camera back to the overview", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await mapReady(page);
+
+  const card = page.locator(".sm-card");
+  const home = (await card.boundingBox())!;
+
+  // focus drives the camera, so walking into the ring moves the view off home
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator(".sm-branch:focus")).toHaveCount(1);
+  await page.waitForTimeout(300);
+  const walked = (await card.boundingBox())!;
+  expect(Math.abs(walked.x - home.x) + Math.abs(walked.y - home.y)).toBeGreaterThan(20);
+
+  // leaving the map with nothing selected must not strand the visitor there
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.waitForTimeout(300);
+  const back = (await card.boundingBox())!;
+  expect(Math.abs(back.x - home.x)).toBeLessThan(4);
+  expect(Math.abs(back.y - home.y)).toBeLessThan(4);
+});
+
 test("recenter clears the selection and closes the panel", async ({ page }) => {
   await page.goto("/");
   await mapReady(page);

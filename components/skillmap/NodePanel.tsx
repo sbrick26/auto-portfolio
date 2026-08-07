@@ -343,6 +343,9 @@ export function NodePanel({
 // go click around". Same clipboard path as the resume copy, same confirmation.
 function ShareLink({ hash }: { hash: string }) {
   const [copied, setCopied] = useState(false);
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => clearTimeout(resetRef.current ?? undefined), []);
 
   const copy = useCallback(async () => {
     const { origin, pathname, search } = window.location;
@@ -360,31 +363,39 @@ function ShareLink({ hash }: { hash: string }) {
     }
     if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      clearTimeout(resetRef.current ?? undefined);
+      resetRef.current = setTimeout(() => setCopied(false), 1800);
     }
   }, [hash]);
 
   return (
-    <button
-      type="button"
-      className={`sm-panel-x sm-panel-share${copied ? " sm-panel-share-on" : ""}`}
-      onClick={copy}
-      aria-label={copied ? "link copied" : "copy a link to this node"}
-    >
-      {copied ? (
-        "✓"
-      ) : (
-        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-          <path
-            d="M6.6 9.4a2.8 2.8 0 0 0 4 0l2.1-2.1a2.8 2.8 0 0 0-4-4l-1 1M9.4 6.6a2.8 2.8 0 0 0-4 0L3.3 8.7a2.8 2.8 0 0 0 4 4l1-1"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-    </button>
+    <>
+      <button
+        type="button"
+        className={`sm-panel-x sm-panel-share${copied ? " sm-panel-share-on" : ""}`}
+        onClick={copy}
+        aria-label={copied ? "link copied" : "copy a link to this node"}
+      >
+        {copied ? (
+          "✓"
+        ) : (
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+            <path
+              d="M6.6 9.4a2.8 2.8 0 0 0 4 0l2.1-2.1a2.8 2.8 0 0 0-4-4l-1 1M9.4 6.6a2.8 2.8 0 0 0-4 0L3.3 8.7a2.8 2.8 0 0 0 4 4l1-1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+      </button>
+      {/* the swapped aria-label alone is silent in most screen readers, since
+          the button keeps focus and nothing re-announces it. This says it. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "link copied" : ""}
+      </span>
+    </>
   );
 }
 

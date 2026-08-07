@@ -375,6 +375,19 @@ export function SkillMap() {
     [focusOn, nodeKeyDown],
   );
 
+  // ...and tabbing back OUT hands the camera back to the selection (or the
+  // overview when nothing is selected). Without this, walking the ring and
+  // leaving strands the visitor zoomed on the last node they passed through
+  // with nothing open. Moves within the map - to the panel, to the topbar -
+  // keep the camera where it is.
+  const mapBlur = useCallback(
+    (ev: React.FocusEvent<HTMLDivElement>) => {
+      if (ev.currentTarget.contains(ev.relatedTarget)) return;
+      focusOn(nodeIdFromHash(urlMap, window.location.hash));
+    },
+    [focusOn, urlMap],
+  );
+
   // measure the stage and seed the world transform before first paint; on
   // resize, re-fit the overview whenever nothing is selected
   useLayoutEffect(() => {
@@ -582,7 +595,7 @@ export function SkillMap() {
   const dimmed = (id: BranchId) => activeBranchId !== null && activeBranchId !== id;
 
   return (
-    <div className={`sm-root${compact ? " sm-compact" : ""}`}>
+    <div className={`sm-root${compact ? " sm-compact" : ""}`} onBlur={mapBlur}>
       <div className="sm-grain" />
       <div className="sm-vignette" />
 

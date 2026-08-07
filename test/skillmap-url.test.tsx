@@ -119,6 +119,8 @@ describe("addressable map", () => {
       `${window.location.origin}/#${urlMap.slugById["project-3"]}`,
     );
     expect(screen.getByRole("button", { name: "link copied" })).toBeDefined();
+    // the confirmation is announced, not just relabelled on the focused button
+    expect(screen.getByRole("status").textContent).toBe("link copied");
   });
 });
 
