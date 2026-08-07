@@ -264,7 +264,6 @@ export function SkillMap() {
   // heading; Escape closes it and puts focus back on the node it came from.
 
   const [panelFocusKey, setPanelFocusKey] = useState(0);
-  const keyOriginRef = useRef<string | null>(null);
   // a node that is not on the canvas YET (or is about to fold away) cannot be
   // focused during the keystroke itself; park it here and let the commit that
   // follows hand it the focus
@@ -323,17 +322,20 @@ export function SkillMap() {
   // second Enter on the same node cannot leave focus stranded in a closed panel
   const openFrom = useCallback(
     (id: string) => {
-      keyOriginRef.current = id;
       navigate(id);
       setPanelFocusKey((n) => n + 1);
     },
     [navigate],
   );
 
+  // The origin is the LIVE selection, never a remembered one. The panel always
+  // shows whatever is selected, so the node the visitor came from is by
+  // definition the selected node - and reading it fresh means a selection made
+  // through any other door (a click, a panel row, a cross-jump, the back
+  // button) cannot leave a stale origin behind to hijack the next Escape.
   const closeToOrigin = useCallback(() => {
-    const origin = keyOriginRef.current ?? selectedRef.current;
     // the close unmounts the fan, so the origin can only be focused afterwards
-    if (origin) pendingFocusRef.current = origin;
+    if (selectedRef.current) pendingFocusRef.current = selectedRef.current;
     navigate(null);
   }, [navigate]);
 
@@ -373,19 +375,6 @@ export function SkillMap() {
       onKeyDown: (ev: React.KeyboardEvent) => nodeKeyDown(ev, id),
     }),
     [focusOn, nodeKeyDown],
-  );
-
-  // ...and tabbing back OUT hands the camera back to the selection (or the
-  // overview when nothing is selected). Without this, walking the ring and
-  // leaving strands the visitor zoomed on the last node they passed through
-  // with nothing open. Moves within the map - to the panel, to the topbar -
-  // keep the camera where it is.
-  const mapBlur = useCallback(
-    (ev: React.FocusEvent<HTMLDivElement>) => {
-      if (ev.currentTarget.contains(ev.relatedTarget)) return;
-      focusOn(nodeIdFromHash(urlMap, window.location.hash));
-    },
-    [focusOn, urlMap],
   );
 
   // measure the stage and seed the world transform before first paint; on
@@ -591,6 +580,27 @@ export function SkillMap() {
 
   // stop nodes from starting a pan/background-deselect
   const stopDown = (ev: React.PointerEvent) => ev.stopPropagation();
+
+  // Tabbing OUT of the map hands the camera back to the selection (or the
+  // overview when nothing is selected). Without this, walking the ring and
+  // leaving strands the visitor zoomed on the last node they passed through
+  // with nothing open. Moves within the map - to the panel, to the topbar -
+  // keep the camera where it is.
+  //
+  // A pointer landing on the canvas background blurs the focused node with the
+  // same null relatedTarget as a real exit, so the gesture in progress is the
+  // tiebreak: while the visitor is dragging or pinching, the camera is theirs,
+  // and re-aiming mid-gesture would yank a wheel-adjusted zoom back to the
+  // node-framing scale. Nodes stopPropagation on pointerdown, so a size of 0
+  // here means no background gesture is running.
+  const mapBlur = useCallback(
+    (ev: React.FocusEvent<HTMLDivElement>) => {
+      if (ev.currentTarget.contains(ev.relatedTarget)) return;
+      if (pointers.current.size > 0) return;
+      focusOn(nodeIdFromHash(urlMap, window.location.hash));
+    },
+    [focusOn, urlMap],
+  );
 
   const dimmed = (id: BranchId) => activeBranchId !== null && activeBranchId !== id;
 

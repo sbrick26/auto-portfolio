@@ -227,6 +227,27 @@ describe("keyboard navigation", () => {
     expect(baseElement.querySelector(".sm-panel-open")).toBeNull();
   });
 
+  it("Escape follows the CURRENT selection, not the last keyboard one", () => {
+    render(<SkillMap />);
+    // open Skills from the keyboard, then close it: the map has now seen a
+    // keyboard origin
+    const skills = screen.getByRole("button", { name: "Skills" });
+    skills.focus();
+    fireEvent.keyDown(skills, { key: "Enter" });
+    fireEvent.keyDown(focused(), { key: "Escape" });
+    expect(focused().getAttribute("aria-label")).toBe("Skills");
+
+    // ...now go somewhere else entirely with the mouse
+    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sterling MCP" }));
+
+    // Escape must come back to where THIS panel was opened from (the leaf's
+    // branch, since the leaf folds away with it) - never to the stale Skills
+    fireEvent.keyDown(screen.getByRole("button", { name: "close panel" }), { key: "Escape" });
+    expect(document.querySelector(".sm-panel-open")).toBeNull();
+    expect(focused().getAttribute("aria-label")).toBe("Projects");
+  });
+
   it("returns focus to the owning branch when the node itself folded away", () => {
     render(<SkillMap />);
     fireEvent.click(screen.getByRole("button", { name: "Projects" }));
