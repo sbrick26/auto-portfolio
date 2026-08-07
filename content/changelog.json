@@ -3,7 +3,8 @@
     "version": "3.10.0",
     "date": "2026-08-07",
     "changes": [
-      "Close the currently open PR without merging, re-run QA from scratch on"
+      "Close the currently open PR without merging, re-run QA from scratch on",
+      "map nodes select on the first click: a press no longer slides out from under the cursor"
     ]
   },
   {

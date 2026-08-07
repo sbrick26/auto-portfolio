@@ -48,6 +48,54 @@ test("skills tile fans out leaves and folds back on a second tap", async ({ page
   await expect(page.getByRole("button", { name: "AI & Agents", exact: true })).toBeHidden();
 });
 
+// Playwright's .click() presses and releases in one go, which is faster than
+// any human hand - fast enough to hide a real bug. A visitor holds the button
+// down for a tenth of a second, and while they do, the camera used to glide the
+// node out from under the cursor: the release landed on the canvas and the tap
+// did nothing until they clicked a second time. These three drive the pointer
+// by hand so a regression cannot hide behind a synthetic click.
+test.describe("a node press lands on the first click", () => {
+  async function press(page: Page, node: Locator, holdMs: number) {
+    const box = (await node.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(holdMs);
+    await page.mouse.up();
+  }
+
+  for (const hold of [60, 110, 250]) {
+    test(`a ${hold}ms press on a branch selects it`, async ({ page }) => {
+      await page.goto("/");
+      await mapReady(page);
+      await press(page, page.getByRole("button", { name: "Skills", exact: true }), hold);
+      await expect(page).toHaveURL(/#skills$/);
+      await expect(page.getByRole("button", { name: "AI & Agents", exact: true })).toBeVisible();
+    });
+  }
+
+  test("a press while the camera is still gliding lands too", async ({ page }) => {
+    await page.goto("/");
+    await mapReady(page);
+    await page.getByRole("button", { name: "Skills", exact: true }).click();
+    // deliberately no settle wait: tap a fanned leaf mid-glide
+    await press(page, page.getByRole("button", { name: "Core Stack", exact: true }), 120);
+    await expect(page).toHaveURL(/#skills\/core-stack$/);
+  });
+
+  test("dragging away from a node still cancels the tap", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await mapReady(page);
+    const box = (await page.getByRole("button", { name: "Skills", exact: true }).boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 200, box.y + 160, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    expect(page.url()).not.toMatch(/#skills/);
+  });
+});
+
 test("center card opens the profile panel", async ({ page }) => {
   await page.goto("/");
   await mapReady(page);

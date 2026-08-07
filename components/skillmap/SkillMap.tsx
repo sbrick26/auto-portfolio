@@ -374,11 +374,33 @@ export function SkillMap() {
     [openFrom, deselect, siblingsOf, firstChildOf, parentOf, focusNode],
   );
 
+  // Focus drives the camera only when the focus came from the KEYBOARD. A
+  // pointer press focuses the node before it clicks it, so letting that glide
+  // the camera slid the node out from under the cursor mid-press: the release
+  // landed on the canvas, the button's click never fired, and the tap did
+  // nothing until you clicked a second time. Pointer selections still get
+  // framed - the selection effect below aims the camera once the click commits.
+  const keyboardFocusRef = useRef(true);
+  useEffect(() => {
+    const byPointer = () => (keyboardFocusRef.current = false);
+    const byKey = () => (keyboardFocusRef.current = true);
+    // capture phase: nodes stopPropagation on pointerdown, which would
+    // otherwise hide the press from a bubbling listener
+    window.addEventListener("pointerdown", byPointer, true);
+    window.addEventListener("keydown", byKey, true);
+    return () => {
+      window.removeEventListener("pointerdown", byPointer, true);
+      window.removeEventListener("keydown", byKey, true);
+    };
+  }, []);
+
   // tabbing to a node brings it to the middle of the stage (instantly under
   // reduced motion, since focusOn only sets the target the ease chases)
   const nodeProps = useCallback(
     (id: string) => ({
-      onFocus: () => focusOn(id),
+      onFocus: () => {
+        if (keyboardFocusRef.current) focusOn(id);
+      },
       onKeyDown: (ev: React.KeyboardEvent) => nodeKeyDown(ev, id),
     }),
     [focusOn, nodeKeyDown],
@@ -585,8 +607,29 @@ export function SkillMap() {
     }
   };
 
-  // stop nodes from starting a pan/background-deselect
-  const stopDown = (ev: React.PointerEvent) => ev.stopPropagation();
+  // Stop nodes from starting a pan/background-deselect, and pin the pointer to
+  // the node for the rest of the press. The capture makes the node the target
+  // of the release and the click that follows, so a tap still lands even when
+  // the camera is mid-glide and the node is sliding under a held cursor - the
+  // second half of the "had to click twice" bug. The press origin is kept so a
+  // deliberate drag AWAY from a node still cancels, the way a button should.
+  const nodePress = useRef<{ x: number; y: number } | null>(null);
+  const TAP_SLOP = 10; // px of pointer travel still read as a tap
+
+  const stopDown = (ev: React.PointerEvent) => {
+    ev.stopPropagation();
+    nodePress.current = { x: ev.clientX, y: ev.clientY };
+    (ev.currentTarget as Element).setPointerCapture?.(ev.pointerId);
+  };
+
+  // Did the press behind this click stay put? Consumes the origin, so a click
+  // with no press behind it (keyboard/synthetic activation) counts as a tap.
+  const isTap = (ev: React.MouseEvent) => {
+    const p = nodePress.current;
+    nodePress.current = null;
+    if (!p) return true;
+    return Math.abs(ev.clientX - p.x) + Math.abs(ev.clientY - p.y) <= TAP_SLOP;
+  };
 
   // Tabbing OUT of the map hands the camera back to the selection (or the
   // overview when nothing is selected). Without this, walking the ring and
@@ -676,7 +719,7 @@ export function SkillMap() {
             onPointerDown={stopDown}
             onClick={(ev) => {
               ev.stopPropagation();
-              canvasSelect(ME_NODE_ID);
+              if (isTap(ev)) canvasSelect(ME_NODE_ID);
             }}
             {...nodeProps(ME_NODE_ID)}
             aria-label={graph.me.name}
@@ -720,7 +763,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                canvasSelect(b.id);
+                if (isTap(ev)) canvasSelect(b.id);
               }}
               {...nodeProps(b.id)}
               aria-label={b.label}
@@ -767,7 +810,7 @@ export function SkillMap() {
                 onPointerDown={stopDown}
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  canvasSelect(leaf.id);
+                  if (isTap(ev)) canvasSelect(leaf.id);
                 }}
                 {...nodeProps(leaf.id)}
                 aria-label={leaf.label}
@@ -799,7 +842,7 @@ export function SkillMap() {
               onPointerDown={stopDown}
               onClick={(ev) => {
                 ev.stopPropagation();
-                canvasSelect(s.sub.id);
+                if (isTap(ev)) canvasSelect(s.sub.id);
               }}
               {...nodeProps(s.sub.id)}
               aria-label={s.sub.full}
