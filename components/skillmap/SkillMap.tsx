@@ -212,16 +212,23 @@ export function SkillMap() {
   // the hash entirely rather than leaving a bare "#" behind.
   const navigate = useCallback(
     (next: string | null) => {
-      if (!window.history?.pushState) return;
       if (nodeIdFromHash(urlMap, window.location.hash) === next) return;
       // the first move of the visit is over: from here the camera eases
       bootRef.current = false;
-      window.history.pushState(
-        null,
-        "",
-        window.location.pathname + window.location.search + hashForNode(urlMap, next),
-      );
-      window.dispatchEvent(new Event(MAP_NAV));
+      const hash = hashForNode(urlMap, next);
+      if (window.history?.pushState) {
+        window.history.pushState(
+          null,
+          "",
+          window.location.pathname + window.location.search + hash,
+        );
+        window.dispatchEvent(new Event(MAP_NAV));
+        return;
+      }
+      // no pushState (nothing real ships without it): still select, just with a
+      // plain hash write. hashchange is already a store source, so this lands on
+      // the same single path - the only loss is a bare "#" when deselecting.
+      window.location.hash = hash || "#";
     },
     [urlMap],
   );
