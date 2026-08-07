@@ -10,9 +10,24 @@
 // by dragging the background, zoom with the wheel, click a node to focus + open
 // the slide-in panel. Layout is pure trig (no physics), so adding content to
 // content/data.ts just lands in the right place automatically.
+//
+// Every node is ADDRESSABLE: selecting one pushes a history entry and writes a
+// readable hash (#projects/sterling-mcp), back/forward walk the selections, and
+// loading a hashed URL boots straight to that node with the camera already
+// framed. The same selection plumbing drives keyboard use - focus follows the
+// camera, arrows walk the tree, Enter opens the panel, Escape comes back.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { buildPortfolioGraph, type BranchId } from "@/lib/portfolio-graph";
+import { ME_NODE_ID, buildNodeUrlMap, hashForNode, nodeIdFromHash } from "@/lib/node-url";
 import {
   HOME_PAN_Y,
   adaptiveScales,
@@ -33,10 +48,30 @@ import { BranchIcon } from "./icons";
 
 const CAM_EASE = 0.18; // camera smoothing toward target
 
+// The address bar IS the selection state, subscribed to as an external store.
+// One consequence, and it is the whole point: a click on a node, the back
+// button, and a pasted link all travel the exact same path, so the URL and the
+// map can never disagree. history.pushState notifies nobody, so the writer
+// fires MAP_NAV itself; the browser supplies popstate/hashchange for free.
+const MAP_NAV = "skillmap:nav";
+
+function subscribeToHash(onChange: () => void) {
+  for (const ev of ["popstate", "hashchange", MAP_NAV]) window.addEventListener(ev, onChange);
+  return () => {
+    for (const ev of ["popstate", "hashchange", MAP_NAV]) window.removeEventListener(ev, onChange);
+  };
+}
+const readHash = () => window.location.hash;
+// the server has no address bar: prerender the plain overview, then let
+// hydration adopt whatever the real URL asks for
+const readServerHash = () => "";
+
 export function SkillMap() {
   const graph = useMemo(() => buildPortfolioGraph(), []);
+  const urlMap = useMemo(() => buildNodeUrlMap(graph), [graph]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const hash = useSyncExternalStore(subscribeToHash, readHash, readServerHash);
+  const selectedId = useMemo(() => nodeIdFromHash(urlMap, hash), [urlMap, hash]);
   // compact = phone-width stage: drives the CSS mode (bottom-sheet panel,
   // stronger dimming). SPACING is not a binary mode anymore - see stage below.
   const [compact, setCompact] = useState(false);
@@ -120,6 +155,27 @@ export function SkillMap() {
 
   const leafElRef = useRef<Map<string, HTMLElement | null>>(new Map());
   const spokeRef = useRef<Map<string, SVGPathElement | null>>(new Map());
+  // every node button (card, branches, leaves, sub-leaves) by id - the keyboard
+  // walk moves real DOM focus, so it needs the elements themselves
+  const nodeElRef = useRef<Map<string, HTMLElement | null>>(new Map());
+  // the committed selection, readable from callbacks that outlive a render
+  // (the resize listener, the keyboard's return-focus path)
+  const selectedRef = useRef<string | null>(null);
+  // set until the visitor's first move; while set, a selection arriving from
+  // the URL snaps the camera into place instead of easing toward it
+  const bootRef = useRef(true);
+
+  // write the camera to the DOM immediately (the rAF loop does this every
+  // frame; boot needs it once, before the first paint)
+  const paintCamera = useCallback(() => {
+    const { w, h } = sizeRef.current;
+    const c = cam.current;
+    const ox = w / 2 + c.panX;
+    const oy = h / 2 + c.panY;
+    if (worldRef.current)
+      worldRef.current.style.transform = `translate(${ox}px, ${oy}px) scale(${c.scale})`;
+    worldGRef.current?.setAttribute("transform", `translate(${ox} ${oy}) scale(${c.scale})`);
+  }, []);
 
   // Point the camera at a node: ZOOM IN on it and center it in the space the
   // panel leaves free (right panel on desktop, bottom sheet on mobile). For a
@@ -148,15 +204,34 @@ export function SkillMap() {
     [posById, graph],
   );
 
+  // ---- selection = navigation (one door, so the URL can never drift) ----
+
+  // EVERY selection change is a navigation: push the node's address, then tell
+  // the store. The render that follows moves the panel AND the camera, so there
+  // is no second code path for "selected but not addressed". Deselecting drops
+  // the hash entirely rather than leaving a bare "#" behind.
+  const navigate = useCallback(
+    (next: string | null) => {
+      if (!window.history?.pushState) return;
+      if (nodeIdFromHash(urlMap, window.location.hash) === next) return;
+      // the first move of the visit is over: from here the camera eases
+      bootRef.current = false;
+      window.history.pushState(
+        null,
+        "",
+        window.location.pathname + window.location.search + hashForNode(urlMap, next),
+      );
+      window.dispatchEvent(new Event(MAP_NAV));
+    },
+    [urlMap],
+  );
+
   const toggleSelect = useCallback(
     (id: string) => {
-      setSelectedId((prev) => {
-        const next = prev === id ? null : id;
-        focusOn(next);
-        return next;
-      });
+      const current = nodeIdFromHash(urlMap, window.location.hash);
+      navigate(current === id ? null : id);
     },
-    [focusOn],
+    [navigate, urlMap],
   );
 
   // canvas taps also snap the phone sheet back to PEEK - selecting a node on
@@ -171,30 +246,137 @@ export function SkillMap() {
   );
 
   // jump straight to a node (panel cross-link: project <-> skill)
-  const jumpTo = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      focusOn(id);
-    },
-    [focusOn],
-  );
+  const jumpTo = navigate;
 
-  const deselect = useCallback(() => {
-    setSelectedId(null);
-    focusOn(null);
-  }, [focusOn]);
+  const deselect = useCallback(() => navigate(null), [navigate]);
 
   const recenter = useCallback(() => {
-    setSelectedId(null);
+    navigate(null);
     camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
+  }, [navigate]);
+
+  // ---- keyboard: the whole map is operable without a pointer ----
+  //
+  // Focus DRIVES the camera, so focus can never land on a node that is off
+  // screen. Left/right walk siblings (branch ring, leaf fan, sub-skill web),
+  // up climbs to the parent, down descends into whatever is already fanned out,
+  // Home returns to the card. Enter opens the panel and hands focus to its
+  // heading; Escape closes it and puts focus back on the node it came from.
+
+  const [panelFocusKey, setPanelFocusKey] = useState(0);
+  const keyOriginRef = useRef<string | null>(null);
+  // a node that is not on the canvas YET (or is about to fold away) cannot be
+  // focused during the keystroke itself; park it here and let the commit that
+  // follows hand it the focus
+  const pendingFocusRef = useRef<string | null>(null);
+
+  const focusNode = useCallback((id: string) => {
+    const el = nodeElRef.current.get(id);
+    if (el) el.focus();
+    else pendingFocusRef.current = id;
   }, []);
+
+  useLayoutEffect(() => {
+    const id = pendingFocusRef.current;
+    if (!id) return;
+    pendingFocusRef.current = null;
+    // a leaf folds away with its branch; fall back to the branch that owns it
+    const el = nodeElRef.current.get(id) ?? nodeElRef.current.get(graph.branchOfLeaf[id] ?? "");
+    el?.focus();
+  });
+
+  const siblingsOf = useCallback(
+    (id: string): string[] => {
+      if (graph.subLeafById[id]) return visibleSubPositions.map((s) => s.sub.id);
+      if (graph.leafById[id]) return visibleLeafPositions.map((lp) => lp.leaf.id);
+      if (graph.branchById[id as BranchId]) return branches.map((b) => b.id);
+      return [];
+    },
+    [graph, branches, visibleLeafPositions, visibleSubPositions],
+  );
+
+  const parentOf = useCallback(
+    (id: string): string | null => {
+      if (graph.subLeafById[id]) return graph.subLeafById[id].parent;
+      if (graph.leafById[id]) return graph.leafById[id].branch;
+      if (graph.branchById[id as BranchId]) return ME_NODE_ID;
+      return null;
+    },
+    [graph],
+  );
+
+  // only ever descends into nodes ALREADY on the canvas - an arrow key must
+  // never silently change what the map is showing
+  const firstChildOf = useCallback(
+    (id: string): string | null => {
+      if (id === ME_NODE_ID) return branches[0]?.id ?? null;
+      if (graph.branchById[id as BranchId])
+        return id === activeBranchId ? visibleLeafPositions[0]?.leaf.id ?? null : null;
+      if (graph.leafById[id])
+        return visibleSubPositions.find((s) => s.parent.leaf.id === id)?.sub.id ?? null;
+      return null;
+    },
+    [graph, branches, activeBranchId, visibleLeafPositions, visibleSubPositions],
+  );
+
+  // Enter OPENS (never toggles): Escape is the documented way back out, so a
+  // second Enter on the same node cannot leave focus stranded in a closed panel
+  const openFrom = useCallback(
+    (id: string) => {
+      keyOriginRef.current = id;
+      navigate(id);
+      setPanelFocusKey((n) => n + 1);
+    },
+    [navigate],
+  );
+
+  const closeToOrigin = useCallback(() => {
+    const origin = keyOriginRef.current ?? selectedRef.current;
+    // the close unmounts the fan, so the origin can only be focused afterwards
+    if (origin) pendingFocusRef.current = origin;
+    navigate(null);
+  }, [navigate]);
+
+  const nodeKeyDown = useCallback(
+    (ev: React.KeyboardEvent, id: string) => {
+      const k = ev.key;
+      if (k === "Enter" || k === " " || k === "Spacebar") {
+        ev.preventDefault();
+        openFrom(id);
+        return;
+      }
+      if (k === "Escape") {
+        ev.preventDefault();
+        deselect();
+        return;
+      }
+      let next: string | null = null;
+      if (k === "ArrowRight" || k === "ArrowLeft") {
+        const ring = siblingsOf(id);
+        const i = ring.indexOf(id);
+        if (i >= 0) next = ring[(i + (k === "ArrowRight" ? 1 : ring.length - 1)) % ring.length];
+      } else if (k === "ArrowDown") next = firstChildOf(id);
+      else if (k === "ArrowUp") next = parentOf(id);
+      else if (k === "Home") next = ME_NODE_ID;
+      else return;
+      ev.preventDefault();
+      if (next) focusNode(next);
+    },
+    [openFrom, deselect, siblingsOf, firstChildOf, parentOf, focusNode],
+  );
+
+  // tabbing to a node brings it to the middle of the stage (instantly under
+  // reduced motion, since focusOn only sets the target the ease chases)
+  const nodeProps = useCallback(
+    (id: string) => ({
+      onFocus: () => focusOn(id),
+      onKeyDown: (ev: React.KeyboardEvent) => nodeKeyDown(ev, id),
+    }),
+    [focusOn, nodeKeyDown],
+  );
 
   // measure the stage and seed the world transform before first paint; on
   // resize, re-fit the overview whenever nothing is selected
-  const selectedRef = useRef<string | null>(null);
-  useEffect(() => {
-    selectedRef.current = selectedId;
-  }, [selectedId]);
   useLayoutEffect(() => {
     let seeded = false;
     const measure = () => {
@@ -211,24 +393,29 @@ export function SkillMap() {
         seeded = true;
         camT.current = { panX: 0, panY: HOME_PAN_Y * fitRef.current, scale: fitRef.current };
       }
-      const c = cam.current;
-      const tf = `translate(${w / 2 + c.panX}px, ${h / 2 + c.panY}px) scale(${c.scale})`;
-      if (worldRef.current) worldRef.current.style.transform = tf;
-      worldGRef.current?.setAttribute(
-        "transform",
-        `translate(${w / 2 + c.panX} ${h / 2 + c.panY}) scale(${c.scale})`,
-      );
+      paintCamera();
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, []);
+  }, [paintCamera]);
 
-  // when the grid reshapes under a selection (resize/rotate), re-aim the
-  // camera at the selected node's NEW position instead of its old one
-  useEffect(() => {
-    if (selectedRef.current) focusOn(selectedRef.current);
-  }, [focusOn]);
+  // The camera answers to the selection, wherever it came from - a tap, the
+  // back button, or the URL the visitor arrived on. Also re-aims when the grid
+  // reshapes under a selection (resize/rotate), so the camera tracks the node's
+  // NEW position instead of its old one.
+  useLayoutEffect(() => {
+    selectedRef.current = selectedId;
+    focusOn(selectedId);
+    // A link arriving with a node already named opens ALREADY framed: no glide
+    // in from the overview, no flash of the default view. Waits for a MEASURED
+    // stage, because before that the grid is still at its seed scales.
+    if (bootRef.current && selectedId && stage.w > 0) {
+      bootRef.current = false;
+      cam.current = { ...camT.current };
+      paintCamera();
+    }
+  }, [selectedId, focusOn, paintCamera, stage.w]);
 
   // honor reduced-motion
   useEffect(() => {
@@ -252,12 +439,7 @@ export function SkillMap() {
       c.panY += (ct.panY - c.panY) * e;
       c.scale += (ct.scale - c.scale) * e;
 
-      const { w, h } = sizeRef.current;
-      const ox = w / 2 + c.panX;
-      const oy = h / 2 + c.panY;
-      if (worldRef.current)
-        worldRef.current.style.transform = `translate(${ox}px, ${oy}px) scale(${c.scale})`;
-      worldGRef.current?.setAttribute("transform", `translate(${ox} ${oy}) scale(${c.scale})`);
+      paintCamera();
 
       const amp = reduceRef.current ? 0 : FLOAT_AMP;
       for (const lp of visibleLeafPositions) {
@@ -285,7 +467,7 @@ export function SkillMap() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [visibleLeafPositions, visibleSubPositions]);
+  }, [visibleLeafPositions, visibleSubPositions, paintCamera]);
 
   // zoom, clamped; shared by the wheel, the +/- buttons, and pinch
   const applyZoom = useCallback((next: number, immediacy = 0.5) => {
@@ -456,13 +638,17 @@ export function SkillMap() {
               waving hello under a popping chat bubble, ringed by a slow pulse
               of every section's color. */}
           <button
-            className={`sm-card${selectedId === "me" ? " sm-on" : ""}`}
+            ref={(el) => {
+              nodeElRef.current.set(ME_NODE_ID, el);
+            }}
+            className={`sm-card${selectedId === ME_NODE_ID ? " sm-on" : ""}`}
             style={{ transform: "translate(0px, 0px) translate(-50%, -50%)" }}
             onPointerDown={stopDown}
             onClick={(ev) => {
               ev.stopPropagation();
-              canvasSelect("me");
+              canvasSelect(ME_NODE_ID);
             }}
+            {...nodeProps(ME_NODE_ID)}
             aria-label={graph.me.name}
           >
             <div className="sm-card-row">
@@ -491,6 +677,9 @@ export function SkillMap() {
           {branches.map((b) => (
             <button
               key={b.id}
+              ref={(el) => {
+                nodeElRef.current.set(b.id, el);
+              }}
               className={`sm-branch ${b.dir < 0 ? "sm-branch-up" : "sm-branch-down"}${Math.abs(b.x) > EDGE_X * sx ? ` sm-branch-edge ${b.x < 0 ? "sm-branch-left" : "sm-branch-right"}` : ""}${dimmed(b.id) ? " sm-dim" : ""}${activeBranchId === b.id ? " sm-on" : ""}`}
               style={
                 {
@@ -503,6 +692,7 @@ export function SkillMap() {
                 ev.stopPropagation();
                 canvasSelect(b.id);
               }}
+              {...nodeProps(b.id)}
               aria-label={b.label}
             >
               <span className="sm-branch-disc">
@@ -532,6 +722,7 @@ export function SkillMap() {
                 key={leaf.id}
                 ref={(el) => {
                   leafElRef.current.set(leaf.id, el);
+                  nodeElRef.current.set(leaf.id, el);
                 }}
                 className={cls}
                 style={
@@ -548,6 +739,7 @@ export function SkillMap() {
                   ev.stopPropagation();
                   canvasSelect(leaf.id);
                 }}
+                {...nodeProps(leaf.id)}
                 aria-label={leaf.label}
               >
                 <span className="sm-leaf-dot">
@@ -564,6 +756,7 @@ export function SkillMap() {
               key={s.sub.id}
               ref={(el) => {
                 leafElRef.current.set(s.sub.id, el);
+                nodeElRef.current.set(s.sub.id, el);
               }}
               className={`sm-leaf sm-subleaf ${s.parent.branch.dir < 0 ? "sm-leaf-up" : "sm-leaf-down"}${selectedId === s.sub.id ? " sm-on" : ""}`}
               style={
@@ -578,6 +771,7 @@ export function SkillMap() {
                 ev.stopPropagation();
                 canvasSelect(s.sub.id);
               }}
+              {...nodeProps(s.sub.id)}
               aria-label={s.sub.full}
             >
               <span className="sm-leaf-dot" />
@@ -615,14 +809,17 @@ export function SkillMap() {
 
       <NodePanel
         branch={activeBranch}
-        me={selectedId === "me" ? graph.me : null}
+        me={selectedId === ME_NODE_ID ? graph.me : null}
         selectedLeafId={selectedLeafId}
         selectedSubId={selectedSubId}
         subsOf={(id) => graph.subLeavesByParent[id] ?? []}
         onClose={deselect}
+        onEscape={closeToOrigin}
         onSelectLeaf={toggleSelect}
         onJump={jumpTo}
         peekTick={peekTick}
+        shareHash={hashForNode(urlMap, selectedId)}
+        focusHeadingKey={panelFocusKey}
         labelOf={(id) => graph.leafById[id]?.label ?? id}
       />
     </div>

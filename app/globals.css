@@ -494,7 +494,7 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: 20px 20px 14px;
   border-bottom: 1px solid var(--sm-border-soft);
   flex-shrink: 0;
@@ -513,6 +513,17 @@ body {
   font-size: 0.8rem;
 }
 .sm-panel-x:hover { color: var(--sm-ink); border-color: var(--sm-dim); }
+/* header actions: copy-link sits beside the close button, one size down so the
+   panel title keeps the width it was designed with */
+.sm-panel-acts { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.sm-panel-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+.sm-panel-share-on { color: var(--sm-accent); border-color: rgba(18, 124, 112, 0.45); }
 .sm-panel-body { flex: 1; overflow-y: auto; padding: 16px 18px 26px; }
 .sm-lead { font-size: 13.5px; line-height: 1.55; color: var(--sm-sub); margin: 0 0 16px; }
 
@@ -821,6 +832,9 @@ body {
 .sm-branch:focus-visible .sm-branch-disc,
 .sm-leaf:focus-visible .sm-leaf-dot { box-shadow: 0 0 0 3px rgba(18, 124, 112, 0.35); }
 .sm-card:focus-visible { border-color: var(--sm-accent); }
+/* the panel heading takes focus on a keyboard open; keep the ring on-brand */
+.sm-panel-title:focus { outline: none; }
+.sm-panel-title:focus-visible { outline: 2px solid var(--sm-accent); outline-offset: 5px; border-radius: 4px; }
 .sm-recenter:focus-visible { border-color: var(--sm-accent); color: var(--sm-ink); }
 
 /* ============================================================
