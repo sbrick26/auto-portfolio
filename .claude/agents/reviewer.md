@@ -19,7 +19,10 @@ them. You add what scripts cannot: judgment.
    Any weakened or deleted test? These are automatic REQUEST_CHANGES.
 
 ## Output format
-Verdict line first: APPROVE or REQUEST_CHANGES.
+HARD REQUIREMENT: the VERY FIRST LINE of your output is exactly APPROVE or
+REQUEST_CHANGES - alone, no preamble, no "VERDICT:" prefix, nothing before it.
+A verdict buried later in the output was once parsed as a rejection and burned
+rework rounds on an approved diff (2026-08-06). All findings go AFTER it.
 Then numbered findings, each: severity (blocker/should/nit), file:line, one-sentence
 reason, one-sentence suggested fix. No findings = say so in one line.
 Hard cap: this loop gets at most 5 rounds total; weigh whether a nit is worth a round.
