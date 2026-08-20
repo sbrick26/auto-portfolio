@@ -19,7 +19,7 @@ fact weights, so they stay in sync and tell one coherent, current story.
   (state/sa-resume-framing.md at the workspace root - "AI Solutions Architect / FDE") is the optimization
   LENS for choosing and wording content, NOT the displayed title. The title
   changes only when a promotion is recorded in the hub via a check-in. (Today
-  the real title is "AI Solutions Engineer" - do not write "Architect".)
+  the real title is "AI Forward Deployed Engineer" - do not write "Architect".)
 - Every claim must trace to a fact row. If it is not in the hub, it does not
   go on the resume. You never fabricate roles, projects, skills, scope, or
   numbers.

@@ -28,7 +28,7 @@ const newsreader = Newsreader({
 const siteUrl = "https://imsway.dev";
 const title = "swayam barik // skill map";
 const description =
-  "Swayam Barik, AI Solutions Engineer @ IBM. An interactive skill-map portfolio that ships its own daily improvements through a fleet of agents.";
+  "Swayam Barik, AI Forward Deployed Engineer @ IBM. An interactive skill-map portfolio that ships its own daily improvements through a fleet of agents.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   creator: profile.name,
   keywords: [
     "Swayam Barik",
-    "AI Solutions Engineer",
+    "AI Forward Deployed Engineer",
     "IBM",
     "watsonx Orchestrate",
     "agentic systems",
@@ -71,7 +71,7 @@ const personJsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
   name: profile.name,
-  jobTitle: "AI Solutions Engineer",
+  jobTitle: "AI Forward Deployed Engineer",
   url: siteUrl,
   worksFor: { "@type": "Organization", name: "IBM" },
   address: {

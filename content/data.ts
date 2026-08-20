@@ -8,11 +8,11 @@ import changelogJson from "./changelog.json";
 export const profile = {
   name: "Swayam Barik",
   handle: "swayam",
-  role: "AI Solutions Engineer @ IBM",
+  role: "AI Forward Deployed Engineer @ IBM",
   location: "San Francisco, CA",
   status: "building autonomous dev pipelines",
   summary:
-    "AI forward deployed architect, working presales through post-sales: from first pilot to production systems. In my free time I set up agentic loops that build tools for myself and others. This site is one of them, and it ships its own improvements daily.",
+    "AI Forward Deployed Engineer at IBM, working presales through post-sales: from first pilot to production systems. In my free time I set up agentic loops that build tools for myself and others. This site is one of them, and it ships its own improvements daily.",
   links: {
     github: "https://github.com/sbrick26",
     linkedin: "https://www.linkedin.com/in/swayam-barik",
@@ -27,7 +27,7 @@ export const profile = {
 };
 
 export const about: string[] = [
-  "I'm an AI Solutions Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
+  "I'm an AI Forward Deployed Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
   "Before that I shipped full-stack web, mobile, and IoT products at Qureez for energy startups, and built user-facing iOS features on LinkedIn's profile team that reached hundreds of thousands of members.",
   "This portfolio is itself a live deployment: a thin front agent on a Mac Mini routes work to project leads and workers, opens pull requests to GitHub, runs CI gates, and deploys to AWS through SST.",
   "Every morning the system picks one useful improvement, builds it on a branch, runs deterministic checks, reviews it, and opens a PR. User-visible changes wait for my one-tap approval over Telegram.",
@@ -340,10 +340,10 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 export const resume = {
   summary:
-    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
+    "AI Forward Deployed Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
   experience: [
     {
-      title: "AI Solutions Engineer, Horizon West Market",
+      title: "AI Forward Deployed Engineer",
       org: "IBM, Client Engineering",
       when: "Jan 2026 - Present",
       points: [
@@ -356,7 +356,7 @@ export const resume = {
       ],
     },
     {
-      title: "Brand Technical Specialist, Data and AI",
+      title: "AI Solutions Engineer",
       org: "IBM",
       when: "Mar 2025 - Jan 2026",
       points: [

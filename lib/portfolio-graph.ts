@@ -347,8 +347,8 @@ export function buildPortfolioGraph(): PortfolioGraph {
   // role to data.ts and it auto-appears here. The full PDF + plain-text export
   // stays available from the panel (see NodePanel).
   const RESUME_SHORT: Record<string, string> = {
-    "AI Solutions Engineer, Horizon West Market": "IBM",
-    "Brand Technical Specialist, Data and AI": "Brand Tech",
+    "AI Forward Deployed Engineer": "IBM",
+    "AI Solutions Engineer": "Solutions Eng",
     "Software Engineering Bootcamp": "Education",
   };
   const resumeRows = [...resume.experience, ...resume.education];
@@ -411,7 +411,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
       id: "about",
       label: "About",
       title: "About",
-      lead: "AI Solutions Engineer at IBM. I build autonomous multi-agent systems and MCP servers that modernize enterprise mainframe and ERP workloads - and ship them end to end.",
+      lead: "AI Forward Deployed Engineer at IBM. I build autonomous multi-agent systems and MCP servers that modernize enterprise mainframe and ERP workloads - and ship them end to end.",
       leaves: aboutLeaves,
       ...posOf("about"),
     },
