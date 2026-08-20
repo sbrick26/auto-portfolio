@@ -348,7 +348,7 @@ export function buildPortfolioGraph(): PortfolioGraph {
   // stays available from the panel (see NodePanel).
   const RESUME_SHORT: Record<string, string> = {
     "AI Forward Deployed Engineer": "IBM",
-    "AI Solutions Engineer": "Solutions Eng",
+    "AI Solutions Engineer": "IBM · Data & AI",
     "Software Engineering Bootcamp": "Education",
   };
   const resumeRows = [...resume.experience, ...resume.education];

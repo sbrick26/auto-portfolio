@@ -377,7 +377,7 @@ export const resume = {
     {
       title: "Software Engineer, iOS Profile Team",
       org: "LinkedIn",
-      when: "Jun 2022 - Jan 2024",
+      when: "Jun 2022 - 2024",
       points: [
         "Shipped user-facing Swift/Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
         "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and the Career Break feature under the Skills First initiative.",
