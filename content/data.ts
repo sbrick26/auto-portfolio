@@ -341,19 +341,19 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // <resume-export:resume> AUTO-MANAGED: applied from career-engine dist/resume-export.json
 // by scripts/apply-resume-export.mjs - do not hand-edit between these markers.
 export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[] } = {
-  "summary": "AI Forward Deployed Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
+  "summary": "AI Forward Deployed Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: MCP servers, multi-agent orchestration, and agent-driven mainframe modernization on live production systems, turning evaluations into 3 enterprise purchases. Exceeded first-year quota by 125%.",
   "experience": [
     {
       "title": "AI Forward Deployed Engineer",
       "org": "IBM, Client Engineering",
       "when": "Jan 2026 - Present",
       "points": [
-        "Cut order-management incident resolution from hours to minutes via an MCP platform over a live Sterling OMS, exposing 1,060 APIs through 20 Python tools with full audit trails.",
-        "Win a platform bake-off vs Copilot Studio with a watsonx Orchestrate agent triaging 2,000-3,000 daily EDI alerts by severity for a national beverage manufacturer.",
-        "Modernize legacy RPG end to end with an AI agent on a live IBM i - 10,000+ line rule extraction, fixed-to-free conversion, on-box compile - drawing purchase interest from a state pension fund.",
-        "Ship a 3-agent HR pilot on live Workday and ServiceNow tenants, fixing ~8,000-line context-overflow timeouts with a list-then-detail tool, moving a sports entertainment account to pricing.",
-        "Create Bobathon, a full-day enterprise hackathon series run 10+ times, converting 2 trucking clients into product purchases and a financial-services client into a premium IBM Z trial.",
-        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse tool adopted by client engineers across a US go-to-market segment."
+        "Cut order-management incident resolution from hours to minutes with an MCP platform wiring an agent into a live Sterling OMS across 1,060 exposed APIs.",
+        "Win a platform bake-off vs Copilot Studio with a watsonx Orchestrate agent triaging 2,000-3,000 daily EDI alert emails by severity for a beverage manufacturer.",
+        "Modernize legacy RPG on a live IBM i with an agent that extracts rules from a 10,000+ line file and compiles on the box, drawing purchase interest from a state pension fund.",
+        "Scale an enterprise HR agent system to 6 orchestrated agents on live Workday and ServiceNow tenants, fixing 8,000-line context overflows and moving a sports entertainment client to pricing.",
+        "Convert a self-designed full-day hackathon series, run 10+ times, into 3 product purchases at national freight carriers plus a premium mainframe trial at a financial-services client.",
+        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse server now official IBM tooling slated for hundreds of engineers."
       ]
     },
     {
@@ -362,7 +362,7 @@ export const resume: { summary: string; experience: ResumeItem[]; education: Res
       "when": "Mar 2025 - Jan 2026",
       "points": [
         "Exceeded first-year quota by 125% across 20+ enterprise accounts, owning technical evaluations end to end and differentiating watsonx from Azure OpenAI, Bedrock, and Vertex AI.",
-        "Generated 314 pipeline opportunities with a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session."
+        "Generated 314 pipeline opportunities from a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session."
       ]
     },
     {
@@ -380,9 +380,9 @@ export const resume: { summary: string; experience: ResumeItem[]; education: Res
       "org": "LinkedIn",
       "when": "Jun 2022 - 2024",
       "points": [
-        "Shipped user-facing Swift/Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
-        "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and the Career Break feature under the Skills First initiative.",
-        "Engineered 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections."
+        "Shipped user-facing Swift and Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
+        "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and Career Break Associations under the Skills First initiative.",
+        "Built 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections."
       ]
     },
     {
@@ -390,7 +390,7 @@ export const resume: { summary: string; experience: ResumeItem[]; education: Res
       "org": "ALNA Properties",
       "when": "Aug 2021 - Dec 2021",
       "points": [
-        "Automated manual MLS listing review with a Python + Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%."
+        "Automated manual MLS listing review with a Python and Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%."
       ]
     }
   ],

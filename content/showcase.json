@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-08-19T22:38:59",
+  "generated": "2026-08-20T16:23:13",
   "projects": [
     {
       "id": "swaygent",
@@ -19,8 +19,8 @@
         "GitHub"
       ],
       "stats": {
-        "runs completed": 128,
-        "agents in fleet": 12,
+        "runs completed": 131,
+        "agents in fleet": 13,
         "models (eval-selected)": [
           "claude-haiku-4-5",
           "claude-opus-5",
@@ -28,7 +28,7 @@
         ],
         "routing evals": "28/28",
         "incidents hardened into controls": 11,
-        "days in production": 70
+        "days in production": 71
       },
       "diagram": "graph LR; O[Owner via Telegram] -->|one-tap gates| F[Front agent]; F --> S[Scheduler + run queue]; S --> W[Workers: ideation/build/reviewer/qa]; W -->|PR + preview| G[Human gate]; G -->|merge| D[CI -> AWS deploy]; M[(Metrics + evals DB)] --> A[Architect: self-improvement]; A -->|proposals| O; W --> M; S --> M"
     },

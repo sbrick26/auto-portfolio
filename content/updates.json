@@ -1,28 +1,194 @@
 [
-  { "date": "2026-06-06", "time": "10:12", "text": "decided on the agent pipeline architecture (3 levels, hard ceiling)", "tag": "design" },
-  { "date": "2026-06-07", "time": "15:40", "text": "locked the tooling: subagents + headless claude -p for unattended runs", "tag": "design" },
-  { "date": "2026-06-08", "time": "18:30", "text": "set up AWS + GitHub, secured creds, layered the config", "tag": "infra" },
-  { "date": "2026-06-08", "time": "19:05", "text": "scaffolded the terminal site (Next.js + Tailwind + Geist Mono)", "tag": "portfolio" },
-  { "date": "2026-06-08", "time": "19:20", "text": "built the click-or-type command engine with tabs", "tag": "portfolio" },
-  { "date": "2026-06-08", "time": "19:35", "text": "wired the live updates tail you're reading right now", "tag": "portfolio" },
-  { "date": "2026-06-10", "time": "01:45", "text": "38 tests + coverage gates + privacy guards now block every PR", "tag": "pipeline" },
-  { "date": "2026-06-10", "time": "02:10", "text": "agent layer scaffolded: lead + 4 workers with scoped tools", "tag": "agents" },
-  { "date": "2026-06-10", "time": "02:35", "text": "registered imsway.dev and shipped to AWS. you're reading this on the live site", "tag": "launch" },
-  { "date": "2026-06-10", "time": "16:00", "text": "built a job requisition agent on watsonx Orchestrate: prompts HR staff for inputs, creates the req in Workday, then chases down approvers via Teams channel alerts - part of an AskHR suite for a sports entertainment industry client", "tag": "client-work" },
-  { "date": "2026-06-10", "time": "16:30", "text": "beta-testing a new IBM i developer tooling release: connected to a live IBM i box to transfer, compile, run, and test code directly on the machine. found a couple of bugs, traced the exact fixes, and posted them upstream", "tag": "ibm-i" },
-  { "date": "2026-06-11", "time": "16:00", "text": "built an AIDLC guardrails demo for a utility/energy client: same prompts, run with enforced agent guardrails vs without, to show how rule enforcement changes what the agent produces", "tag": "client-work" },
-  { "date": "2026-06-11", "time": "16:15", "text": "hardened this auto-portfolio pipeline so it runs the full loop autonomously while still checking in with me at the right gates", "tag": "pipeline" },
-  { "date": "2026-06-12", "time": "16:00", "text": "kicked off a new initiative I'm leading: a team of interns building a reusable library of agent modes, skills, rules, and MCP servers that wire an enterprise coding agent into major enterprise products - guardrails and best-practice context baked in - so sales engineers, clients, and internal teams can stand up POCs and pilots fast", "tag": "client-work" },
-  { "date": "2026-06-16", "time": "16:00", "text": "built a personal agent for a family member: it scans LinkedIn for roles matching her profile and standards and sends application links, with a beta feature that tailors a resume to each posting", "tag": "agents" },
-  { "date": "2026-06-17", "time": "16:00", "text": "built an objective coding-agent bake-off: runs three AI coding tools in parallel on identical scenarios, each in an isolated repo copy, then scores them on cost, time, tests added, and security with real verification (semgrep, pytest) - turning head-to-head claims into reproducible numbers", "tag": "agents" },
-  { "date": "2026-06-17", "time": "16:20", "text": "wired an AI agent into a live enterprise order-management system over a secured tunnel: ~20 MCP tools plus a catch-all over 1,000+ platform APIs, so it can diagnose a real production bug from the logs, patch it, deploy, and clear stuck orders - cutting diagnosis-to-fix from hours to minutes", "tag": "client-work" },
-  { "date": "2026-06-21", "time": "16:00", "text": "mentoring two intern teams through a summer hackathon, coaching them to build their projects with an enterprise AI coding agent", "tag": "mentoring" },
-  { "date": "2026-06-23", "time": "16:00", "text": "designed and led a full-day mainframe Bobathon for a financial-services company: 40 developers, a live demo where an AI agent modernizes legacy IBM Z green-screens into a modern React UI that pulls live data straight off the mainframe, custom guided labs (COBOL-to-Java, explain legacy code, plan migration), then a hackathon", "tag": "client-work" },
-  { "date": "2026-06-24", "time": "16:00", "text": "the enterprise AI coding agent I've been building demos and workshops around all spring went to its official 2.0 release - including the premium mainframe (IBM i and IBM Z) and Java modernization packages - and I was part of the beta that helped get it there", "tag": "product" },
-  { "date": "2026-07-02", "time": "16:00", "text": "a team of interns I mentored won our summer hackathon - they built a scam-prevention app for elderly users that one-taps a message to chosen family members the moment something looks off", "tag": "mentoring" },
-  { "date": "2026-07-02", "time": "16:10", "text": "coached another intern team to ship an MCP tool that plugs into our AI coding IDE and mines our library of finished POCs and pilots - repo caching, local-model classification, and similarity scoring - to surface the closest past project and pull code straight from it", "tag": "mentoring" },
-  { "date": "2026-07-02", "time": "16:20", "text": "the full-day mainframe Bobathon I ran for a financial-services company landed: 40 engaged developers, and they're now moving into a trial of the premium IBM Z package for the AI coding agent", "tag": "client-work" },
-  { "date": "2026-07-02", "time": "16:30", "text": "this pipeline is now fully autonomous end to end - it updates my resume, pings me on Telegram, deploys to AWS, and builds and tests itself with real guardrails and traceability. yes, the site you're reading right now shipped itself", "tag": "pipeline" },
-  { "date": "2026-07-03", "time": "16:00", "text": "the intern team I mentored won 1st place out of 25 teams at the summer hackathon", "tag": "mentoring" },
-  { "date": "2026-07-03", "time": "16:05", "text": "the MCP reuse tool another intern team I coached built is now being picked up by client engineers and forward-deployed engineers across a US market segment - it mines our library of finished POCs and pilots to surface and reuse the closest past project", "tag": "mentoring" }
+  {
+    "date": "2026-06-06",
+    "time": "10:12",
+    "text": "decided on the agent pipeline architecture (3 levels, hard ceiling)",
+    "tag": "design"
+  },
+  {
+    "date": "2026-06-07",
+    "time": "15:40",
+    "text": "locked the tooling: subagents + headless claude -p for unattended runs",
+    "tag": "design"
+  },
+  {
+    "date": "2026-06-08",
+    "time": "18:30",
+    "text": "set up AWS + GitHub, secured creds, layered the config",
+    "tag": "infra"
+  },
+  {
+    "date": "2026-06-08",
+    "time": "19:05",
+    "text": "scaffolded the terminal site (Next.js + Tailwind + Geist Mono)",
+    "tag": "portfolio"
+  },
+  {
+    "date": "2026-06-08",
+    "time": "19:20",
+    "text": "built the click-or-type command engine with tabs",
+    "tag": "portfolio"
+  },
+  {
+    "date": "2026-06-08",
+    "time": "19:35",
+    "text": "wired the live updates tail you're reading right now",
+    "tag": "portfolio"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "01:45",
+    "text": "38 tests + coverage gates + privacy guards now block every PR",
+    "tag": "pipeline"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "02:10",
+    "text": "agent layer scaffolded: lead + 4 workers with scoped tools",
+    "tag": "agents"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "02:35",
+    "text": "registered imsway.dev and shipped to AWS. you're reading this on the live site",
+    "tag": "launch"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "16:00",
+    "text": "built a job requisition agent on watsonx Orchestrate: prompts HR staff for inputs, creates the req in Workday, then chases down approvers via Teams channel alerts - part of an AskHR suite for a sports entertainment industry client",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-06-10",
+    "time": "16:30",
+    "text": "beta-testing a new IBM i developer tooling release: connected to a live IBM i box to transfer, compile, run, and test code directly on the machine. found a couple of bugs, traced the exact fixes, and posted them upstream",
+    "tag": "ibm-i"
+  },
+  {
+    "date": "2026-06-11",
+    "time": "16:00",
+    "text": "built an AIDLC guardrails demo for a utility/energy client: same prompts, run with enforced agent guardrails vs without, to show how rule enforcement changes what the agent produces",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-06-11",
+    "time": "16:15",
+    "text": "hardened this auto-portfolio pipeline so it runs the full loop autonomously while still checking in with me at the right gates",
+    "tag": "pipeline"
+  },
+  {
+    "date": "2026-06-12",
+    "time": "16:00",
+    "text": "kicked off a new initiative I'm leading: a team of interns building a reusable library of agent modes, skills, rules, and MCP servers that wire an enterprise coding agent into major enterprise products - guardrails and best-practice context baked in - so sales engineers, clients, and internal teams can stand up POCs and pilots fast",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-06-16",
+    "time": "16:00",
+    "text": "built a personal agent for a family member: it scans LinkedIn for roles matching her profile and standards and sends application links, with a beta feature that tailors a resume to each posting",
+    "tag": "agents"
+  },
+  {
+    "date": "2026-06-17",
+    "time": "16:00",
+    "text": "built an objective coding-agent bake-off: runs three AI coding tools in parallel on identical scenarios, each in an isolated repo copy, then scores them on cost, time, tests added, and security with real verification (semgrep, pytest) - turning head-to-head claims into reproducible numbers",
+    "tag": "agents"
+  },
+  {
+    "date": "2026-06-17",
+    "time": "16:20",
+    "text": "wired an AI agent into a live enterprise order-management system over a secured tunnel: ~20 MCP tools plus a catch-all over 1,000+ platform APIs, so it can diagnose a real production bug from the logs, patch it, deploy, and clear stuck orders - cutting diagnosis-to-fix from hours to minutes",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-06-21",
+    "time": "16:00",
+    "text": "mentoring two intern teams through a summer hackathon, coaching them to build their projects with an enterprise AI coding agent",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-06-23",
+    "time": "16:00",
+    "text": "designed and led a full-day mainframe Bobathon for a financial-services company: 40 developers, a live demo where an AI agent modernizes legacy IBM Z green-screens into a modern React UI that pulls live data straight off the mainframe, custom guided labs (COBOL-to-Java, explain legacy code, plan migration), then a hackathon",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-06-24",
+    "time": "16:00",
+    "text": "the enterprise AI coding agent I've been building demos and workshops around all spring went to its official 2.0 release - including the premium mainframe (IBM i and IBM Z) and Java modernization packages - and I was part of the beta that helped get it there",
+    "tag": "product"
+  },
+  {
+    "date": "2026-07-02",
+    "time": "16:00",
+    "text": "a team of interns I mentored won our summer hackathon - they built a scam-prevention app for elderly users that one-taps a message to chosen family members the moment something looks off",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-07-02",
+    "time": "16:10",
+    "text": "coached another intern team to ship an MCP tool that plugs into our AI coding IDE and mines our library of finished POCs and pilots - repo caching, local-model classification, and similarity scoring - to surface the closest past project and pull code straight from it",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-07-02",
+    "time": "16:20",
+    "text": "the full-day mainframe Bobathon I ran for a financial-services company landed: 40 engaged developers, and they're now moving into a trial of the premium IBM Z package for the AI coding agent",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-07-02",
+    "time": "16:30",
+    "text": "this pipeline is now fully autonomous end to end - it updates my resume, pings me on Telegram, deploys to AWS, and builds and tests itself with real guardrails and traceability. yes, the site you're reading right now shipped itself",
+    "tag": "pipeline"
+  },
+  {
+    "date": "2026-07-03",
+    "time": "16:00",
+    "text": "the intern team I mentored won 1st place out of 25 teams at the summer hackathon",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-07-03",
+    "time": "16:05",
+    "text": "the MCP reuse tool another intern team I coached built is now being picked up by client engineers and forward-deployed engineers across a US market segment - it mines our library of finished POCs and pilots to surface and reuse the closest past project",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:00",
+    "text": "the HR agent build for a major sports entertainment company is now six agents, not three: job requisitions, job changes, approvals, and Teams notifications, with an orchestration layer that routes each request to the right specialist agent plus caching and shared memory so context survives a long multi-step workflow",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:05",
+    "text": "spoke as a main speaker at the ALIGN AI Executive Summit in San Francisco on making agentic AI useful across the whole software lifecycle, and gave the live demo: an agent moving a Jira ticket through the pipeline, writing the description and plan, opening the pull request, and tracking every governance decision on the way",
+    "tag": "speaking"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:10",
+    "text": "the intern project I led is going official: the POC and pilot reuse tool that team built is being implemented as an internal tool for hundreds of engineers across client engineering and forward deployed engineering",
+    "tag": "mentoring"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:15",
+    "text": "closed another deal with a national freight and logistics carrier for the premium IBM i package of our AI coding agent, and I am helping them modernize and remap their EDI on top of the RPG work",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:20",
+    "text": "starting a new project with a major video game publisher, building speech-to-text and text-to-speech for upcoming titles",
+    "tag": "client-work"
+  },
+  {
+    "date": "2026-08-20",
+    "time": "16:25",
+    "text": "pushed the work public on github: swaygents, the resume builder, and this portfolio are all open repos now, so the pipeline that ships this site can be read instead of just described",
+    "tag": "pipeline"
+  }
 ]
