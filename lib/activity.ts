@@ -30,6 +30,7 @@ export const TAG_CATEGORY: Record<string, string> = {
   "ibm-i": "ai / agents",
   product: "ai / agents",
   mentoring: "customer-facing",
+  speaking: "customer-facing",
 };
 
 // One concrete piece of evidence: a single update that backs a skill category.
