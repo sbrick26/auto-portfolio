@@ -6,7 +6,7 @@ import { profile } from "@/content/data";
 
 // Shared by both the Open Graph and Twitter cards (twitter-image re-exports this).
 export const alt =
-  "swayam.map: Swayam Barik, AI Solutions Engineer @ IBM. An interactive skill-map portfolio that ships its own improvements through a fleet of agents.";
+  "swayam.map: Swayam Barik, AI Forward Deployed Engineer @ IBM. An interactive skill-map portfolio that ships its own improvements through a fleet of agents.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

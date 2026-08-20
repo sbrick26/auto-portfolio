@@ -8,11 +8,11 @@ import changelogJson from "./changelog.json";
 export const profile = {
   name: "Swayam Barik",
   handle: "swayam",
-  role: "AI Solutions Engineer @ IBM",
+  role: "AI Forward Deployed Engineer @ IBM",
   location: "San Francisco, CA",
   status: "building autonomous dev pipelines",
   summary:
-    "AI forward deployed architect, working presales through post-sales: from first pilot to production systems. In my free time I set up agentic loops that build tools for myself and others. This site is one of them, and it ships its own improvements daily.",
+    "AI Forward Deployed Engineer at IBM, working presales through post-sales: from first pilot to production systems. In my free time I set up agentic loops that build tools for myself and others. This site is one of them, and it ships its own improvements daily.",
   links: {
     github: "https://github.com/sbrick26",
     linkedin: "https://www.linkedin.com/in/swayam-barik",
@@ -27,7 +27,7 @@ export const profile = {
 };
 
 export const about: string[] = [
-  "I'm an AI Solutions Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
+  "I'm an AI Forward Deployed Engineer at IBM in San Francisco, where I design and lead custom proof-of-concept engagements across a portfolio of 116 enterprise accounts: production MCP servers for IBM i RPG modernization, LucidLink, and Sterling order-management; an agentic HR framework live on Workday and ServiceNow; and full-day enterprise hackathons that turn evaluations into adoptions.",
   "Before that I shipped full-stack web, mobile, and IoT products at Qureez for energy startups, and built user-facing iOS features on LinkedIn's profile team that reached hundreds of thousands of members.",
   "This portfolio is itself a live deployment: a thin front agent on a Mac Mini routes work to project leads and workers, opens pull requests to GitHub, runs CI gates, and deploys to AWS through SST.",
   "Every morning the system picks one useful improvement, builds it on a branch, runs deterministic checks, reviews it, and opens a PR. User-visible changes wait for my one-tap approval over Telegram.",
@@ -338,67 +338,69 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 
 // Seeded from the real resume (career-corpus/source/resume-2026-06-10.txt).
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
-export const resume = {
-  summary:
-    "AI Solutions Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
-  experience: [
+// <resume-export:resume> AUTO-MANAGED: applied from career-engine dist/resume-export.json
+// by scripts/apply-resume-export.mjs - do not hand-edit between these markers.
+export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[] } = {
+  "summary": "AI Forward Deployed Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: security-hardened MCP servers and agentic mainframe-modernization frameworks running live in production, turning evaluations into purchases and trials. Exceeded first-year quota by 125%.",
+  "experience": [
     {
-      title: "AI Solutions Engineer, Horizon West Market",
-      org: "IBM, Client Engineering",
-      when: "Jan 2026 - Present",
-      points: [
+      "title": "AI Forward Deployed Engineer",
+      "org": "IBM, Client Engineering",
+      "when": "Jan 2026 - Present",
+      "points": [
         "Cut order-management incident resolution from hours to minutes via an MCP platform over a live Sterling OMS, exposing 1,060 APIs through 20 Python tools with full audit trails.",
         "Win a platform bake-off vs Copilot Studio with a watsonx Orchestrate agent triaging 2,000-3,000 daily EDI alerts by severity for a national beverage manufacturer.",
         "Modernize legacy RPG end to end with an AI agent on a live IBM i - 10,000+ line rule extraction, fixed-to-free conversion, on-box compile - drawing purchase interest from a state pension fund.",
         "Ship a 3-agent HR pilot on live Workday and ServiceNow tenants, fixing ~8,000-line context-overflow timeouts with a list-then-detail tool, moving a sports entertainment account to pricing.",
         "Create Bobathon, a full-day enterprise hackathon series run 10+ times, converting 2 trucking clients into product purchases and a financial-services client into a premium IBM Z trial.",
-        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse tool adopted by client engineers across a US go-to-market segment.",
-      ],
+        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse tool adopted by client engineers across a US go-to-market segment."
+      ]
     },
     {
-      title: "Brand Technical Specialist, Data and AI",
-      org: "IBM",
-      when: "Mar 2025 - Jan 2026",
-      points: [
+      "title": "AI Solutions Engineer",
+      "org": "IBM",
+      "when": "Mar 2025 - Jan 2026",
+      "points": [
         "Exceeded first-year quota by 125% across 20+ enterprise accounts, owning technical evaluations end to end and differentiating watsonx from Azure OpenAI, Bedrock, and Vertex AI.",
-        "Generated 314 pipeline opportunities with a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session.",
-      ],
+        "Generated 314 pipeline opportunities with a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session."
+      ]
     },
     {
-      title: "Software Engineer",
-      org: "Qureez",
-      when: "Feb 2022 - Apr 2025",
-      points: [
+      "title": "Software Engineer",
+      "org": "Qureez",
+      "when": "Feb 2022 - Apr 2025",
+      "points": [
         "Engineered a real-time ERCOT grid-dispatch integration reaching 80% dispatch success during grid overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
         "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and drove a PWA migration raising mobile app usage ~50%.",
-        "Led a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, Next.js, and Node.js for commercial and industrial buildings.",
-      ],
+        "Led a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, Next.js, and Node.js for commercial and industrial buildings."
+      ]
     },
     {
-      title: "Software Engineer, iOS Profile Team",
-      org: "LinkedIn",
-      when: "Jun 2022 - Jan 2024",
-      points: [
+      "title": "Software Engineer, iOS Profile Team",
+      "org": "LinkedIn",
+      "when": "Jun 2022 - 2024",
+      "points": [
         "Shipped user-facing Swift/Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
         "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and the Career Break feature under the Skills First initiative.",
-        "Engineered 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections.",
-      ],
+        "Engineered 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections."
+      ]
     },
     {
-      title: "Software Developer",
-      org: "ALNA Properties",
-      when: "Aug 2021 - Dec 2021",
-      points: [
-        "Automated manual MLS listing review with a Python + Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%.",
-      ],
-    },
-  ] as ResumeItem[],
-  education: [
+      "title": "Software Developer",
+      "org": "ALNA Properties",
+      "when": "Aug 2021 - Dec 2021",
+      "points": [
+        "Automated manual MLS listing review with a Python + Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%."
+      ]
+    }
+  ],
+  "education": [
     {
-      title: "Software Engineering Bootcamp",
-      org: "Dominican University of California",
-      when: "2020",
-      points: [],
-    },
-  ] as ResumeItem[],
+      "title": "Software Engineering Bootcamp",
+      "org": "Dominican University of California",
+      "when": "2020",
+      "points": []
+    }
+  ]
 };
+// </resume-export:resume>

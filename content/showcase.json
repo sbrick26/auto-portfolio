@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated": "2026-08-19T22:38:59",
+  "projects": [
+    {
+      "id": "swaygent",
+      "name": "Swaygent - autonomous agent fleet",
+      "oneliner": "A self-improving multi-agent pipeline on one Mac mini: it plans, builds, reviews, previews, and ships this very website daily, with the owner reduced to one-tap decisions.",
+      "visibility": "private (case study)",
+      "stack": [
+        "Claude Opus 5 / Sonnet 5 / Haiku 4.5",
+        "Claude Code CLI",
+        "MCP",
+        "SQLite",
+        "launchd",
+        "Telegram Bot API",
+        "local TTS (kokoro)",
+        "Playwright",
+        "GitHub"
+      ],
+      "stats": {
+        "runs completed": 128,
+        "agents in fleet": 12,
+        "models (eval-selected)": [
+          "claude-haiku-4-5",
+          "claude-opus-5",
+          "claude-sonnet-5"
+        ],
+        "routing evals": "28/28",
+        "incidents hardened into controls": 11,
+        "days in production": 70
+      },
+      "diagram": "graph LR; O[Owner via Telegram] -->|one-tap gates| F[Front agent]; F --> S[Scheduler + run queue]; S --> W[Workers: ideation/build/reviewer/qa]; W -->|PR + preview| G[Human gate]; G -->|merge| D[CI -> AWS deploy]; M[(Metrics + evals DB)] --> A[Architect: self-improvement]; A -->|proposals| O; W --> M; S --> M"
+    },
+    {
+      "id": "career-engine",
+      "name": "Career Engine - honest resume automation",
+      "oneliner": "A career memory that interviews you, stores achievements as auditable facts with metric provenance, ranks them per target role, and emits a schema-validated resume artifact.",
+      "visibility": "source-available showcase (publishing after privacy scrub)",
+      "stack": [
+        "Claude Opus 5",
+        "SQLite facts hub",
+        "pairwise LLM-judge Elo ranking",
+        "JSON Schema contract",
+        "external private data dir"
+      ],
+      "stats": {
+        "facts on record": 52,
+        "claims traceable to facts": "100% (honesty contract)",
+        "output": "dist/resume-export.json -> portfolio + PDF"
+      },
+      "diagram": "graph LR; I[Check-in interview] --> H[(Facts hub: provenance + weights)]; H --> R[rank.py + Elo judge]; R --> W[Resume writer: 5-slot schema, outcome ladder]; W --> E[resume-export.json]; E --> P[Portfolio adapter -> site + PDF]"
+    }
+  ]
+}

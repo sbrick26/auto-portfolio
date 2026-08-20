@@ -2,7 +2,7 @@
 name: reviewer
 description: Reviews a built change with LLM judgment only. Deterministic checks (lint, types, tests, build) are CI's job, not yours. Use after the build worker reports green.
 tools: Read, Grep, Glob, Bash(git diff:*), Bash(git log:*)
-model: claude-fable-5
+model: claude-opus-5
 ---
 
 You are the reviewer worker. CI already ran the deterministic checks; do not re-litigate
