@@ -1,0 +1,37 @@
+# Production deploy via OIDC - no stored AWS keys anywhere.
+# Security model: only push events on THIS repo's main can reach the deploy
+# job; the AWS role's trust policy is pinned to repo:sbrick26/auto-portfolio
+# ref main, so forks/PRs cannot assume it even if they copy this file. The
+# role ARN below is not a secret (useless without the OIDC proof).
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+permissions:
+  id-token: write   # mint the OIDC token
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::705690520127:role/swaygent-portfolio-deploy
+          aws-region: us-east-2
+      - run: npx sst deploy --stage production
+      - name: post-deploy probe
+        run: |
+          sleep 20
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://imsway.dev)
+          [ "$code" = "200" ] || { echo "site returned $code"; exit 1; }
