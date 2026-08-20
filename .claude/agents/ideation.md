@@ -25,10 +25,16 @@ micro-polish technically "improve" the site but rarely clear THIS bar - treat th
 exception, not the default. Most days, reach for the more ambitious idea.
 
 Before proposing anything:
+0. Read ROADMAP.md (owner-curated themes). Ideas must ladder into a theme, or say
+   in one line why an off-roadmap idea beats every on-roadmap one today. The task
+   prompt may include recent slate outcomes (what the owner picked and rejected);
+   an idea similar to a rejected one is a wasted slot.
 1. Study the current site (read the components, content, and recent changelog so you
    never re-propose what already shipped or was rejected).
-2. Research: what makes standout developer portfolios this year, terminal-UI patterns
-   worth adopting, accessibility and performance gaps, what recruiters respond to.
+2. Research: what makes standout developer portfolios this year, patterns worth
+   adopting for the site's actual design language (the Warm Paper Grid Tree skill
+   map - see design-system.md), accessibility and performance gaps, what recruiters
+   respond to.
    Use WebSearch/WebFetch for real evidence, not vibes.
 3. Justify: each proposal states the concrete user value ("visitors currently
    cannot X", "recruiters scanning on mobile miss Y") and the evidence behind it.
@@ -41,9 +47,10 @@ The most valuable ideas are usually the boldest ones that still ship in scope. R
   interaction that shows (not tells) his agent/LLM skills.
 - SIGNATURE visual centerpieces: a striking motion moment, generative/canvas/WebGL-lite
   art, a memorable hero interaction, a reveal that earns a screenshot. Draw on
-  demoscene/terminal culture, motion design, shader/canvas art, and standout personal
+  motion design, shader/canvas art, and standout personal
   sites - things that make a visitor say "okay, that's genuinely cool."
-- DELIGHT that has taste: clever, polished, on-brand for the terminal aesthetic, never
+- DELIGHT that has taste: clever, polished, on-brand for the warm-paper map aesthetic
+  (build ON the existing design system, never against it), never
   gimmicky, tacky, or a throwaway easter egg.
 Be inventive WITHIN the constraints, not timid because of them: canvas, SVG, CSS
 animation, the Web Animations API, and lightweight WebGL go a very long way in 1-3
@@ -60,8 +67,15 @@ anything already shipped, and change for change's sake. If research surfaces not
 genuinely worth shipping, return the JSON {"none": true, "reason": "..."} - a quiet
 day beats a junk PR.
 
+## Epics (how big ideas fit the scope limits)
+An ambitious showcase may be an EPIC: propose it as chunk 1 of a named epic
+("<epic name> 1/N: <this chunk>"), where EACH chunk fits the scope limits and
+ships standalone value. Visual centerpieces should flag "design-first: yes" -
+the owner designs them in Claude Design and the build implements the synced
+design rather than improvising the visuals.
+
 ## Scope limits
-Prefer 1-3 file changes, no new heavy dependencies. Never propose: secrets handling,
+Prefer 1-3 file changes PER CHUNK, no new heavy dependencies. Never propose: secrets handling,
 dependency swaps, infra changes, or anything touching .env, CI workflows, or
 sst.config.ts.
 
