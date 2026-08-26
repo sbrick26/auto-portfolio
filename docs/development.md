@@ -9,7 +9,7 @@ npm run test           # unit + component tests (Vitest + RTL)
 npm run test:coverage  # with coverage thresholds (CI runs this)
 npm run e2e            # Playwright, desktop + mobile (builds + serves on :3100)
 npm run build          # production build
-npx sst deploy --stage production   # needs AWS creds in .env
+# production deploys run ONLY in CI (GitHub Actions + OIDC) - see architecture.md
 ```
 
 ## Testing layers
@@ -18,18 +18,19 @@ npx sst deploy --stage production   # needs AWS creds in .env
   (no client names, phone numbers, or private emails can ship - fixtures are
   base64-encoded so the public specs do not leak what they forbid) and changelog
   invariants (shape, semver ordering, newest entry matches package.json).
-- **Functional e2e** - Playwright on desktop Chrome and Pixel 7: boot, every command,
-  tabs, ghost-text, palette, the served-page secret-leak scan.
+- **Functional e2e** - Playwright on desktop Chrome and Pixel 7: the skill map,
+  node panels, deep links, resume one-page gate, and the served-page
+  secret-leak scan.
 - **Visual regression** - Playwright screenshot baselines, tagged `@visual`,
   darwin-only (excluded in CI; Linux font rendering flakes).
 
 ## The site
 
-A custom React terminal engine (no xterm.js): click-or-type commands (`me`, `about`,
-`updates`, `skills`, `projects`, `resume`, `contact`, `changelog`, `help`, aliases,
-and one secret), ghost-text autocomplete, editor-style tabs, cmd-K palette, arrow-key
-history, an animated live `updates` tail, skills with animated bars + radar chart,
-fully responsive.
+An interactive skill map in the "Warm Paper Grid Tree" design (design-system.md):
+a branching node map of roles, projects, and skills where each section carries its
+own muted accent color, node panels open with shareable deep links, and the
+updates feed, resume, and changelog render from `content/`. Fully responsive;
+the resume page is the source for the downloadable one-page PDF.
 
 **Stack:** Next.js (App Router) · React · TypeScript · Tailwind v4 · Framer Motion ·
 Recharts · Vitest + RTL · Playwright · SST v4 on AWS · GitHub Actions · Claude Code
@@ -46,7 +47,7 @@ agents
 ## Repo layout
 
 ```
-app/  components/  lib/   the Next.js site (terminal engine in components/terminal/)
+app/  components/  lib/   the Next.js site (skill map in components/skillmap/)
 content/                  data the site renders and the agents append to
 test/  e2e/               Vitest suites and Playwright suites
 docs/                     architecture + pipeline + development docs

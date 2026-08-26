@@ -37,10 +37,14 @@ and run on the Mac, tagged `@visual` and excluded in CI.
 
 ## Deploy path
 
-Deploys are driven from the Mac by SST (`npx sst deploy --stage production`), always
-from a freshly pulled `main` that has just passed CI, and re-verified locally (tests +
-build) before shipping. Every shipped drop bumps the minor version, appends to
-`content/changelog.json`, and pushes a `vX.Y.Z` tag.
+Production deploys run in GitHub Actions, keylessly: the workflow proves "I am a
+main-branch run of this repo" to AWS through OIDC and receives 15-minute
+credentials scoped to this app's resources - no stored cloud keys anywhere, not
+even in CI secrets. The deploy job runs the test suite before it may assume the
+role, then `sst deploy` ships from the runner and a post-deploy probe verifies
+the site answers. The pipeline watches the run and reports the result; every
+shipped drop bumps the minor version, appends to `content/changelog.json`, and
+pushes a `vX.Y.Z` tag. The Mac never deploys production.
 
 ## Cost posture
 

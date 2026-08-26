@@ -3,6 +3,88 @@
 How this repo builds, reviews, ships, and maintains itself. The companion doc
 [architecture.md](architecture.md) covers the infrastructure these flows run on.
 
+## The agents
+
+Workers under one project lead, three levels with a hard ceiling. Every
+user-visible change ends at the same gate: a live preview link plus human
+approval. At every button prompt, a plain text reply steers the plan while the
+buttons alone decide.
+
+```mermaid
+flowchart TD
+    O(["Owner"]) <-->|"slate buttons, interview,
+    approvals, text steering"| TGM["Telegram"]
+    TGM <--> FA["Front agent layer
+    routing, run lock, SQLite state, inbox"]
+
+    FA --> LIS["listener, always on
+    idle texts + screenshots become
+    fix now / queue / note buttons"]
+    FA --> DAILY["weekday 9:30 improvement"]
+    FA --> CHECKIN["16:00 check-in"]
+
+    subgraph workers["Portfolio lead + workers, capped loops"]
+        IDE["ideation: read-only research,
+        output untrusted"]
+        BLD["build: implements + reworks,
+        branches only"]
+        REV["reviewer: scope,
+        correctness, taste"]
+        QA["qa: real-browser sweeps
+        of the live site"]
+        MNT["maintainer: evidence-only
+        self-audits"]
+    end
+
+    DAILY -->|"slate of 3"| IDE
+    IDE -->|"owner picks or rethinks"| BLD
+    LIS -->|"fix now"| BLD
+    BLD <-->|"max 5 rounds"| REV
+    CHECKIN --> MNT
+
+    BLD --> GATE{"PR, CI, repair loop,
+    branch-fresh preview,
+    text reply = rework round"}
+    GATE -->|"docs/tests only"| SHIP["squash merge, version,
+    changelog, CI deploy"]
+    GATE -->|"user-visible:
+    preview + one tap"| TGM
+    TGM -->|"approve"| SHIP
+    SHIP --> LIVE(["imsway.dev"])
+```
+
+The career agents (archivist, resume-writer) live in their own repo,
+[career-engine](https://github.com/sbrick26/career-engine); the 16:00 check-in
+drives them and applies their output here through a validated export contract.
+
+## From a phone, any time
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant TG as Telegram
+    participant L as Listener
+    participant P as Pipeline
+    participant GH as GitHub + CI
+    participant AWS as AWS
+
+    Owner->>TG: screenshot + "make the footer like this"
+    TG->>L: message burst (45s collection)
+    L->>Owner: fix now / queue for 9:30 / career note / ignore
+    Owner->>L: fix now
+    L->>P: full lifecycle, under the run lock
+    P->>GH: branch, PR, CI
+    P->>AWS: preview stage (PR branch)
+    P->>Owner: preview link + approve / reject
+    Owner->>P: "move it up a bit" (text = rework)
+    P->>AWS: revised preview
+    P->>Owner: fresh link + buttons
+    Owner->>P: approve
+    P->>GH: squash merge, version, tag
+    P->>AWS: CI deploys production, preview torn down
+    P->>Owner: shipped and live
+```
+
 ## The two scheduled runs
 
 Both run on an always-on Mac via launchd. A single run-lock means they can never
