@@ -20,7 +20,7 @@ const validate = (x) => {
   if (!Number.isInteger(x.version) || x.version < 1) fail("missing/invalid version");
   if (typeof x.generated !== "string") fail("missing generated timestamp");
   const r = x.resume;
-  if (!r || typeof r.summary !== "string" || !r.summary) fail("resume.summary missing");
+  if (!r || typeof r.summary !== "string") fail("resume.summary missing (empty string = no summary section)");
   for (const key of ["experience", "education"]) {
     if (!Array.isArray(r[key])) fail(`resume.${key} is not an array`);
     for (const e of r[key]) {
@@ -28,11 +28,27 @@ const validate = (x) => {
       if (!Array.isArray(e.points)) fail(`${key} entry '${e.title}' missing points[]`);
       for (const p of e.points) {
         if (typeof p !== "string") fail(`non-string bullet under '${e.title}'`);
-        if (p.length > 220) fail(`bullet over 220 chars under '${e.title}': "${p.slice(0, 60)}..."`);
+        // fused theme bullets (owner style, 2026-08-25); the one-page PDF gate arbitrates fit
+        if (p.length > 620) fail(`bullet over 620 chars under '${e.title}': "${p.slice(0, 60)}..."`);
       }
     }
   }
   if (r.experience.length < 1) fail("experience is empty");
+  if (r.projects !== undefined) {
+    if (!Array.isArray(r.projects)) fail("resume.projects is not an array");
+    for (const pr of r.projects) {
+      if (typeof pr.name !== "string" || !pr.name) fail("project entry missing name");
+      if (typeof pr.desc !== "string" || !pr.desc) fail(`project '${pr.name}' missing desc`);
+      if (pr.desc.length > 620) fail(`project desc over 620 chars for '${pr.name}'`);
+    }
+  }
+  if (r.skillsLines !== undefined) {
+    if (!Array.isArray(r.skillsLines)) fail("resume.skillsLines is not an array");
+    for (const sl of r.skillsLines) {
+      if (typeof sl.label !== "string" || !sl.label) fail("skills line missing label");
+      if (typeof sl.items !== "string" || !sl.items) fail(`skills line '${sl.label}' missing items`);
+    }
+  }
 };
 
 const src = readFileSync(DATA, "utf8");
@@ -56,7 +72,7 @@ validate(exp);
 
 const literal = JSON.stringify(exp.resume, null, 2);
 const generated =
-  `export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[] } = ${literal};`;
+  `export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[]; projects?: { name: string; desc: string }[]; skillsLines?: { label: string; items: string }[] } = ${literal};`;
 const out = src.replace(BLOCK, `$1${generated}$3`);
 writeFileSync(DATA, out);
 console.log(`applied resume export v${exp.version} (${exp.generated}): ` +

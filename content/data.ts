@@ -340,66 +340,98 @@ export type ResumeItem = { title: string; org?: string; when?: string; points: s
 // Condensed for on-screen reading; Phase 3 regenerates this from the corpus.
 // <resume-export:resume> AUTO-MANAGED: applied from career-engine dist/resume-export.json
 // by scripts/apply-resume-export.mjs - do not hand-edit between these markers.
-export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[] } = {
-  "summary": "AI Forward Deployed Engineer at IBM owning enterprise agent deployments end to end across 116 accounts: MCP servers, multi-agent orchestration, and agent-driven mainframe modernization on live production systems, turning evaluations into 3 enterprise purchases. Exceeded first-year quota by 125%.",
+export const resume: { summary: string; experience: ResumeItem[]; education: ResumeItem[]; projects?: { name: string; desc: string }[]; skillsLines?: { label: string; items: string }[] } = {
+  "summary": "",
   "experience": [
     {
       "title": "AI Forward Deployed Engineer",
-      "org": "IBM, Client Engineering",
+      "org": "IBM, Client Engineering - San Francisco, CA",
       "when": "Jan 2026 - Present",
       "points": [
-        "Cut order-management incident resolution from hours to minutes with an MCP platform wiring an agent into a live Sterling OMS across 1,060 exposed APIs.",
-        "Win a platform bake-off vs Copilot Studio with a watsonx Orchestrate agent triaging 2,000-3,000 daily EDI alert emails by severity for a beverage manufacturer.",
-        "Modernize legacy RPG on a live IBM i with an agent that extracts rules from a 10,000+ line file and compiles on the box, drawing purchase interest from a state pension fund.",
-        "Scale an enterprise HR agent system to 6 orchestrated agents on live Workday and ServiceNow tenants, fixing 8,000-line context overflows and moving a sports entertainment client to pricing.",
-        "Convert a self-designed full-day hackathon series, run 10+ times, into 3 product purchases at national freight carriers plus a premium mainframe trial at a financial-services client.",
-        "Mentor intern hackathon teams to a 1st-place finish out of 25 and an MCP pilot-reuse server now official IBM tooling slated for hundreds of engineers."
+        "Manage technical strategy and full engagements end to end for 20+ large and mid-market enterprise accounts in the western US - leading requirements discovery, drafting engagement plans, and hosting in-person and virtual working sessions that win buy-in - through architecture, build, and post-sales adoption",
+        "Main speaker at the ALIGN AI Executive Summit (SF): live demonstration of IBM Bob (Agentic Coding IDE/Shell) running the full AI SDLC - Jira planning, Figma design, development, CI/CD, MCP deployment into watsonx Orchestrate - with agent identity via HashiCorp Vault and every governance decision tracked",
+        "Design and build the full agentic stack - agents, MCP servers (Python/TypeScript), tools, skills, knowledge and data layers - for clients in 6+ industries: a Sterling order-management operations agent for natural-language diagnosis and remediation, a secure IBM i/RPG modernization MCP server, email-classification and data-readiness agents, a 6-agent HR system over Workday and Teams (caching, cross-step memory), and a live in-game translation agent (speech-to-text on Orchestrate) for a major video game publisher",
+        "Engineer and guide Bob rollouts - custom rules, skills, hooks, workflows, and modes; CI/CD checks and deployments run by Bob shells; agent and MCP builds deployed into watsonx Orchestrate - with governance, usage-tracking, and cost best practices, on legacy codebases (RPG on IBM i, COBOL to Java, mainframe green-screens to React) and modern ones; 3 enterprise deals closed",
+        "Created Bobathon for IBM's Horizon West market: a workshop-plus-hackathon format teaching teams Bob's agents, skills, rules, and governance hooks wired into their real SDLC (Jira, Figma, GitHub, Monday, watsonx Orchestrate, and more) - 20+ run, about 1 in 3 purchased and adopted IBM Bob",
+        "Grow adoption after the sale and expand it: initial workflows, rules/modes/skills setup, best-practice guides, then the next use case - an HR launch grew into IT-team automation, in-game translation is spreading to more titles - 30-40% usage and token growth",
+        "Lead 5 engineers building a plugin library (skills, rules, modes, MCPs) across 10+ IBM products; mentored intern teams to a 1st-of-25 hackathon win and a tool now official inside IBM; beta contributor on Bob 2.0's GA and its premium IBM i, Z, and Java packages",
+        "Feed the field back into the product: work with product teams to reuse and embed deployed client code into watsonx Orchestrate and IBM Bob - 4 major product improvements, helping lead the sales-to-client-to-product pipeline"
       ]
     },
     {
-      "title": "AI Solutions Engineer",
-      "org": "IBM",
+      "title": "AI Solutions Engineer, Data and AI",
+      "org": "IBM, Client Engineering - San Francisco, CA",
       "when": "Mar 2025 - Jan 2026",
       "points": [
-        "Exceeded first-year quota by 125% across 20+ enterprise accounts, owning technical evaluations end to end and differentiating watsonx from Azure OpenAI, Bedrock, and Vertex AI.",
-        "Generated 314 pipeline opportunities from a live watsonx demonstration at AWS re:Invent that drew ~400 attendees to the IBM booth session."
+        "Exceeded first-year quota by 125% owning technical evaluations end to end across 20+ enterprise accounts - POC wins head-to-head against Microsoft Azure OpenAI, AWS Bedrock, and Google Vertex AI",
+        "Designed and presented a live watsonx demonstration at AWS re:Invent that drew ~400 attendees, generating hundreds of inbound client conversations and new pipeline",
+        "Led competitive displacement against GitHub Copilot, Cursor, Claude Code, Codex, and other AI tooling with tailored technical narratives and ROI frameworks",
+        "Built repeatable, client-specific demonstration frameworks turning business pain points into quantifiable watsonx.ai, Orchestrate, watsonx.data, and watsonx.governance outcomes - cutting time-to-close, improving win rates"
       ]
     },
     {
       "title": "Software Engineer",
-      "org": "Qureez",
+      "org": "Qureez - Pleasanton, CA",
       "when": "Feb 2022 - Apr 2025",
       "points": [
-        "Engineered a real-time ERCOT grid-dispatch integration reaching 80% dispatch success during grid overload events and shipped an RBAC system to AWS Marketplace serving hundreds of accounts.",
-        "Launched AI Bench Studio, an infrastructure benchmarking platform (YCSB/TSBS + Grafana) on AWS Marketplace, and drove a PWA migration raising mobile app usage ~50%.",
-        "Led a 5-person offshore team delivering full-stack web, mobile, and IoT energy platforms in TypeScript, React, Next.js, and Node.js for commercial and industrial buildings."
+        "Delivered full-stack web, mobile, and IoT platforms for startups (TypeScript, React, Next.js, Node.js, AWS, MongoDB) driving energy reductions across large commercial and industrial buildings, while project-managing a 5-person offshore team",
+        "Engineered an ERCOT grid-signal integration hitting an 80% success rate during grid overloads; shipped a role-based access control system to AWS Marketplace serving hundreds of accounts",
+        "Created AI Bench Studio, an AWS Marketplace platform for benchmarking AI infrastructure (YCSB/TSBS, Grafana); led a PWA migration that boosted mobile usage ~50%"
       ]
     },
     {
       "title": "Software Engineer, iOS Profile Team",
-      "org": "LinkedIn",
-      "when": "Jun 2022 - 2024",
+      "org": "LinkedIn - San Francisco, CA",
+      "when": "Jun 2022 - Jan 2024",
       "points": [
-        "Shipped user-facing Swift and Objective-C features across the core profile; Top Skills engaged 600K+ members with a ~10% weekly-active-user lift in LIX A/B tests.",
-        "Lifted profile updates ~14% and career-break additions ~11% by designing Next Best Action prompts and Career Break Associations under the Skills First initiative.",
-        "Built 2 reusable API-driven iOS components, a stateful Connect/Follow action button and a re-orderable skills module, adopted across multiple profile sections."
+        "Shipped core profile features in Swift/Objective-C across the Skills First initiative: Top Skills (600K+ members engaged, ~10% weekly-active lift), Career Break Associations (~11% lift), Next Best Action prompts (~14% more profile updates)",
+        "Built reusable API-driven UI components adopted across profile surfaces - a stateful Connect/Follow button, a re-orderable skills module - and ran LIX/T-REX A/B experiments end to end; organized monthly meetups for a 35-person early-career cohort"
       ]
     },
     {
       "title": "Software Developer",
-      "org": "ALNA Properties",
+      "org": "ALNA Properties - Dallas, TX",
       "when": "Aug 2021 - Dec 2021",
       "points": [
-        "Automated manual MLS listing review with a Python and Firebase BI tool scoring thousands of listings daily via image-processing AI, cutting outsourcing costs 80%."
+        "Built a Python/Firebase tool with image-processing AI scoring thousands of MLS listings a day, cutting outsourced review costs 80%"
       ]
     }
   ],
-  "education": [
+  "education": [],
+  "projects": [
     {
-      "title": "Software Engineering Bootcamp",
-      "org": "Dominican University of California",
-      "when": "2020",
-      "points": []
+      "name": "Swaygent",
+      "desc": "self-running agentic system maintaining imsway.dev and this resume: 13 Claude agents behind one orchestrator, Telegram one-tap approvals, golden-set evals, self-healing audits, keyless CI deploys (GitHub OIDC) onto AWS with usage metering, cost tracking, alerting. Live at imsway.dev; engine at github.com/sbrick26/career-engine"
+    },
+    {
+      "name": "Bobwork",
+      "desc": "web app for an agentic CLI with a council mode - 5 parallel agents, peer review, chairman synthesis (Node.js, Next.js, SQLite, WebSockets); Bob runs in the pipeline: automated review checks, branch management, code hygiene and cleanup with regression testing"
+    },
+    {
+      "name": "Coding-agent benchmarking platform",
+      "desc": "benchmarks IBM Bob against Claude Code, Codex, and others - standard suites plus custom benchmarks (multi-turn evolving requirements, enterprise migrations verified on real databases) behind integrity gates that catch reward-hacking"
+    }
+  ],
+  "skillsLines": [
+    {
+      "label": "AI and agents",
+      "items": "agentic architecture, orchestration, MCP, RAG, prompt engineering - IBM Bob, watsonx (.ai, Orchestrate, .data, .governance), Claude Code, Managed Agents, Codex, Cursor; models: Granite, Llama, GPT 5.4, gpt-oss, Claude (Opus, Sonnet, Fable 5, Haiku)"
+    },
+    {
+      "label": "Governance and safety",
+      "items": "governed AI SDLC (audit logging, blocking rules, tracked decisions), agent identity (HashiCorp Vault), privacy guards in CI, agent evaluation with integrity gates"
+    },
+    {
+      "label": "Engineering",
+      "items": "TypeScript, JavaScript, Python, Swift, Objective-C; React, Next.js, Node.js, AWS (Lambda, CloudFront, S3, OIDC), GitHub Actions, MongoDB, Firebase, SQLite, WebSockets, GraphQL, Telegram Bot API"
+    },
+    {
+      "label": "Field",
+      "items": "discovery and solutioning, executive briefings, public speaking and live demonstrations, POC/pilot creation and management, ROI frameworks, competitive positioning, pre- and post-sales adoption"
+    },
+    {
+      "label": "Education",
+      "items": "Dominican University of California - Software Engineering Bootcamp, 2020"
     }
   ]
 };

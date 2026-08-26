@@ -188,7 +188,25 @@
   {
     "date": "2026-08-20",
     "time": "16:25",
-    "text": "pushed the work public on github: swaygents, the resume builder, and this portfolio are all open repos now, so the pipeline that ships this site can be read instead of just described",
+    "text": "pushed the work public on github: the career engine and this portfolio are open repos now, so the pipeline that ships this site can be read instead of just described, while the orchestrator that drives them stays private and runs live here",
     "tag": "pipeline"
+  },
+  {
+    "date": "2026-08-25",
+    "time": "17:52",
+    "text": "newer post-sales use case at a major video game publisher: live in-game translation, speech-to-text piped through an enterprise agent orchestrator, heading toward live in-game agents",
+    "tag": "agents"
+  },
+  {
+    "date": "2026-08-25",
+    "time": "18:20",
+    "text": "built a coding-agent benchmarking platform measuring IBM Bob (Agentic Coding IDE/Shell) against Claude Code, CODEX and other coding agents on coding and enterprise-migration work: 52 gated tasks plus an 8-task containerised migration suite (Java 8 to 21, EJB to Spring, Ant to Maven, Oracle to Postgres), every task gated by oracle, nop and adversarial probe engines, 120 clean gate runs, and the Oracle-to-Postgres grader proven 103/103 against a live Oracle 23ai database",
+    "tag": "evaluation"
+  },
+  {
+    "date": "2026-08-25",
+    "time": "18:25",
+    "text": "the lab runs on credibility over favourable results, so unflattering findings stay in: I retracted my own 2.08x cost comparison after finding the figure was a platform credit tariff rather than dollars, hardened the store so it refuses to aggregate across cost units, and published that the default global skill loadout costs 48.8 percent more tokens for zero accuracy change",
+    "tag": "evaluation"
   }
 ]
