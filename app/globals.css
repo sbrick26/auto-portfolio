@@ -149,8 +149,8 @@ body {
   .resume-doc .resume-doc-title { font-weight: 700; }
   .resume-doc .resume-doc-when { font-size: 8pt; color: #555; white-space: nowrap; }
   .resume-doc .resume-doc-org { font-style: italic; color: #333; font-size: 8.5pt; }
-  .resume-doc ul { margin: 1px 0 0; padding-left: 14px; }
-  .resume-doc li { margin-bottom: 0.5px; }
+  .resume-doc ul { margin: 1px 0 0; padding-left: 14px; list-style-type: disc; }
+  .resume-doc li { margin-bottom: 0.5px; display: list-item; }
   .resume-doc .resume-doc-skill { margin-bottom: 1px; }
 
   @page { margin: 1.1cm; }

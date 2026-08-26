@@ -71,6 +71,7 @@ export function PrintableResume() {
         ))}
       </section>
 
+      {resume.education.length ? (
       <section>
         <h2>Education</h2>
         {resume.education.map((e, i) => (
@@ -83,6 +84,7 @@ export function PrintableResume() {
           </div>
         ))}
       </section>
+      ) : null}
     </div>
   );
 }

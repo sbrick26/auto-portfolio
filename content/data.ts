@@ -382,7 +382,7 @@ export const resume: { summary: string; experience: ResumeItem[]; education: Res
     {
       "title": "Software Engineer, iOS Profile Team",
       "org": "LinkedIn - San Francisco, CA",
-      "when": "Jun 2022 - Jan 2024",
+      "when": "Jun 2022 - 2024",
       "points": [
         "Shipped core profile features in Swift/Objective-C across the Skills First initiative: Top Skills (600K+ members engaged, ~10% weekly-active lift), Career Break Associations (~11% lift), Next Best Action prompts (~14% more profile updates)",
         "Built reusable API-driven UI components adopted across profile surfaces - a stateful Connect/Follow button, a re-orderable skills module - and ran LIX/T-REX A/B experiments end to end; organized monthly meetups for a 35-person early-career cohort"
