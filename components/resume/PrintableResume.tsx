@@ -23,10 +23,12 @@ export function PrintableResume() {
         </div>
       </header>
 
-      <section>
-        <h2>Summary</h2>
-        <p>{resume.summary}</p>
-      </section>
+      {resume.summary ? (
+        <section>
+          <h2>Summary</h2>
+          <p>{resume.summary}</p>
+        </section>
+      ) : null}
 
       <section>
         <h2>Experience</h2>
@@ -46,15 +48,30 @@ export function PrintableResume() {
         ))}
       </section>
 
+      {resume.projects?.length ? (
+        <section>
+          <h2>Projects</h2>
+          {resume.projects.map((p) => (
+            <div className="resume-doc-skill" key={p.name}>
+              <strong>{p.name}</strong> - {p.desc}
+            </div>
+          ))}
+        </section>
+      ) : null}
+
       <section>
         <h2>Skills</h2>
-        {skills.map((g) => (
-          <div className="resume-doc-skill" key={g.category}>
-            <strong>{g.category}:</strong> {g.items.map((s) => s.name).join(", ")}
+        {(resume.skillsLines?.length
+          ? resume.skillsLines
+          : skills.map((g) => ({ label: g.category, items: g.items.map((s) => s.name).join(", ") }))
+        ).map((line) => (
+          <div className="resume-doc-skill" key={line.label}>
+            <strong>{line.label}:</strong> {line.items}
           </div>
         ))}
       </section>
 
+      {resume.education.length && !resume.skillsLines?.some((l) => l.label === "Education") ? (
       <section>
         <h2>Education</h2>
         {resume.education.map((e, i) => (
@@ -67,6 +84,7 @@ export function PrintableResume() {
           </div>
         ))}
       </section>
+      ) : null}
     </div>
   );
 }

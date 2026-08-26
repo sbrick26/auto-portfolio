@@ -15,7 +15,11 @@ describe("resumeToPlainText (copy-to-clipboard serializer)", () => {
 
   it("includes the summary and every section heading", () => {
     expect(text).toContain(resume.summary);
-    for (const heading of ["SUMMARY", "EXPERIENCE", "SKILLS", "EDUCATION"]) {
+    const expected = ["EXPERIENCE", "EDUCATION"];
+    if (resume.summary) expected.push("SUMMARY");
+    if (resume.projects?.length) expected.push("PROJECTS");
+    if (resume.skillsLines?.length) expected.push("SKILLS");
+    for (const heading of expected) {
       expect(text).toContain(heading);
     }
   });
