@@ -28,7 +28,7 @@ jobs:
       # tests gate the deploy: a direct push or auto-merge that skipped PR CI
       # must still prove itself before touching production
       - run: npx vitest run
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::705690520127:role/swaygent-portfolio-deploy
           aws-region: us-east-2
