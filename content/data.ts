@@ -397,7 +397,14 @@ export const resume: { summary: string; experience: ResumeItem[]; education: Res
       ]
     }
   ],
-  "education": [],
+  "education": [
+    {
+      "title": "Software Engineering Bootcamp",
+      "org": "Dominican University of California",
+      "when": "2020",
+      "points": []
+    }
+  ],
   "projects": [
     {
       "name": "Swaygent",

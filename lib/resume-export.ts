@@ -19,7 +19,7 @@ export function resumeToPlainText(): string {
     ].join(" | "),
   );
 
-  lines.push("", "SUMMARY", resume.summary);
+  if (resume.summary) lines.push("", "SUMMARY", resume.summary);
 
   lines.push("", "EXPERIENCE");
   for (const e of resume.experience) {
@@ -35,6 +35,14 @@ export function resumeToPlainText(): string {
   }
 
   lines.push("", "EDUCATION");
+  if (resume.projects?.length) {
+    lines.push("", "PROJECTS");
+    for (const p of resume.projects) lines.push(`${p.name} - ${p.desc}`);
+  }
+  if (resume.skillsLines?.length) {
+    lines.push("", "SKILLS");
+    for (const l of resume.skillsLines) lines.push(`${l.label}: ${l.items}`);
+  }
   for (const e of resume.education) {
     lines.push("");
     lines.push(e.when ? `${e.title} (${e.when})` : e.title);

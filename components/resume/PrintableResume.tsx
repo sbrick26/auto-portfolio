@@ -71,7 +71,7 @@ export function PrintableResume() {
         ))}
       </section>
 
-      {resume.education.length ? (
+      {resume.education.length && !resume.skillsLines?.some((l) => l.label === "Education") ? (
       <section>
         <h2>Education</h2>
         {resume.education.map((e, i) => (
