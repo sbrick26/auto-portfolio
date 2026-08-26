@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { resume } from "@/content/data";
 
-// Deterministic resume-formatting lint (fast, no browser) encoding researched
-// best practices (Harvard MCS, Resume Worded, Teal, Indeed). It exists so the
-// resume can never regress into pronoun-led, multi-sentence paragraph bullets
-// again. The one-page e2e gate handles physical fit; this gates writing style.
+// Deterministic resume-formatting lint (fast, no browser). Policy updated
+// 2026-08-25 after the owner's 33-round taste loop: fused THEME bullets (one
+// theme per bullet, several facts fused, up to ~620 chars) replaced the old
+// 220-char single-fact style; the current role runs up to 8 theme bullets.
+// Verb-first no-pronoun voice and the one-sentence-fragment rule stay. The
+// one-page e2e gate handles physical fit; this gates writing style.
 const bullets = resume.experience.flatMap((e) => e.points);
 
 describe("resume formatting policy", () => {
@@ -23,9 +25,9 @@ describe("resume formatting policy", () => {
     }
   });
 
-  it("every bullet is one tight fragment (<=220 chars, single idea)", () => {
+  it("every bullet is one fused theme (<=620 chars, no second sentence)", () => {
     for (const b of bullets) {
-      expect(b.length, `bullet too long (${b.length} chars) - tighten or split: "${b}"`).toBeLessThanOrEqual(220);
+      expect(b.length, `bullet too long (${b.length} chars) - tighten or split: "${b}"`).toBeLessThanOrEqual(620);
       // a period followed by a capital = a second sentence; bullets are fragments
       const sentenceBreaks = (b.match(/\.\s+[A-Z]/g) || []).length;
       expect(sentenceBreaks, `bullet must be ONE idea, not multiple sentences: "${b}"`).toBe(0);
@@ -37,13 +39,13 @@ describe("resume formatting policy", () => {
     const unquantified = bullets.length - quantified;
     expect(
       unquantified,
-      `${unquantified} bullets have no number; at most 1 may be unquantified (stat-pack the rest)`,
-    ).toBeLessThanOrEqual(1);
+      `${unquantified} bullets have no number; at most 3 may be unquantified (stat-pack the rest)`,
+    ).toBeLessThanOrEqual(3);
   });
 
-  it("no role exceeds 6 bullets", () => {
+  it("no role exceeds 8 bullets", () => {
     for (const e of resume.experience) {
-      expect(e.points.length, `"${e.title}" has ${e.points.length} bullets (max 6)`).toBeLessThanOrEqual(6);
+      expect(e.points.length, `"${e.title}" has ${e.points.length} bullets (max 8)`).toBeLessThanOrEqual(8);
     }
   });
 

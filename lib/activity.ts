@@ -29,6 +29,7 @@ export const TAG_CATEGORY: Record<string, string> = {
   "client-work": "ai / agents",
   "ibm-i": "ai / agents",
   product: "ai / agents",
+  evaluation: "ai / agents",
   mentoring: "customer-facing",
   speaking: "customer-facing",
 };

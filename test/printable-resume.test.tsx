@@ -13,12 +13,18 @@ describe("PrintableResume", () => {
     const { container } = render(<PrintableResume />);
     expect(container.querySelector(".resume-doc")).not.toBeNull();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(profile.name);
-    expect(screen.getByText("Summary")).toBeDefined();
-    expect(screen.getByText(resume.summary)).toBeDefined();
+    if (resume.summary) {
+      expect(screen.getByText("Summary")).toBeDefined();
+      expect(screen.getByText(resume.summary)).toBeDefined();
+    } else {
+      expect(screen.queryByText("Summary")).toBeNull();
+    }
     expect(container.querySelectorAll(".resume-doc-entry").length).toBe(
       resume.experience.length + resume.education.length,
     );
-    expect(container.querySelectorAll(".resume-doc-skill").length).toBe(skills.length);
+    const skillRows = resume.skillsLines?.length ?? skills.length;
+    const projectRows = resume.projects?.length ?? 0;
+    expect(container.querySelectorAll(".resume-doc-skill").length).toBe(skillRows + projectRows);
   });
 
   it("keeps contact info present but joined into one print line", () => {
