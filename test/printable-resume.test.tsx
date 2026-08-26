@@ -19,8 +19,10 @@ describe("PrintableResume", () => {
     } else {
       expect(screen.queryByText("Summary")).toBeNull();
     }
+    const educationRendered = resume.education.length &&
+      !resume.skillsLines?.some((l) => l.label === "Education");
     expect(container.querySelectorAll(".resume-doc-entry").length).toBe(
-      resume.experience.length + resume.education.length,
+      resume.experience.length + (educationRendered ? resume.education.length : 0),
     );
     const skillRows = resume.skillsLines?.length ?? skills.length;
     const projectRows = resume.projects?.length ?? 0;
