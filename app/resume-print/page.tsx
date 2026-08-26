@@ -5,7 +5,7 @@ import { PrintableResume } from "@/components/resume/PrintableResume";
 // rendered by the PDF generator (e2e/gen-resume-pdf.spec.ts) and the one-page
 // CI gate (e2e/resume-onepage.spec.ts). Not linked from the UI, not indexed.
 export const metadata: Metadata = {
-  title: "resume (print)",
+  title: "Swayam Barik - Resume",
   robots: { index: false, follow: false },
 };
 
