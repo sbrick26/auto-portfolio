@@ -325,3 +325,45 @@ test("recenter clears the selection and closes the panel", async ({ page }) => {
   await page.getByRole("button", { name: /recenter/i }).click();
   await expect(page.getByRole("link", { name: /download the resume as a PDF/i })).toBeHidden();
 });
+
+// The topbar chrome (recenter + the two zoom buttons) floats over the canvas on
+// its own stacking context. If it ever loses its position, grows past its text,
+// or drops out of that context, it silently eats the clicks meant for the nodes
+// underneath and the map stops responding altogether - which surfaces as a pile
+// of unrelated click timeouts rather than anything pointing at the topbar. Hit
+// test the nodes directly so a regression names the layer that covered them.
+test("chrome never swallows the clicks meant for the card or a branch", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await mapReady(page);
+  await page.waitForTimeout(500); // let the opening camera glide settle
+
+  await expect(page.locator(".sm-topbar")).toBeVisible();
+
+  for (const label of [
+    "Swayam Barik",
+    "About",
+    "Skills",
+    "Resume",
+    "Updates",
+    "Changelog",
+    "Projects",
+    "Pipeline",
+    "Contact",
+  ]) {
+    const node = page.getByRole("button", { name: label, exact: true });
+    // a node parked off-screen cannot be clicked anyway; the framing tests own that
+    if (!(await isOnStage(page, node))) continue;
+    const box = (await node.boundingBox())!;
+    const hit = await page.evaluate(
+      ([x, y]) => {
+        const el = document.elementFromPoint(x, y);
+        if (!el) return "nothing";
+        const owner = el.closest("button");
+        return owner ? `button[${owner.getAttribute("aria-label")}]` : `${el.tagName}.${el.className}`;
+      },
+      [box.x + box.width / 2, box.y + box.height / 2],
+    );
+    expect(hit, `something is covering the "${label}" node`).toBe(`button[${label}]`);
+  }
+});
