@@ -1,5 +1,12 @@
 [
   {
+    "version": "3.21.0",
+    "date": "2026-10-28",
+    "changes": [
+      "automated dependency updates (CI-verified)"
+    ]
+  },
+  {
     "version": "3.20.0",
     "date": "2026-10-14",
     "changes": [
